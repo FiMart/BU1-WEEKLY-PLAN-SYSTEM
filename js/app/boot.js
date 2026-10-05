@@ -48,10 +48,10 @@ async function init(){
     if(d){
       db=d;S.mode='live';S.backend='claude';showMe();
       if(users){try{S.me=await users.id();const w=await users.can('data.write');if(w===false)S.canWrite=false}catch(e){}}
-      wireData();return;
+      usePrefsOf(S.me||'claude');wireData();return;
     }
   }
   if(hasSupabaseConfig()){initSupabase();return}
-  downloads=browserDownloads;startLocal();
+  downloads=browserDownloads;usePrefsOf('local');startLocal();
 }
 init();

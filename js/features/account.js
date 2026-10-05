@@ -1,5 +1,5 @@
 'use strict';
-/* BU1 Weekly Plan · account: basic info on who is signed in and their access level; preferences on this device
+/* BU1 Weekly Plan · account: basic info on who is signed in and their access level; preferences of each account
    Name and photo come from the signed-in account (claude.ai profile, or the Supabase profile when that backend is on). */
 S.account={name:'',avatar:'',id:null};
 
@@ -47,7 +47,7 @@ function openAccount(){
   const d=$('#acctDlg');if(!d.open)d.showModal();
 }
 
-/* preferences on this device: shown in the account window and in จัดการข้อมูล › การตั้งค่า */
+/* preferences of the signed-in account (js/core/state.js keeps them per account): shown in the account window and in จัดการข้อมูล › การตั้งค่า */
 const PREF_GROUPS=[
   ['หน้าตา',[
     {id:'dark',label:'โหมดมืด',desc:'พื้นสีเข้ม สบายตาเวลาใช้ในที่แสงน้อย',get:()=>isDark(),set:v=>{if(v!==isDark())toggleTheme()}},
@@ -65,6 +65,8 @@ const PREF_GROUPS=[
     {id:'dashMonth',label:'เปิดเป็นรายเดือน',desc:'ปิดไว้ = รายสัปดาห์',get:()=>S.dash.mode==='month',set:v=>{S.dash.mode=v?'month':'week';remember('bu1wp.dash',S.dash.mode)}},
   ]],
 ];
+const prefScopeText=()=>S.backend==='supabase'?'บันทึกไว้กับบัญชีนี้ เข้าสู่ระบบจากเครื่องอื่นก็ได้การตั้งค่าเดิม แต่ละบัญชีตั้งค่าแยกกัน'
+  :S.mode==='live'?'บันทึกไว้กับบัญชีนี้ในเบราว์เซอร์นี้ คนอื่นที่ใช้เครื่องเดียวกันตั้งค่าแยกกัน':'โหมดทดลอง การตั้งค่าจำไว้ในเบราว์เซอร์นี้';
 const PREF_DEFAULTS={mini:false,cust:false,avail:true,sun:true,busy:false,dashMonth:false};
 const allPrefs=()=>PREF_GROUPS.flatMap(g=>g[1]);
 function prefsHtml(){
@@ -72,7 +74,7 @@ function prefsHtml(){
 }
 function resetPrefs(){
   for(const p of allPrefs())if(p.id in PREF_DEFAULTS)p.set(PREF_DEFAULTS[p.id]);
-  try{localStorage.removeItem('bu1wp.theme')}catch(e){}document.documentElement.removeAttribute('data-theme');syncThemeLbl();
+  forget('theme');document.documentElement.removeAttribute('data-theme');syncThemeLbl();
   render();if($('#acctDlg').open)openAccount();toast('คืนค่าการตั้งค่าเริ่มต้นแล้ว');
 }
 function prefsSection(){
@@ -89,8 +91,8 @@ function prefsSection(){
     ['ข้อมูลในระบบ',`พนักงาน ${S.staff.filter(s=>s.active!==false).length} คน · รถ ${vehicles().filter(v=>v.active!==false).length} คัน · โปรเจกต์ ${S.projects.length} · แผนสัปดาห์นี้ ${S.tasks.length}`],
   ];
   return {id:'prefs',title:'การตั้งค่า',sub:changed?`ปรับแล้ว ${changed} รายการ · ข้อมูลระบบ`:'การแสดงผล · ข้อมูลระบบ',count:n,
-    desc:'การแสดงผลที่จำไว้เฉพาะเบราว์เซอร์นี้ ไม่กระทบคนอื่นในทีม และข้อมูลของระบบ',
-    body:`<h3 class="pref-h">การแสดงผลบนเครื่องนี้</h3>${prefsHtml()}
+    desc:'การแสดงผลที่จำไว้กับบัญชีของคุณ ไม่กระทบคนอื่นในทีม และข้อมูลของระบบ',
+    body:`<h3 class="pref-h">การแสดงผลของบัญชี${S.me&&/@/.test(S.me)?` <small class="hint">${esc(S.me)}</small>`:''}</h3><p class="hint">${esc(prefScopeText())}</p>${prefsHtml()}
       <div class="pref-actions"><button type="button" class="btn" data-action="reset-prefs">คืนค่าเริ่มต้น</button><span class="hint">โหมดมืดจะกลับไปใช้ตามการตั้งค่าของเครื่อง</span></div>
       <h3 class="pref-h">ข้อมูลระบบ</h3>
       <dl class="acct-info">${info.map(([k,v],i)=>`<div${i>=info.length-2?' class="wide"':''}><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`};

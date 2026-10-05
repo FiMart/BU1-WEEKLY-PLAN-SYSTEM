@@ -1,7 +1,7 @@
 'use strict';
 /* BU1 Weekly Plan · global event handlers */
 /* ---------- events ---------- */
-function goView(v){if(S.view!==v){S.view=v;S.anim='view';remember('bu1wp.view',v)}render()}
+function goView(v){if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
 function setMonth(d){S.month=firstOfMonth(d);S.anim='view';render()}
 document.addEventListener('click',e=>{
   const t=e.target;
@@ -10,7 +10,7 @@ document.addEventListener('click',e=>{
   if(!t.closest('#copyMenu'))$('#copyMenu').open=false;
   const md=t.closest('[data-md]');if(md){if(S.md!==md.dataset.md){S.md=md.dataset.md;S.mdq='';remember('bu1wp.md',S.md);S.anim='view';render();const b=$('#view .md-body');if(b&&window.innerWidth<=900)b.scrollIntoView({block:'start'})}return}
   const gc=t.closest('[data-gchip]');if(gc){const k=gc.dataset.gchip;S.pf.groups=!k?[]:S.pf.groups.includes(k)?S.pf.groups.filter(x=>x!==k):S.pf.groups.concat(k);S.anim='view';render();return}
-  const gw=t.closest('[data-goweek]');if(gw){S.week=mondayOf(parseD(gw.dataset.goweek));S.view='plan';remember('bu1wp.view','plan');S.anim='view';subscribeWeek();window.scrollTo(0,0);return}
+  const gw=t.closest('[data-goweek]');if(gw){S.week=mondayOf(parseD(gw.dataset.goweek));S.view='plan';rememberView('plan');S.anim='view';subscribeWeek();window.scrollTo(0,0);return}
   const pe=t.closest('[data-proj-edit]');if(pe){S.projEdit=pe.dataset.projEdit;render();setTimeout(()=>{const f=$('#pj-name');if(f){f.focus();f.scrollIntoView({block:'center'})}},30);return}
   const pdb=t.closest('[data-pday]');if(pdb){S.pday=pdb.dataset.pday;S.anim=null;render();return}
   const mdb=t.closest('[data-mday]');if(mdb){S.mday=mdb.dataset.mday;S.anim=null;render();return}

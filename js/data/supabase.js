@@ -146,6 +146,10 @@ async function myDepts(){
 }
 async function afterLogin(user){
   S.auth.user=user;S.auth.email=String(user.email||'').trim().toLowerCase();S.me=S.auth.email;
+  usePrefsOf(S.auth.email,(user.user_metadata||{}).bu1wp_prefs,pushPrefs);render();
+  /* the stored session may predate a change made on another device: read the account once more from the server */
+  sb.auth.getUser().then(({data})=>{const u=data&&data.user;if(!u||String(u.email||'').toLowerCase()!==S.auth.email)return;S.auth.user=u;
+    const r=cleanPrefs((u.user_metadata||{}).bu1wp_prefs);if(Object.keys(r).length&&JSON.stringify(r)!==JSON.stringify(prefs)){usePrefsOf(S.auth.email,r,pushPrefs);S.anim='view';render()}}).catch(()=>{});
   S.auth.depts=await myDepts();
   if(S.auth.depts&&!S.auth.depts.includes(DEPT())){showAuth('noaccess');return}
   /* role = data.level of this person's public.user_roles row for BU1 (js/features/roles.js); no row = viewer */
@@ -157,6 +161,12 @@ async function afterLogin(user){
   showMe();wireData();
 }
 
+/* the account's display prefs go to its user_metadata.bu1wp_prefs (merged with the other metadata keys), a moment after the last change */
+let prefTimer=null;
+function pushPrefs(p){
+  if(!sb||!S.auth.user)return;clearTimeout(prefTimer);
+  prefTimer=setTimeout(()=>{sb.auth.updateUser({data:{bu1wp_prefs:p}}).then(({data})=>{if(data&&data.user)S.auth.user=data.user}).catch(()=>{})},800);
+}
 document.addEventListener('input',e=>{if(e.target.id==='ar-pw')pwMeter()});
 document.addEventListener('click',e=>{
   const eye=e.target.closest('[data-pw-toggle]');if(eye){const inp=eye.parentElement.querySelector('input');const show=inp.type==='password';inp.type=show?'text':'password';eye.textContent=show?'ซ่อน':'แสดง';eye.setAttribute('aria-label',show?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน');return}

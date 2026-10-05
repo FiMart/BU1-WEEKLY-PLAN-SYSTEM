@@ -12,6 +12,7 @@
    - ทุก select / delete กรอง `.eq('dept_id', DEPT)`
    - ทุก upsert ใส่ `dept_id` และใช้ `onConflict: 'id,dept_id'`
 4. **ผู้ใช้ระบุด้วยอีเมลตัวพิมพ์เล็ก** ใช้กับ `updated_by` และ `updatedBy` ในข้อมูล ส่วนสิทธิ์อ่านจาก `core.my_depts()`
+   - การตั้งค่าการแสดงผลของแต่ละบัญชี (โหมดมืด ย่อเมนู ฯลฯ) เก็บใน `auth.users.raw_user_meta_data` คีย์ `bu1wp_prefs` ผ่าน `supabase.auth.updateUser({data})` ซึ่งรวมกับคีย์เดิม ไม่ลบ `full_name` และคีย์อื่น ไม่ต้องสร้างตารางเพิ่ม
 5. **วันที่ `YYYY-MM-DD` ตามเวลาท้องถิ่น** (`ymd()`) ไม่มีจุดไหนใช้ `toISOString().slice(0,10)`
 6. **ไม่มี URL หรือคีย์ในโค้ด:** `js/config.js` เว้นว่างไว้ให้เจ้าของระบบใส่
 
