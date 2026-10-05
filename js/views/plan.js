@@ -46,7 +46,7 @@ function wcard(t,conf,i){
   const sub=[t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · ');
   const det=headline(t);const ch=transportChip(t.transport,t);
   return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
-    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
+    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
     <span class="wc-sub"><span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${t.location?`<span class="wc-loc">L : <b>${esc(t.location)}</b></span>`:''}
     ${t.customer&&S.pf.by!=='cust'?`<span class="wc-cust">${esc(t.customer)}</span>`:''}

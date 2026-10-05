@@ -61,11 +61,13 @@
  "planNo":"PN-26-10001","sale":"คุณสมชาย","customer":"บริษัท ตัวอย่าง จำกัด","location":"ชลบุรี",
  "date":"2026-10-05","period":"full","timeNote":"ถึงหน้างาน 08.30 น.","detail":"Work Order: WO-001\nTag No. FT-101",
  "request":"Work Permit, PPE","transport":"1กข-1234","needGA":false,"contact":"คุณวิชัย","contactTel":"081-xxx-xxxx",
+ "prep":[{"text":"Calibrator Fluke 754","done":true},{"text":"ซีลวาล์ว 2 ชุด","done":false}],
  "staffIds":["slq1a2b3c4"],"guests":[],"status":"planned","statusNote":"","photoIds":[],"fileIds":[],
- "files":[],"createdAt":"2026-10-05T01:20:00.000Z","updatedAt":"2026-10-05T01:20:00.000Z","updatedBy":"name@company.co.th"}
+ "files":[],"createdAt":"2026-10-05T01:20:00.000Z","createdBy":"name@company.co.th","updatedAt":"2026-10-05T01:20:00.000Z","updatedBy":"name@company.co.th"}
 ```
 - `period` = `am` | `pm` | `full`
 - `status` = `planned` | `done` | `notdone` | `postponed` | `cancelled`
+- `prep` = ใบเตรียมงาน รายการของที่ต้องเตรียม `{text, done}` ไม่เกิน 40 รายการ
 - `ncrId` = id ของ NCR เมื่องานไม่เสร็จ (มีเฉพาะแผนที่มี NCR)
 - `files` = `[{id, name, size, type}]`
 

@@ -162,6 +162,10 @@ table.wp{border-collapse:separate;border-spacing:0;width:100%;min-width:1120px;t
 .dlg-sub:empty{display:none}
 .dv{display:grid;gap:16px}
 .dv-badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dv-by{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.dv-by svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dv-by b{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.dv-by b.dash{color:var(--muted);font-weight:400}
 .badge{--c:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));background:color-mix(in srgb,var(--c) 10%,var(--surface));color:var(--ink);border-radius:7px;padding:3px 10px}
 .badge i{width:8px;height:8px;border-radius:50%;background:var(--c)}
 .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

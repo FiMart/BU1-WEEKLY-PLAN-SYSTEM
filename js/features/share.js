@@ -6,7 +6,7 @@ function cardText(t){
   return [`${typeLabel(t)}${t.planNo?' · '+t.planNo:''}`,`วันที่: ${fmtDayY(t.date)} (${pName(t)})${t.timeNote?' '+t.timeNote:''}`,
     t.customer?`ลูกค้า: ${t.customer}`:'',t.location?`สถานที่: ${t.location}`:'',detailOf(t).trim()?`Detail: ${detailOf(t).trim()}`:'',
     t.request?`Request: ${t.request}`:'',t.transport||t.needGA?`รถ: ${transportText(t)}`:'',(t.contact||t.contactTel)?`ติดต่อ: ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`:'',
-    `ทีม: ${teamNames(t).join(', ')||'-'}`,t.sale?`Sale: ${t.sale}${tel?' '+tel:''}`:'',NEEDS_REASON.has(t.status)?`สถานะ: ${statusText(t)}`:''].filter(Boolean).join('\n');
+    prepText(t),`ทีม: ${teamNames(t).join(', ')||'-'}`,t.sale?`Sale: ${t.sale}${tel?' '+tel:''}`:'',NEEDS_REASON.has(t.status)?`สถานะ: ${statusText(t)}`:''].filter(Boolean).join('\n');
 }
 function dayText(k){
   const d=parseD(k);const list=S.tasks.filter(t=>t.date===k&&isWorking(t)).sort(byTime);

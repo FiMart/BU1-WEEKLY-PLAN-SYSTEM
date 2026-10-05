@@ -130,7 +130,7 @@ const jr=(k,v,cls)=>v?`<span class="jr"><span class="k">${k}</span><span class="
 function card(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
   return `<button type="button" class="jc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,40)}" data-edit="${esc(t.id)}">
-    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${statusIcon(t.status)}</span>
+    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${prepChip(t)}${statusIcon(t.status)}</span>
     <span class="jc-body">
       ${t.planNo?`<span class="pn">${esc(t.planNo)}</span>`:''}
       ${t.customer?`<span class="jc-cust">${esc(t.customer)}</span>`:''}

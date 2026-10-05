@@ -479,6 +479,23 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0;display:contents}
 .tp-guest .th{font-weight:400;color:var(--muted);margin-left:4px}
 .guest-row{display:flex;gap:8px}
 .guest-row input{flex:1;min-width:0}
+/* ใบเตรียมงาน: checklist in the form and in the read-only card */
+.prep{display:grid;gap:8px}
+.prep-list,.dv-prep ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.prep-row{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface)}
+.prep-row .check{flex:1;min-width:0;font-size:14px;color:var(--ink)}
+.prep-row .check span,.dv-prep li span{overflow-wrap:anywhere}
+.prep-row.on .check span,.dv-prep li.on>label span,.dv-prep li.on>span:nth-child(2){color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.prep-x{border:0;background:none;width:26px;height:26px;border-radius:7px;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;flex:none}
+.prep-x:hover{background:var(--sunken);color:var(--crit-ink)}
+.prep-last{justify-self:start;font-size:13px}
+.dv-prep{white-space:normal!important}
+.dv-prep li{display:flex;align-items:center;gap:8px;min-height:26px}
+.dv-prep .check{font-size:14.5px;font-weight:500;color:var(--ink)}
+.prep-mk{width:15px;height:15px;flex:none;display:inline-grid;place-items:center;border:1.5px solid var(--line);border-radius:4px;font-size:11px;font-weight:700;color:var(--good-ink)}
+.dv-prep li.on .prep-mk{border-color:var(--good-ink)}
+#dvPrepN{text-transform:none;letter-spacing:0;color:var(--warn-ink)}
+#dvPrepN.ok,.pcount.prep.ok{color:var(--good-ink)}
 .tp-tag.guest{background:var(--surface);border-style:dashed;border-color:var(--muted)}
 .tp-tag.guest .avatar{background:var(--sunken);color:var(--ink-2)}
 .tp-tag small{font-weight:500;color:var(--muted);font-size:11px}

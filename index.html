@@ -163,6 +163,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
         <label class="fl" for="f-request"><b>Request</b><small>สิ่งที่ลูกค้า / หน้างานต้องการ</small></label>
         <div class="fv"><textarea id="f-request" rows="2" maxlength="1500" placeholder="เช่น Work Permit, PPE, ลูกค้าปิดวาล์วก่อนเข้างาน"></textarea></div>
 
+        <label class="fl" for="prepIn"><b>ใบเตรียมงาน</b><small>เครื่องมือ อุปกรณ์ อะไหล่ เอกสาร · ติ๊กเมื่อเตรียมแล้ว · <span id="prepN"></span></small></label>
+        <div class="fv prep">
+          <ul class="prep-list" id="prepList" hidden></ul>
+          <div class="guest-row"><input id="prepIn" list="dl-prep" maxlength="120" autocomplete="off" placeholder="พิมพ์รายการ แล้วกด Enter เช่น Calibrator Fluke 754, ซีลวาล์ว 2 ชุด"><button type="button" class="btn sm" id="prepAdd">+ เพิ่มรายการ</button></div>
+          <button type="button" class="lnk prep-last" id="prepLast" hidden></button>
+        </div>
+
         <div class="fl fl-full" id="lblTr"><b>รถ / Car (ขนส่ง)</b><small>ห้ามซ้ำในวัน · ระบุครึ่งวันแล้วคันเดียวกันใช้ได้เช้า-บ่ายคนละงาน</small></div>
         <div class="fv fv-full tr-pick" role="group" aria-labelledby="lblTr">
           <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
@@ -230,6 +237,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <datalist id="dl-locations"></datalist>
 <datalist id="dl-contacts"></datalist>
 <datalist id="dl-guests"></datalist>
+<datalist id="dl-prep"></datalist>
 <dialog id="ncrDlg" class="ncr-dlg" aria-labelledby="ncrTitle">
   <form id="ncrForm" class="ncr-wrap" novalidate>
     <header class="dlg-head"><div><h2 id="ncrTitle">NCR</h2><p class="dlg-sub" id="ncrSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-ncr-close aria-label="ปิด">✕</button></header>
@@ -373,6 +381,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/dialog/picker.js"></script>
 <script src="js/dialog/fields.js"></script>
 <script src="js/dialog/attachments.js"></script>
+<script src="js/dialog/prep.js"></script>
 <script src="js/dialog/task-form.js"></script>
 <script src="js/features/master-actions.js"></script>
 <script src="js/features/backup.js"></script>
