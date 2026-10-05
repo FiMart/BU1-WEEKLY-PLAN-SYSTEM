@@ -69,17 +69,28 @@ function availOn(k){
   }
   return out;
 }
-/* every free person is listed in full (no "+N" collapsing) */
-function availCell(k,d,a){
-  const grp=(label,list,period,cls)=>{
-    if(!list.length)return '';const show=list;
-    const pill=s=>{const tip=`${s.name}${s.role?' · '+s.role:''} · ${label}`;
-      return S.canWrite?`<button type="button" class="av-pill" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${period}" title="${esc(tip)} · กดเพื่อลงแผนให้วัน${TH_DAY_FULL[d.getDay()]}">${esc(s.name)}</button>`
-        :`<span class="av-pill" title="${esc(tip)}">${esc(s.name)}</span>`};
-    return `<div class="av-grp ${cls}"><span class="av-lbl">${label} <b>${list.length}</b></span><div class="av-list">${show.map(pill).join('')}</div></div>`;
-  };
-  const none=!a.full.length&&!a.am.length&&!a.pm.length;
-  return `<div class="av-cell">${grp('ว่างทั้งวัน',a.full,'full','f')}${grp('ว่างเช้า',a.am,'am','h')}${grp('ว่างบ่าย',a.pm,'pm','h')}${none?'<span class="av-none">ไม่มีคนว่าง</span>':''}${a.leave?`<span class="av-leave">ลา ${a.leave} คน</span>`:''}</div>`;
+/* ผู้ปฏิบัติงานที่ว่าง (Available): a panel below the board, one column per day, people grouped by ตำแหน่ง,
+   every name in full; half-day free people carry a ว่างเช้า / ว่างบ่าย tag; a name opens a new plan for that person */
+const PERSON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.7 3.6-5.8 7-5.8s6.2 2.1 7 5.8"/></svg>';
+function availDay(d,a,today){
+  const k=ymd(d);const we=d.getDay()===0||d.getDay()===6;const order=positions();
+  const per=new Map([...a.full.map(s=>[s.id,'full']),...a.am.map(s=>[s.id,'am']),...a.pm.map(s=>[s.id,'pm'])]);
+  const people=[...a.full,...a.am,...a.pm];
+  let h=`<div class="avp-day${we?' we':''}${k===today?' td':''}"><div class="avp-head" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}"><b>${EN_DAY[d.getDay()]}</b><span>${d.getDate()}</span>${we?'<em>วันหยุด</em>':''}${k===today?'<em class="td">วันนี้</em>':''}<i>${people.length} ว่าง</i></div>`;
+  if(!people.length)h+='<p class="avp-none">ไม่มีคนว่าง</p>';
+  for(const [role,list] of roleGroups(people)){
+    const ci=order.indexOf(role);const color=POS_COLORS[(ci>=0?ci:order.length)%POS_COLORS.length];
+    h+=`<div class="avp-grp" style="--pc:${color}"><p>${esc(role)}</p>${list.map(s=>{const p=per.get(s.id);const tag=p==='am'?'ว่างเช้า':p==='pm'?'ว่างบ่าย':'';
+      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}</span>${tag?`<small>${tag}</small>`:''}`;
+      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}">${inner}</button>`
+        :`<div class="avp-row">${inner}</div>`}).join('')}</div>`;
+  }
+  if(a.leave)h+=`<p class="avp-leave">ลาทั้งวัน ${a.leave} คน</p>`;
+  return h+'</div>';
+}
+function availPanel(days,avail,today){
+  return `<section class="avp" aria-label="ผู้ปฏิบัติงานที่ว่าง"><header class="avp-top">${PERSON_ICON}<div><h2>ผู้ปฏิบัติงานที่ว่าง (Available)</h2><p>คนที่ยังไม่ถูกจัดงานในแต่ละวัน — ใช้มอบหมายงานเพิ่ม${S.canWrite?' · กดชื่อเพื่อลงแผนให้คนนั้น':''}</p></div></header>
+    <div class="avp-scroll"><div class="avp-grid" style="--n:${days.length}">${days.map((d,i)=>availDay(d,avail[i],today)).join('')}</div></div></section>`;
 }
 function renderPlan(){
   if(notReady())return loading();
@@ -102,7 +113,8 @@ function renderPlan(){
   </header>`;
   const total=S.tasks.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
   $('#pf-count').textContent=vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`;
-  if(planDayMode())return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>';
+  if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
+    return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
   days.forEach((d,i)=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k).length;const we=d.getDay()===0||d.getDay()===6;const a=avail[i];
     h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span><span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}" title="แผนของวันนี้ ${n} จาก ${MAX_CARDS} แผน">${n}/${MAX_CARDS}</span>${S.staff.length?`<span class="dfree" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}">ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}</span>`:''}</th>`});
@@ -114,13 +126,9 @@ function renderPlan(){
       h+=`<td class="${we?'wkend':''}${k===today?' is-today':''}"><div class="wcell">${list.map(t=>wcard(t,conf,ci++)).join('')}${S.canWrite?`<button type="button" class="wadd" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)} วัน${TH_DAY_FULL[d.getDay()]}">+ เพิ่ม</button>`:''}</div></td>`}
     h+='</tr>';
   }
-  /* ว่าง (Available) sits last, below the job-type rows (ลา is the last type) */
-  if(showAv){
-    h+=`<tr class="av-row"><th class="gh av-gh" scope="row" style="--c:var(--good)"><span class="gh-name"><i></i>ว่าง</span><span class="gh-sub">Available</span></th>`;
-    days.forEach((d,i)=>{const k=ymd(d);const we=d.getDay()===0||d.getDay()===6;h+=`<td class="${we?'wkend':''}${k===today?' is-today':''}">${availCell(k,d,avail[i])}</td>`});
-    h+='</tr>';
-  }
   h+='</tbody></table></div></section>';
+  /* ผู้ปฏิบัติงานที่ว่าง sits below the board */
+  if(showAv)h+=availPanel(days,avail,today);
   return h;
 }
 
@@ -160,7 +168,6 @@ function planDayHtml({days,today,conf,shown,avail,showAv}){
     h+=`<section class="pd-grp" style="--c:${safeColor(g.color)}"><h3><i></i>${esc(g.label)}<span class="pd-cnt">${list.length} แผน</span>${add}</h3><div class="pd-cards">${list.map(t=>wcard(t,conf,ci++)).join('')}</div></section>`;
   }
   if(S.canWrite)h+=`<button type="button" class="btn pd-addday" data-action="add" data-date="${k}">+ เพิ่มแผนงานวัน${TH_DAY_FULL[d.getDay()]}</button>`;
-  if(showAv)h+=`<section class="pd-grp pd-av" style="--c:var(--good)"><h3><i></i>ว่าง (Available)</h3>${availCell(k,d,a)}</section>`;
   return h+'</div>';
 }
 /* in auto mode, switch between the day and week views when the window crosses 1180px */
