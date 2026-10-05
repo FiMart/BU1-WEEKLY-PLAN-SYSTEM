@@ -1,0 +1,18 @@
+/* BU1 Weekly Plan · blue to sky sidebar */
+/* sidebar: blue → sky */
+:root{--side:#0A2A6B;--side-ink:#EAF3FF;--side-muted:#A9C4EE;--signal:#5CD0FF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--side:#061B47;--side-ink:#E3EEFF;--side-muted:#8FAEDD;--signal:#5CD0FF}}
+:root[data-theme="dark"]{--side:#061B47;--side-ink:#E3EEFF;--side-muted:#8FAEDD;--signal:#5CD0FF}
+.side{background:radial-gradient(380px 300px at -60px -60px,rgba(92,208,255,.45),transparent 70%),radial-gradient(420px 380px at 120% 105%,rgba(56,189,248,.35),transparent 70%),linear-gradient(180deg,var(--side) 0%,#0D46B5 58%,#1377D6 100%);border-right:1px solid rgba(255,255,255,.1)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .side{background:radial-gradient(380px 300px at -60px -60px,rgba(92,208,255,.28),transparent 70%),linear-gradient(180deg,var(--side) 0%,#0A3284 60%,#0D56B0 100%)}}
+:root[data-theme="dark"] .side{background:radial-gradient(380px 300px at -60px -60px,rgba(92,208,255,.28),transparent 70%),linear-gradient(180deg,var(--side) 0%,#0A3284 60%,#0D56B0 100%)}
+.side::before{background-image:radial-gradient(rgba(255,255,255,.1) 1px,transparent 1px)}
+.sb-mark{background:linear-gradient(140deg,#7FE0FF,#2F8BFF 50%,#1D5BE0);box-shadow:0 8px 22px rgba(56,189,248,.45),inset 0 1px 0 rgba(255,255,255,.45)}
+.sb-rule{background:rgba(255,255,255,.18)}
+.sb-ind{background:linear-gradient(90deg,rgba(92,208,255,.32),rgba(255,255,255,.1));box-shadow:inset 0 0 0 1px rgba(160,225,255,.35),0 8px 22px rgba(8,40,110,.35)}
+.sb-nav button{opacity:.9}
+.sb-nav button:hover{background:rgba(255,255,255,.1)}
+.sb-nav button[aria-selected="true"]{color:#fff}
+.sb-theme,.side .sync,.side .me,.sb-collapse{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+.sb-theme:hover{background:rgba(255,255,255,.18)}
+.mtop,.selbar{background:linear-gradient(90deg,var(--side),#0D46B5 60%,#1377D6)}

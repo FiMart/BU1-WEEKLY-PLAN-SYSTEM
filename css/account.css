@@ -1,0 +1,77 @@
+/* BU1 Weekly Plan · account card (sidebar), avatar button (phone top bar), "บัญชีของฉัน" window */
+.side .acct-card{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px 8px 8px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(255,255,255,.1);color:var(--side-ink);cursor:pointer;text-align:left;font:inherit;transition:background .15s,border-color .15s}
+.side .acct-card:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35)}
+.acct-card img{width:36px;height:36px;border-radius:50%;flex:none;display:block;background:rgba(255,255,255,.2);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.acct-txt{display:grid;min-width:0;flex:1;line-height:1.25}
+.acct-txt b{font:600 13.5px/1.3 var(--f-body);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-txt small{font-size:11.5px;color:var(--side-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-card>svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+body.mini .acct-txt,body.mini .acct-card>svg{display:none}
+body.mini .side .acct-card{justify-content:center;padding:6px}
+.acct-mini{width:38px;height:38px;border:0;padding:0;border-radius:50%;background:none;cursor:pointer;flex:none}
+.acct-mini img{width:36px;height:36px;border-radius:50%;display:block;box-shadow:0 0 0 2px rgba(255,255,255,.4)}
+/* window */
+.acct-dlg{width:min(560px,calc(100vw - 24px))}
+.acct-wrap{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
+.acct-wrap .dlg-body{overflow:auto;gap:18px;grid-auto-rows:max-content}
+.acct-wrap .dlg-head h2{font:700 19px/1.25 var(--f-disp)}
+.acct-hero{display:flex;gap:16px;align-items:center;padding:16px;border-radius:16px;background:linear-gradient(135deg,var(--accent-soft),var(--surface) 78%);border:1px solid var(--line-2)}
+.acct-hero img{width:68px;height:68px;border-radius:50%;flex:none;box-shadow:0 0 0 3px var(--surface),0 0 0 5px color-mix(in srgb,var(--accent) 40%,transparent)}
+.acct-hero h2{margin:0;font:700 21px/1.25 var(--f-disp);overflow-wrap:anywhere}
+.acct-hero p{margin:2px 0 6px;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.acct-role{display:inline-flex;margin-top:4px;font-size:12px;font-weight:600;padding:2px 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.acct-role.viewer,.acct-role.pending{background:var(--surface-2);color:var(--ink-2);border-color:var(--line)}
+.acct-role.demo{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn-ink);border-color:transparent}
+.acct-role.admin{background:var(--accent);color:var(--accent-ink)}
+.acct-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.acct-info>div{display:grid;gap:3px;padding:10px 13px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-2)}
+.acct-info>div.wide{grid-column:1/-1}
+.acct-info dt{font-size:11.5px;font-weight:600;color:var(--muted)}
+.acct-info dd{margin:0;font-weight:600;font-size:14px}
+.acct-info dd small{display:block;margin-top:2px;font-weight:400;font-size:12.5px;color:var(--muted)}
+.acct-sec{display:grid;gap:8px}
+.acct-sec h3{margin:0;display:flex;align-items:center;gap:8px;font:700 15px/1.3 var(--f-disp)}
+.acct-sec .hint{margin:0}
+.acct-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.acct-list .cplan{min-width:0}
+.acct-more{margin:0;font-size:13px}
+@media (max-width:520px){.acct-info{grid-template-columns:1fr}}
+
+/* preferences: account window and จัดการข้อมูล › การตั้งค่า */
+.pref-groups{display:grid;gap:10px}
+.md-body .pref-groups{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.pref-grp{display:grid;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);overflow:hidden}
+.pref-grp h4{margin:0;padding:9px 14px 6px;font-size:12px;font-weight:700;color:var(--muted)}
+.pref-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;border-top:1px solid var(--line-2);cursor:pointer}
+.pref-row:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.pref-txt{display:grid;gap:2px;min-width:0}
+.pref-txt b{font-size:13.5px;font-weight:600;color:var(--ink)}
+.pref-txt small{font-size:12px;color:var(--muted)}
+.pref-h{margin:6px 0 0;font:700 15px/1.3 var(--f-disp)}
+.pref-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.pref-actions .hint{margin:0}
+
+/* about: จัดการข้อมูล › เกี่ยวกับระบบ, and the version line at the end of วิธีใช้ */
+.about-hero{display:flex;align-items:center;gap:14px;padding:16px;border-radius:14px;border:1px solid var(--line-2);background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 12%,var(--surface)),var(--surface) 70%)}
+.about-hero>div{flex:1;display:grid;gap:2px;min-width:0}
+.about-hero b{font:700 18px/1.3 var(--f-disp);color:var(--ink)}
+.about-hero span{font-size:13px;color:var(--muted)}
+.about-ver{flex:none;padding:4px 12px;border-radius:999px;background:var(--accent);color:#fff!important;font:700 13px/1.4 var(--f-mono)!important}
+.about-log{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.about-log>li{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 16px;padding:12px 14px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2)}
+.about-log>li.cur{border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2))}
+.about-v{display:grid;align-content:start;gap:2px}
+.about-v b{font:700 15px/1.3 var(--f-mono);color:var(--ink)}
+.about-v span{font-size:12px;color:var(--muted)}
+.about-v em{justify-self:start;margin-top:4px;font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;color:var(--accent);background:var(--accent-soft)}
+.about-log ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13px;line-height:1.6;color:var(--ink-2)}
+@media (max-width:620px){.about-log>li{grid-template-columns:1fr}.about-v{grid-auto-flow:column;justify-content:start;align-items:center;gap:8px}.about-v em{margin:0}}
+/* roles: level descriptions on ผู้ใช้งานระบบ, and the GA "car only" form */
+.lv-legend{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))}
+.lv-legend>div{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-2)}
+.lv-legend b{font-size:13.5px}
+.lv-legend b small{font:500 11.5px var(--f-mono);color:var(--muted);margin-left:4px}
+.lv-legend span{font-size:12px;line-height:1.5;color:var(--muted)}
+#taskForm.ga-only #formFields .fv:not(.tr-pick),#taskForm.ga-only #formFields .fl:not(#lblTr){opacity:.45}
+#taskForm.ga-only .tr-per{opacity:.45}
+.help-ver{margin:4px 0 0;text-align:center;font-size:12.5px;color:var(--muted)}

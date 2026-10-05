@@ -1,0 +1,23 @@
+/* BU1 Weekly Plan · fluid UI scale
+   The interface is drawn for a 1680px-wide window and zoomed to the real window width (0.8–1.12×, set as --z by the
+   inline script in index.html), so type, spacing, sidebar, board and dialogs keep the same proportions on a laptop
+   and on a large monitor. Phones (≤760px) keep zoom 1 and use their own layout; tablets ease from 1 (760px) to 0.8
+   (1344px) so text and touch targets stay readable (css/responsive.css has the tablet and phone layouts).
+   Chrome multiplies vh / vw by zoom, so every screen-sized length below uses --vh / --vw (= 1dvh / 1vw ÷ zoom). */
+:root{--z:1;--vh:calc(1dvh / var(--z));--vw:calc(1vw / var(--z))}
+body{zoom:var(--z)}
+
+.wp-scroll{max-height:calc(100 * var(--vh) - 210px)}
+.scroll-x.tall{max-height:calc(100 * var(--vh) - 250px)}
+.md-scroll{max-height:calc(100 * var(--vh) - 330px)}
+dialog{width:min(840px,calc(100 * var(--vw) - 24px));max-height:calc(100 * var(--vh) - 24px)}
+dialog form{max-height:calc(100 * var(--vh) - 24px)}
+#dlg{height:calc(100 * var(--vh));max-height:calc(100 * var(--vh));width:min(580px,calc(100 * var(--vw)))}
+#dlg form{max-height:calc(100 * var(--vh))}
+#dlg.wide{width:min(1000px,calc(100 * var(--vw)))}
+.acct-dlg{width:min(560px,calc(100 * var(--vw) - 24px))}
+.acct-wrap{max-height:calc(100 * var(--vh) - 24px)}
+.lightbox{width:min(1100px,calc(100 * var(--vw) - 24px));max-height:calc(100 * var(--vh) - 24px)}
+.lightbox img{max-height:calc(100 * var(--vh) - 100px)}
+.toast,.selbar{max-width:calc(100 * var(--vw) - 32px)}
+@media (max-width:900px){.md-scroll{max-height:none}}

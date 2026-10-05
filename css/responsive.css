@@ -1,0 +1,51 @@
+/* BU1 Weekly Plan · tablet and phone proportions
+   Tablet (761–1180px): zoom about 1 (index.html), icon-only sidebar (js/core/state.js), tighter gutters.
+   Phone (≤760px): top bar + bottom nav, compact page head, one-line scrolling chip row, full-width search. */
+@media (min-width:761px) and (max-width:1180px){
+  .app{padding-inline:20px}
+  .page-head h2{font-size:27px}
+  .ph-actions .btn{padding:0 13px}
+  .rpt-hd h2{font-size:20px}
+}
+@media (max-width:760px){
+  .app{padding-inline:14px}
+  .page-head{gap:4px 12px}
+  .ph-main{flex:1 1 100%}
+  .page-head h2{font-size:23px;margin-top:2px}
+  .page-head p{font-size:12.5px}
+  /* contain:inline-size keeps the one-line chip row from widening the page to its full length */
+  .gchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-14px;padding:2px 14px;contain:inline-size}
+  .gchips::-webkit-scrollbar{display:none}
+  .gchip{flex:none}
+  .ph-actions{gap:6px}
+  .ph-actions .btn{min-height:36px;padding:0 12px;font-size:13px}
+  .planbar{gap:8px}
+  .planbar input[type=search]{flex:1 1 100%}
+  .weekbar{padding:10px 12px;gap:10px 14px}
+  /* week board */
+  .wp-head{padding:12px 14px;gap:8px}
+  .wp-nav{flex-wrap:wrap;justify-content:center;gap:8px}
+  .wp-wk{min-width:0}
+  .wp-wk b{font-size:17px}
+  .wp-legend{justify-content:center;font-size:12px;gap:4px 10px}
+  .wp col.c-g{width:96px}
+  .wp tbody th.gh{padding:12px 8px 12px 12px}
+  .gh-name{font-size:13.5px}
+  /* dashboard report */
+  .dash-bar{gap:8px 12px}
+  .dash-bar .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .rpt-hd{padding:14px 16px}
+  .rpt-hd h2{font-size:18px}
+  .rpt-actions,.rpt-actions .btn{width:100%}
+  .rpt-actions .btn{justify-content:center}
+  .dsec{font-size:15px;margin-top:6px}
+  .dsec small{display:none}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .tile{padding:12px 13px}
+  .tile .val{font-size:25px}
+  .panel{padding:14px}
+  /* help, master data */
+  .help-sec{padding:14px 16px}
+  .help ol,.help ul,.help p{font-size:13.5px}
+}
+@media (max-width:380px){.tiles{grid-template-columns:1fr}}

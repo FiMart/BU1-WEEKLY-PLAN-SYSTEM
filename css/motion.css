@@ -1,0 +1,42 @@
+/* BU1 Weekly Plan · motion tuning: only motion that explains a change */
+/* ===== motion tuning: keep only motion that explains a change (week change, drawer, live update, active page, data) — short, no overshoot ===== */
+:root{--spring:cubic-bezier(.2,.7,.2,1);--ease:cubic-bezier(.2,.7,.2,1)}
+/* decorative / looping motion removed */
+.crumb::before,.wc-dot.s-progress,.sync.live i{animation:none}
+.sb-mark::after{display:none}
+.sb-logo,.sb-foot,.sb-nav button{animation:none}
+.sb-nav button:hover svg{transform:none}
+.btn.primary::after{display:none}
+.btn:hover,.icon-btn:hover,.wp-jump:hover,.gchip:hover,.tile:hover,.help .panel:hover,.mc:hover,.tp-chip:hover,.tp-list .tp-row:not(.lock):hover{transform:none}
+.btn:active{transform:scale(.98)}
+.tile:hover{box-shadow:0 1px 2px rgba(13,22,38,.04),0 10px 28px rgba(13,22,38,.05)}
+.tp-list .tp-row:not(.lock):hover{box-shadow:none}
+.gchip,.gchips .gchip,.gchip[aria-pressed="true"]{animation:none}
+.page-head h2,.page-head p,.ph-actions,.planbar,.dlg-sub,#dlg .dlg-head h2,#dlg .sheet{animation:none}
+.wp-head::after,#view.anim-next .wp-wk,#view.anim-prev .wp-wk{animation:none}
+.wp-legend .alert,.wc.has-conf .chip-flag,.btn.danger.armed{animation:none}
+.badge,.tp-tag,.tp-list .tp-row.just,.tp-list .tp-row.on::after,.empty-ico,.sc-free,.fchip,#trAdd,.ok-box,.conf-box,.banner{animation:none}
+/* page and board: quick fade, a light slide only when the week changes */
+.wp-panel{animation:fadeIn .2s ease-out both}
+#view.anim-view>*,#view.anim-view .sum>*,#view.anim-view .tile{animation:fadeIn .2s ease-out both;animation-delay:0s}
+#view.anim-view .wc,#view.anim-next .wc,#view.anim-prev .wc{animation:fadeIn .2s ease-out both;animation-delay:calc(min(var(--i,0),20) * 6ms)}
+#view.anim-next .wp tbody{animation:slideL .24s var(--ease) both}
+#view.anim-prev .wp tbody{animation:slideR .24s var(--ease) both}
+.wc{transition:box-shadow .2s ease,border-color .2s ease,transform .2s ease}
+.wc:hover{transform:translateY(-1px)}
+.wc.flash{animation:flash 1.2s ease-out 1 both}
+/* data visuals grow once, together */
+.dc-stack{animation:growY .35s ease-out both;animation-delay:0s}
+.tbar i,.ibar i{animation:grow .4s ease-out both;animation-delay:0s}
+#view[class*="anim-"] .meter-fill,#view.anim-view .hb-bar,#view.anim-view .stack span{animation-duration:.4s;animation-delay:0s}
+/* drawer, menus, toast */
+#dlg[open]{animation:drawerIn3 .24s var(--ease)}
+@keyframes drawerIn3{from{transform:translateX(24px);opacity:0}}
+.dv>*,.dv-f>div{animation:none}
+.dv{animation:fadeIn .18s ease-out both}
+.menu-pop{animation:fadeIn .12s ease-out both}
+dialog[open]::backdrop{animation:fadeIn .18s ease-out}
+.toast{transform:translate(-50%,8px);transition:opacity .2s ease,transform .22s ease-out}
+.toast.show{transform:translate(-50%,0)}
+.sb-ind{transition:transform .26s var(--ease),height .2s ease,opacity .2s}
+.ripple{display:none}

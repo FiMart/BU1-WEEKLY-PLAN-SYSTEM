@@ -1,0 +1,372 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>BU1 Lab Weekly Plan</title>
+<!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
+<script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png'});
+add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
+<!-- fluid UI scale: set before first paint; css/scale.css applies it (base width 1680px, 0.8–1.12×; phones stay 1, tablets ease from 1 at 760px to 0.8 at 1344px so touch targets stay full size) -->
+<script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=760?1:w<1344?1-.2*(w-760)/584:Math.min(1.12,Math.max(.8,w/1680));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png"></noscript>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Bai+Jamjuree:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/views.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/attachments.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/master-data.css">
+<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="css/account.css">
+<link rel="stylesheet" href="css/available.css">
+<link rel="stylesheet" href="css/plan-day.css">
+<link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="css/scale.css">
+<link rel="stylesheet" href="css/motion.css">
+
+<aside class="side" id="side" aria-label="เมนูหลัก">
+  <button type="button" class="sb-logo" data-go="plan" aria-label="ไปที่ Weekly Plan"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></button>
+  <div class="sb-rule"></div>
+  <button type="button" class="sb-collapse" data-action="side-mini" aria-label="ย่อหรือขยายเมนู" title="ย่อ / ขยายเมนู">‹</button>
+  <nav class="sb-nav" role="tablist" aria-label="เมนูหลัก"><span class="sb-ind" id="sbInd" aria-hidden="true"></span>
+    <button type="button" role="tab" data-view="dash" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg><span>Dashboard</span></button>
+    <button type="button" role="tab" data-view="plan" title="Weekly Plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Weekly Plan</span></button>
+    <button type="button" role="tab" data-view="people" title="สรุปรายคน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg><span>สรุปรายคน</span></button>
+    <button type="button" role="tab" data-view="projects" title="กำลังคนโปรเจกต์"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg><span>กำลังคนโปรเจกต์</span></button>
+    <button type="button" role="tab" data-view="search" title="ค้นหาย้อนหลัง"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>ค้นหาย้อนหลัง</span></button>
+    <button type="button" role="tab" data-view="settings" title="จัดการข้อมูลหลัก"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>จัดการข้อมูล</span></button>
+    <button type="button" role="tab" data-view="help" title="วิธีใช้"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.8h.01"/></svg><span>วิธีใช้</span></button>
+  </nav>
+  <div class="sb-foot">
+    <button type="button" class="sb-theme" data-action="theme" title="สลับโหมดมืด / สว่าง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span id="themeLbl">โหมดมืด</span></button>
+    <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
+    <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v3.5.1 · BU1 Lab</button>
+  </div>
+</aside>
+<header class="mtop">
+  <button type="button" class="sb-logo" data-go="plan" aria-label="ไปที่ Weekly Plan"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></button>
+  <span class="grow"></span>
+  <button type="button" class="sb-theme" data-action="theme" aria-label="สลับโหมดมืด / สว่าง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+  <button type="button" class="acct-mini" data-action="account" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv2"></button>
+</header>
+<nav class="bottom-nav" role="tablist" aria-label="เมนูหลัก">
+  <button type="button" role="tab" data-view="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h3M13.5 14h3M7.5 17.5h3"/></svg>แผนงาน</button>
+  <button type="button" role="tab" data-view="people"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg>รายคน</button>
+  <button type="button" role="tab" data-view="projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg>กำลังคน</button>
+  <button type="button" role="tab" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>ค้นหา</button>
+  <button type="button" role="tab" data-view="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg>สรุป</button>
+  <button type="button" role="tab" data-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>ข้อมูลหลัก</button>
+  <button type="button" role="tab" data-view="help"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.8h.01"/></svg>วิธีใช้</button>
+</nav>
+
+<div class="app">
+  <div class="page-head">
+    <div class="ph-main"><div class="crumb" id="pageCrumb">BU1 Lab</div><h2 id="pageTitle">Weekly Plan</h2><p id="pageSub"></p><div class="gchips" id="gchips" role="group" aria-label="กรองแถวของตาราง"></div></div>
+    <div class="ph-actions">
+      <button type="button" class="btn primary" data-action="add" id="btnAddTop"><span class="plus">+</span> เพิ่มแผนงาน</button>
+      <details class="menu" id="copyMenu"><summary class="btn" title="คัดลอกแผนของวันที่เลือกเป็นข้อความ เพื่อวางใน LINE"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg> คัดลอกแผนส่ง LINE</summary><div class="menu-pop" id="copyPop"></div></details>
+      <button type="button" class="btn" data-action="shot" id="btnShot" title="บันทึกตารางสัปดาห์นี้เป็นรูป PNG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg> Screenshot</button>
+      <button type="button" class="btn" data-action="report" id="btnPrint" title="ดาวน์โหลดไฟล์สำหรับพิมพ์ A3 แนวนอน หรือบันทึกเป็น PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></svg> Print / PDF</button>
+      <button type="button" class="btn" data-action="xlsx" id="btnXlsx">Excel</button>
+    </div>
+  </div>
+  <div id="banners" class="banners"></div>
+
+  <section class="weekbar" id="weekbar" aria-label="เลือกสัปดาห์">
+    <div class="wk-nav">
+      <button type="button" class="arrow" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
+      <button type="button" data-action="thisweek">สัปดาห์นี้</button>
+      <button type="button" class="arrow" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
+    </div>
+    <div class="wk-label"><strong id="wkTitle">สัปดาห์</strong><span id="wkRange"></span></div>
+    <label class="wk-jump" title="เลือกวันใดก็ได้ ระบบจะเปิดสัปดาห์ที่เริ่มวันจันทร์ของวันนั้น"><span>สร้าง / ไปสัปดาห์ของวันจันทร์</span><input type="date" id="wkJump" aria-label="วันจันทร์ของสัปดาห์"></label>
+    <div class="wk-stats" id="wkStats"></div>
+    <div class="wk-tools">
+      <span class="hint" id="sunHint"></span>
+      <label class="switch"><input type="checkbox" id="optSun"> วันอาทิตย์</label>
+      <span class="export" id="wkExport"></span>
+    </div>
+  </section>
+
+  <section class="planbar" id="planbar" aria-label="ตัวกรอง" hidden>
+    <input type="search" id="pf-q" placeholder="ค้นหา" aria-label="ค้นหาในหน้านี้" autocomplete="off">
+    <select id="pf-type" aria-label="กรองตามหัวข้องาน"></select>
+    <select id="pf-staff" aria-label="กรองตามพนักงาน"></select>
+    <div class="seg" id="pf-mode" role="radiogroup" aria-label="มุมมองแผนงาน"><label><input type="radio" name="pf-mode" id="pf-mode-day" value="day"><span>รายวัน</span></label><label><input type="radio" name="pf-mode" id="pf-mode-week" value="week"><span>ทั้งสัปดาห์</span></label></div>
+    <div class="seg" id="pf-by" role="radiogroup" aria-label="จัดแถวตาม"><label><input type="radio" name="pf-by" id="pf-by-type" value="type"><span>แถวตามหัวข้องาน</span></label><label><input type="radio" name="pf-by" id="pf-by-cust" value="cust"><span>แถวตามลูกค้า</span></label></div>
+    <label class="switch" id="pf-availWrap" title="แสดงแถวรายชื่อผู้ปฏิบัติงานที่ว่างในแต่ละวัน"><input type="checkbox" id="pf-avail"> แสดงคนว่าง</label>
+    <label class="switch" id="pf-busyWrap"><input type="checkbox" id="pf-busy"> เฉพาะคนที่มีงาน</label>
+    <span class="hint" id="pf-count"></span>
+  </section>
+
+  <main id="view" style="display:grid;gap:12px;min-width:0"></main>
+  <div class="selbar" id="selbar" role="region" aria-label="คนที่เลือกไว้" hidden>
+    <span>เลือก <b id="selN">0</b> คน</span><span class="names" id="selNames"></span>
+    <button type="button" class="btn selbar-cta" data-action="add-sel"><span class="plus">+</span> ลงแผนให้คนที่เลือก</button>
+    <button type="button" class="btn ghost sm" data-action="clear-sel">ล้าง</button>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form id="taskForm" novalidate>
+    <header class="dlg-head">
+      <div class="dlg-titles"><h2 id="dlgTitle">เพิ่มแผนงาน</h2><p class="dlg-sub" id="dlgSub"></p></div>
+      <span class="grow"></span>
+      <button type="button" class="icon-btn" data-action="close" aria-label="ปิด">✕</button>
+    </header>
+    <div class="dlg-body">
+      <div class="dv" id="dView" hidden></div>
+      <fieldset class="ro" id="formFields">
+      <div class="sheet">
+        <label class="fl" for="f-type"><b>หัวข้องาน</b><small>ประเภทงาน</small></label>
+        <div class="fv"><div class="row2"><select id="f-type"></select><input id="f-typeOther" maxlength="80" autocomplete="off" placeholder="พิมพ์หัวข้องาน เช่น ประชุมลูกค้า" aria-label="หัวข้องาน (อื่นๆ)"></div></div>
+
+        <label class="fl" for="f-planno"><b>Plan No.</b><small>รูปแบบ PN-YY-MMNNN</small></label>
+        <div class="fv"><input id="f-planno" class="mono planno-in" maxlength="40" autocomplete="off" spellcheck="false" placeholder="เช่น PN-26-09004"><span class="hint" id="f-planhint" hidden></span></div>
+
+        <label class="fl" for="f-sale"><b>Sale</b><small>ฝ่ายขายที่ดูแลงาน</small></label>
+        <div class="fv"><select id="f-sale"></select><span class="hint" id="f-saleTel"></span></div>
+
+        <label class="fl" for="f-customer"><b>Customer</b><small>ลูกค้า</small></label>
+        <div class="fv"><input id="f-customer" list="dl-customers" maxlength="120" autocomplete="off" placeholder="ชื่อลูกค้า / บริษัท"></div>
+
+        <label class="fl" for="f-location"><b>Location</b><small>สถานที่</small></label>
+        <div class="fv"><input id="f-location" list="dl-locations" maxlength="120" autocomplete="off" placeholder="เช่น ชื่อโรงงาน / นิคม / จังหวัด"></div>
+
+        <label class="fl" for="f-date"><b>Time</b><small>วันที่ ช่วงเวลา และเวลา</small></label>
+        <div class="fv">
+          <div class="timeline"><input type="date" id="f-date" aria-label="วันที่"><select id="f-period" aria-label="ช่วงเวลา"></select></div>
+          <input id="f-timeNote" maxlength="240" autocomplete="off" aria-label="เวลา (พิมพ์เอง)" placeholder="เช่น ถึงหน้างาน 08.30 น.">
+          <div class="until" id="untilWrap"><label for="f-until">งานหลายวัน ถึงวันที่</label><input type="date" id="f-until"><label class="check"><input type="checkbox" id="f-skipsun" checked> ข้ามวันอาทิตย์</label><span class="hint">สร้างแผนวันละ 1 แผน ใช้ Plan No. เดียวกัน</span></div>
+        </div>
+
+        <label class="fl" for="f-detail"><b>Detail</b><small>รายละเอียด เช่น Work Order, Tag No.</small></label>
+        <div class="fv"><textarea id="f-detail" rows="4" maxlength="3000" placeholder="Work Order: WO-26-0915&#10;Tag No. FT-101, FT-102"></textarea>
+          <div class="photos" id="photoBox">
+            <div class="ph-grid" id="phGrid"></div>
+            <div class="fl-list" id="fileList"></div>
+            <label class="ph-add" id="phAdd" for="phFile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg><span><b>แนบรูป / ไฟล์</b><small>รูปถ่าย PDF Excel Word ฯลฯ · เลือกไฟล์ ลากมาวาง หรือกด Ctrl+V · รูปสูงสุด 8 รูป · ไฟล์สูงสุด 5 ไฟล์ ไฟล์ละไม่เกิน 4 MB</small></span></label>
+            <input type="file" id="phFile" class="sr-only" multiple>
+          </div>
+        </div>
+
+        <label class="fl" for="f-request"><b>Request</b><small>สิ่งที่ลูกค้า / หน้างานต้องการ</small></label>
+        <div class="fv"><textarea id="f-request" rows="2" maxlength="1500" placeholder="เช่น Work Permit, PPE, ลูกค้าปิดวาล์วก่อนเข้างาน"></textarea></div>
+
+        <div class="fl fl-full" id="lblTr"><b>รถ / Car (ขนส่ง)</b><small>ห้ามซ้ำในวัน · ระบุครึ่งวันแล้วคันเดียวกันใช้ได้เช้า-บ่ายคนละงาน</small></div>
+        <div class="fv fv-full tr-pick" role="group" aria-labelledby="lblTr">
+          <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
+          <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
+          <div class="tr-grid" id="trGrid"></div>
+          <label class="ga-box" id="gaBox" for="f-needGA"><input type="checkbox" id="f-needGA"><span><b>ต้องการรถส่วนกลาง</b><small>GA จะระบุรถและทะเบียนให้ภายหลัง</small></span></label>
+          <span class="hint">กดเลือกรถจากรายการ สีเทา = ถูกใช้แล้วในช่วงเวลาที่ทับกัน · ถ้าไม่มีให้พิมพ์ชื่อรถหรือทะเบียน แล้วกดปุ่มเพิ่มเข้าข้อมูลรถ ครั้งหน้าจะเลือกได้เลย</span>
+        </div>
+
+        <label class="fl" for="f-contact"><b>Contact</b><small>ผู้ติดต่อหน้างาน</small></label>
+        <div class="fv"><div class="pair"><input id="f-contact" list="dl-contacts" maxlength="120" autocomplete="off" placeholder="ชื่อผู้ติดต่อ"><input id="f-contactTel" maxlength="80" autocomplete="off" placeholder="เบอร์โทร" aria-label="เบอร์โทรผู้ติดต่อ"></div></div>
+
+        <div class="fl fl-full" id="lblTeam"><b>Team Service</b><small>ผู้ปฏิบัติงาน / Workers · ห้ามซ้ำในช่วงเวลาเดียวกัน · เลือกแล้ว <b id="tpN">0</b> คน</small></div>
+        <div class="fv fv-full">
+          <div class="tp" role="group" aria-labelledby="lblTeam">
+            <div class="tp-sel" id="tpSel" aria-live="polite"></div>
+            <div class="tp-bar"><input type="search" id="tpQ" placeholder="ค้นหาชื่อ หรือตำแหน่ง" aria-label="ค้นหาคนใน Team Service" autocomplete="off"><label class="check"><input type="checkbox" id="tpFree"> ซ่อนคนที่ไม่ว่าง</label><label class="check" title="ใช้เมื่อตั้งใจจัดคนซ้อนงาน ระบบจะยังเตือนว่าจัดชน"><input type="checkbox" id="tpAllowBusy"> ให้เลือกคนที่ไม่ว่างได้</label></div>
+            <p class="tp-key"><span class="k-free">กดชื่อเพื่อเลือก = ว่างในวันและช่วงเวลาที่เลือก</span><span class="k-un">สีเทา = ติดงานหรือลาในช่วงเวลานั้น เลือกไม่ได้</span></p>
+            <div class="tp-list" id="tpList"></div>
+            <div class="tp-guest">
+              <label for="tpGuest">คนจากแผนกอื่น <span class="th">พิมพ์ชื่อเอง แล้วกด Enter หรือปุ่มเพิ่ม</span></label>
+              <div class="guest-row"><input id="tpGuest" list="dl-guests" maxlength="80" autocomplete="off" placeholder="เช่น สมศักดิ์ (ฝ่ายผลิต)"><button type="button" class="btn sm" id="tpGuestAdd">+ เพิ่มชื่อ</button></div>
+            </div>
+            <div class="tp-foot"><span id="tpCount"></span><button type="button" class="lnk" id="tpClear">ล้างที่เลือก</button></div>
+            <div id="f-conf" class="conf-box" hidden></div>
+            <div id="f-ok" class="ok-box" role="status" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>ไม่มีการชนกัน — พร้อมบันทึก</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field"><span class="lbl" id="lblStatus">สถานะ</span><div class="seg" id="f-status" role="radiogroup" aria-labelledby="lblStatus"></div></div>
+      <div class="field v-reason" id="f-reasonWrap" hidden><label for="f-reason" id="f-reasonLbl">เหตุผล / ปัญหาที่หน้างาน</label><textarea id="f-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้"></textarea></div>
+      </fieldset>
+
+      <details class="copybox" id="copyBox">
+        <summary>ก๊อปแผนนี้ไปวันอื่น / ช่วงวัน</summary>
+        <div class="copy-grid">
+          <div class="field"><label for="cp-from">ตั้งแต่วันที่</label><input type="date" id="cp-from"></div>
+          <div class="field"><label for="cp-to">ถึงวันที่</label><input type="date" id="cp-to"></div>
+          <div class="field"><label for="cp-type">หัวข้องานของแผนใหม่</label><select id="cp-type"></select></div>
+          <label class="check"><input type="checkbox" id="cp-skipsun" checked> ข้ามวันอาทิตย์</label>
+          <button type="button" class="btn primary" data-action="copy-range" id="btnCopy">ก๊อปแผน</button>
+        </div>
+        <p class="hint" style="margin:0 0 12px">ก๊อปทุกช่องตามที่แสดงในฟอร์มตอนนี้ สถานะของแผนใหม่เป็น "วางแผน" เช่น งาน Disconnect วันนี้ แล้วต่อด้วย Installation พรุ่งนี้</p>
+      </details>
+      <p id="f-err" class="form-err" hidden></p>
+      <p id="f-meta" class="meta"></p>
+    </div>
+    <footer class="dlg-foot">
+      <button type="button" class="btn danger" data-action="del-task" id="btnDel">ลบแผน</button>
+      <button type="button" class="btn ghost" data-action="dup-task" id="btnDup">ก๊อปไปวันถัดไป</button>
+      <span class="grow"></span>
+      <button type="button" class="btn ghost" data-action="close">ปิด</button>
+      <button type="button" class="btn primary" data-action="edit-task" id="btnEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg> <span id="btnEditTxt">แก้ไข</span></button>
+      <button type="submit" class="btn primary" id="btnSave">บันทึก</button>
+    </footer>
+  </form>
+</dialog>
+<dialog id="lightbox" class="lightbox" aria-label="ดูรูปขนาดใหญ่">
+  <img id="lbImg" alt="">
+  <div class="lb-bar"><span id="lbCap"></span><span class="grow"></span><button type="button" class="icon-btn" id="lbPrev" aria-label="รูปก่อนหน้า">‹</button><button type="button" class="icon-btn" id="lbNext" aria-label="รูปถัดไป">›</button><button type="button" class="icon-btn" id="lbClose" aria-label="ปิด">✕</button></div>
+</dialog>
+<datalist id="dl-customers"></datalist>
+<datalist id="dl-transport"></datalist>
+<datalist id="dl-locations"></datalist>
+<datalist id="dl-contacts"></datalist>
+<datalist id="dl-guests"></datalist>
+<dialog id="acctDlg" class="acct-dlg" aria-labelledby="acctTitle">
+  <div class="acct-wrap">
+    <header class="dlg-head"><h2>บัญชีของฉัน</h2><span class="grow"></span><button type="button" class="icon-btn" data-acct-close aria-label="ปิด">✕</button></header>
+    <div class="dlg-body" id="acctBody"></div>
+    <footer class="dlg-foot"><span class="hint" id="acctNote"></span><span class="grow"></span><button type="button" class="btn danger" id="acctLogout" data-action="logout" hidden>ออกจากระบบ</button><button type="button" class="btn primary" data-acct-close>ปิด</button></footer>
+  </div>
+</dialog>
+<dialog id="copyDlg" aria-labelledby="copyTitle">
+  <form method="dialog">
+    <header class="dlg-head"><h2 id="copyTitle">คัดลอกข้อความ</h2><span class="grow"></span><button type="submit" class="icon-btn" aria-label="ปิด">✕</button></header>
+    <div class="dlg-body"><p class="hint" style="margin:0">เบราว์เซอร์นี้คัดลอกให้อัตโนมัติไม่ได้ ข้อความถูกเลือกไว้แล้ว กด Ctrl+C (บนมือถือกดค้างแล้วเลือกคัดลอก) แล้ววางใน LINE</p><textarea id="copyArea" class="copy-area" readonly aria-label="ข้อความสำหรับคัดลอก"></textarea></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tip" id="tip" hidden></div>
+
+<!-- login / register (Supabase mode only) -->
+<div class="auth" id="auth" hidden>
+  <section class="auth-side" aria-hidden="true">
+    <div class="auth-brand"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></div>
+    <div class="auth-pitch">
+      <h1>แผนงานทีม BU1 Lab<br>ในที่เดียว</h1>
+      <ul>
+        <li>ลงแผนงานรายวัน เห็นทั้งสัปดาห์</li>
+        <li>รู้ทันทีว่าใครว่าง ใครติดงาน และรถคันไหนใช้งานซ้ำกัน</li>
+        <li>ข้อมูลเก็บบน Cloud ทุกคนเห็นตรงกันทันที</li>
+      </ul>
+    </div>
+    <div class="auth-how">
+      <b>วิธีเข้าใช้งาน</b>
+      <ol>
+        <li><span>มีบัญชีบริษัทแล้ว</span> (ใช้กับ Weekly Plan BU2 หรือ Safety Training Record) → เข้าสู่ระบบด้วยอีเมลและรหัสผ่านเดิมได้เลย</li>
+        <li><span>ยังไม่มีบัญชี</span> → สมัครสมาชิก แล้วกดยืนยันในอีเมล</li>
+        <li><span>รอสิทธิ์แผนก BU1</span> → ผู้ดูแลระบบกลางเพิ่มสิทธิ์ให้ แล้วเข้าสู่ระบบได้ทันที</li>
+      </ol>
+    </div>
+    <p class="auth-foot">Flowlab &amp; Service · BU1 Lab</p>
+  </section>
+  <section class="auth-main">
+    <div class="auth-card">
+      <div class="auth-preview" id="authPreview" hidden><span>หน้าตัวอย่าง · บนลิงก์นี้ใช้บัญชี claude.ai ส่วนหน้านี้ใช้จริงเมื่อเปิดผ่านเว็บที่ต่อ Supabase แล้ว</span><button type="button" class="btn sm" data-auth-close>ปิดตัวอย่าง</button></div>
+      <div class="auth-brand mobile"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></div>
+      <div class="seg auth-tabs" id="authTabs" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก" hidden>
+        <button type="button" role="tab" data-auth-go="login" aria-selected="true">เข้าสู่ระบบ</button>
+        <button type="button" role="tab" data-auth-go="register" aria-selected="false">สมัครสมาชิก</button>
+      </div>
+      <div class="auth-form auth-wait" data-auth-screen="wait" hidden>
+        <span class="auth-spin" aria-hidden="true"></span>
+        <h2>กำลังเชื่อมต่อ…</h2>
+        <p class="hint">กำลังตรวจสอบการเข้าสู่ระบบ</p>
+      </div>
+
+      <form class="auth-form" data-auth-screen="login" novalidate hidden>
+        <div class="auth-head"><h2>เข้าสู่ระบบ</h2><p>ใช้อีเมลและรหัสผ่านของบัญชีบริษัท</p></div>
+        <div class="field"><label for="au-email">อีเมล</label><input id="au-email" name="email" type="email" autocomplete="email" required placeholder="name@company.co.th"></div>
+        <div class="field"><label for="au-pw">รหัสผ่าน</label><div class="pw-wrap"><input id="au-pw" name="password" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" data-pw-toggle aria-label="แสดงรหัสผ่าน">แสดง</button></div></div>
+        <div class="auth-row"><span class="hint">เครื่องนี้จะจำการเข้าสู่ระบบไว้ จนกว่าจะกดออกจากระบบ</span><button type="button" class="lnk" data-auth-go="reset">ลืมรหัสผ่าน?</button></div>
+        <button type="submit" class="btn primary auth-submit">เข้าสู่ระบบ</button>
+        <p class="auth-alt">ยังไม่มีบัญชี? <button type="button" class="lnk" data-auth-go="register">สมัครสมาชิก</button></p>
+        <div class="auth-note"><b>บัญชีกลางของบริษัท</b>บัญชีเดียวใช้ได้ทุกระบบ (Weekly Plan BU2, Safety Training Record) เข้าได้เมื่อได้รับสิทธิ์แผนก BU1 จากผู้ดูแลระบบกลาง</div>
+      </form>
+
+      <form class="auth-form" data-auth-screen="register" novalidate hidden>
+        <div class="auth-head"><h2>สมัครสมาชิก</h2><p>สร้างบัญชีกลางของบริษัท แล้วรอสิทธิ์แผนก BU1</p></div>
+        <div class="field"><label for="ar-name">ชื่อ-นามสกุล</label><input id="ar-name" name="name" autocomplete="name" required maxlength="80" placeholder="เช่น สมชาย ใจดี"></div>
+        <div class="field"><label for="ar-code">รหัสพนักงาน <small class="hint">ถ้ามี</small></label><input id="ar-code" name="code" maxlength="20" autocomplete="off" placeholder="เช่น FL-0123"></div>
+        <div class="field"><label for="ar-email">อีเมลบริษัท</label><input id="ar-email" name="email" type="email" autocomplete="email" required placeholder="name@company.co.th"><small class="hint" id="arDomain" hidden></small></div>
+        <div class="field"><label for="ar-pw">รหัสผ่าน <small class="hint">อย่างน้อย 8 ตัวอักษร</small></label><div class="pw-wrap"><input id="ar-pw" name="password" type="password" autocomplete="new-password" required minlength="8"><button type="button" class="pw-eye" data-pw-toggle aria-label="แสดงรหัสผ่าน">แสดง</button></div>
+          <div class="pw-meter" id="arMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></div><small class="hint" id="arMeterTxt">ใช้ตัวอักษร ตัวเลข และสัญลักษณ์ผสมกัน</small></div>
+        <div class="field"><label for="ar-pw2">ยืนยันรหัสผ่าน</label><input id="ar-pw2" name="password2" type="password" autocomplete="new-password" required minlength="8"></div>
+        <label class="check auth-agree"><input type="checkbox" name="agree" id="ar-agree"> ยืนยันว่าเป็นพนักงาน BU1 Lab และจะใช้บัญชีนี้เพื่องานของแผนกเท่านั้น</label>
+        <button type="submit" class="btn primary auth-submit">สมัครสมาชิก</button>
+        <p class="auth-alt">มีบัญชีแล้ว? <button type="button" class="lnk" data-auth-go="login">เข้าสู่ระบบ</button></p>
+      </form>
+
+      <div class="auth-form" data-auth-screen="registered" hidden>
+        <div class="auth-head"><h2>สมัครสมาชิกแล้ว</h2><p>บัญชี <b id="authRegWho"></b></p></div>
+        <ol class="auth-steps">
+          <li class="done"><b>สร้างบัญชีแล้ว</b><span>บัญชีกลางของบริษัท ใช้ได้กับทุกระบบ</span></li>
+          <li><b>ยืนยันอีเมล</b><span>เปิดอีเมลจาก Supabase แล้วกดลิงก์ยืนยัน (ถ้าไม่เจอ ดูในโฟลเดอร์ Spam)</span></li>
+          <li><b>รอสิทธิ์แผนก BU1</b><span>แจ้งผู้ดูแลระบบกลางให้เพิ่มสิทธิ์ให้อีเมลนี้</span></li>
+        </ol>
+        <button type="button" class="btn primary auth-submit" data-auth-go="login">ไปหน้าเข้าสู่ระบบ</button>
+      </div>
+
+      <form class="auth-form" data-auth-screen="reset" novalidate hidden>
+        <h2>ลืมรหัสผ่าน</h2>
+        <p class="hint">ใส่อีเมลที่ใช้สมัคร ระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้</p>
+        <div class="field"><label for="ap-email">อีเมล</label><input id="ap-email" name="email" type="email" autocomplete="email" required></div>
+        <button type="submit" class="btn primary auth-submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+        <button type="button" class="lnk" data-auth-go="login">‹ กลับไปเข้าสู่ระบบ</button>
+      </form>
+
+      <form class="auth-form" data-auth-screen="newpw" novalidate hidden>
+        <h2>ตั้งรหัสผ่านใหม่</h2>
+        <div class="field"><label for="an-pw">รหัสผ่านใหม่ <small class="hint">อย่างน้อย 8 ตัวอักษร</small></label><input id="an-pw" name="password" type="password" autocomplete="new-password" required minlength="8"></div>
+        <div class="field"><label for="an-pw2">ยืนยันรหัสผ่านใหม่</label><input id="an-pw2" name="password2" type="password" autocomplete="new-password" required minlength="8"></div>
+        <button type="submit" class="btn primary auth-submit">บันทึกรหัสผ่านใหม่</button>
+      </form>
+
+      <div class="auth-form" data-auth-screen="noaccess" hidden>
+        <h2>ยังไม่มีสิทธิ์เข้าถึงข้อมูลแผนกนี้</h2>
+        <p>บัญชี <b id="authNoWho"></b> เข้าสู่ระบบได้แล้ว แต่ยังไม่มีสิทธิ์แผนก <b id="authNoDept">BU1</b> ติดต่อผู้ดูแลระบบกลางให้เพิ่มสิทธิ์ แล้วกดตรวจสอบอีกครั้ง</p>
+        <button type="button" class="btn primary auth-submit" id="authRecheck">ตรวจสอบอีกครั้ง</button>
+        <button type="button" class="lnk" data-action="logout">ออกจากระบบ</button>
+      </div>
+
+      <p class="auth-msg" id="authMsg" role="status" hidden></p>
+    </div>
+  </section>
+</div>
+
+
+<!-- scripts share one global scope and must load in this order; js/app/boot.js starts the app -->
+<script src="js/config.js"></script>
+<script src="js/core/constants.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/data/store.js"></script>
+<script src="js/data/conflicts.js"></script>
+<script src="js/data/backend.js"></script>
+<script src="js/data/supabase.js"></script>
+<script src="js/features/roles.js"></script>
+<script src="js/ui/render.js"></script>
+<script src="js/views/plan.js"></script>
+<script src="js/features/share.js"></script>
+<script src="js/views/people.js"></script>
+<script src="js/views/projects.js"></script>
+<script src="js/views/search.js"></script>
+<script src="js/views/dashboard.js"></script>
+<script src="js/views/settings.js"></script>
+<script src="js/views/help.js"></script>
+<script src="js/dialog/picker.js"></script>
+<script src="js/dialog/fields.js"></script>
+<script src="js/dialog/attachments.js"></script>
+<script src="js/dialog/task-form.js"></script>
+<script src="js/features/master-actions.js"></script>
+<script src="js/features/backup.js"></script>
+<script src="js/features/account.js"></script>
+<script src="js/features/about.js"></script>
+<script src="js/features/export.js"></script>
+<script src="js/app/events.js"></script>
+<script src="js/app/boot.js"></script>
+</body></html>
