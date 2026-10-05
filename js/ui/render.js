@@ -145,6 +145,6 @@ function legendStrip(){
 function emptyState(title,text,btn,ico){return `<div class="empty"><div class="empty-ico" aria-hidden="true">${ico||'+'}</div><h3>${title}</h3><p>${text}</p>${btn||''}</div>`}
 function loading(){return `<div class="skeleton" aria-label="กำลังโหลด"><i></i><i></i><i></i></div>`}
 function initialOf(name){const m=String(name||'').match(/[ก-ฮA-Za-z0-9]/);return m?m[0].toUpperCase():'?'}
-function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;
-  return `<th class="${isT?'is-today':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${meta||''}</div></div></th>`}
+function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;const hol=holidayOf(k);
+  return `<th class="${isT?'is-today':''}${hol?' hol-day':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${hol?`<span class="hol-pill" title="${esc(hol)}">${esc(hol)}</span>`:''}${meta||''}</div></div></th>`}
 const searchText=t=>[t.planNo,typeLabel(t),t.customer,t.location,detailOf(t),t.request,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');

@@ -9,6 +9,9 @@
 .pd-day.on b,.pd-day.on.td small{color:#fff}
 .pd-n{min-width:20px;margin-top:2px;padding:0 5px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font:600 10.5px/1.6 var(--f-mono);text-align:center}
 .pd-n.zero{opacity:.5}
+.pd-day.hol:not(.on){border-color:color-mix(in srgb,var(--crit) 45%,var(--line-2))}
+.pd-day.hol:not(.on) small{color:var(--crit-ink);font-weight:700}
+.pd-hol{justify-self:center;font-style:normal;font-size:12px;font-weight:600;padding:1px 9px;border-radius:999px;color:var(--crit-ink);background:var(--crit-soft)}
 .pd-n.over{background:var(--crit-soft);color:var(--crit-ink)}
 .pd-day.on .pd-n{background:rgba(255,255,255,.22);color:#fff;opacity:1}
 .pd-head{display:flex;align-items:center;gap:10px;padding:12px 14px 2px}

@@ -33,3 +33,9 @@ button.avp-row:hover,button.avp-row:focus-visible{background:color-mix(in srgb,v
 .avp-grid[style*="--n:1"] .avp-grp{grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));column-gap:12px}
 .avp-grid[style*="--n:1"] .avp-grp>p{grid-column:1/-1}
 @media (max-width:760px){.avp-top{padding:14px 16px 12px}}
+/* public holidays: name shown on the board head, the Available panel, the people view and master data */
+.wp thead th .hol{display:block;max-width:100%;margin:4px auto 0;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:600;line-height:1.35;color:var(--crit-ink);background:var(--crit-soft);white-space:normal;overflow-wrap:anywhere}
+.avp-head em.hol{color:var(--crit-ink);background:var(--crit-soft);max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.hol-pill{display:inline-block;max-width:100%;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:600;line-height:1.35;color:var(--crit-ink);background:var(--crit-soft);white-space:normal;overflow-wrap:anywhere}
+th.hol-day{background:var(--wkend)}
+.edit-table tr.hol-year th{padding:10px 8px 4px;text-align:left;font:700 13px var(--f-body);color:var(--ink);background:none;border:0}

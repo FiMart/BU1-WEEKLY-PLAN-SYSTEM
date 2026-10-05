@@ -32,7 +32,7 @@ function dashCompute(){
   const today=ymd(new Date());const inR=t=>t.date>=from&&t.date<=to;
   const all=tasks.filter(inR);const work=all.filter(isWorking);const jobs=work.filter(t=>!isLeave(t));const leaves=work.filter(isLeave);
   const days=[];for(let d=parseD(from);ymd(d)<=to;d=addDays(d,1))days.push(new Date(d));
-  const workDays=days.filter(d=>d.getDay()!==0);
+  const workDays=days.filter(isWorkDay);/* Monday–Saturday, minus public holidays */
   const active=S.staff.filter(s=>s.active!==false);const conf=conflictsIn(work);
   const stc=Object.fromEntries(STATUSES.map(s=>[s.id,0]));all.filter(t=>!isLeave(t)).forEach(t=>{const k=t.status||'planned';stc[k]=(stc[k]||0)+1});
   const allJ=Object.values(stc).reduce((a,n)=>a+n,0);const totalJ=jobs.length;
@@ -87,7 +87,7 @@ function dashCompute(){
   const mk=(a,b)=>{const l=jobs.filter(t=>t.date>=a&&t.date<=b);return {n:l.length,c:Object.fromEntries(DASH_SEG.map(([s])=>[s,l.filter(t=>(t.status||'planned')===s).length]))}};
   const buckets=[];
   if(P.unit==='day')days.forEach(d=>{const k=ymd(d);const busy=new Set(work.filter(t=>t.date===k).flatMap(t=>t.staffIds||[]));
-    buckets.push(Object.assign({from:k,to:k,lbl:String(d.getDate()),sub:TH_DAY[d.getDay()],we:d.getDay()===0||d.getDay()===6,td:k===today,name:fmtDay(k),
+    buckets.push(Object.assign({from:k,to:k,lbl:String(d.getDate()),sub:TH_DAY[d.getDay()],we:isOffDay(d),td:k===today,name:fmtDay(k)+(holidayOf(k)?' · '+holidayOf(k):''),
       free:active.filter(s=>!busy.has(s.id)).length,lv:new Set(leaves.filter(t=>t.date===k).flatMap(t=>t.staffIds||[])).size},mk(k,k)))});
   else if(P.unit==='week')for(let w=mondayOf(parseD(from));ymd(w)<=to;w=addDays(w,7)){const a=ymd(w)<from?from:ymd(w),b=ymd(addDays(w,6))>to?to:ymd(addDays(w,6));
     buckets.push(Object.assign({from:a,to:b,lbl:String(parseD(a).getDate()),sub:TH_MON[parseD(a).getMonth()],td:today>=a&&today<=b,name:`สัปดาห์ ${weekName(w)}`},mk(a,b)))}
@@ -108,7 +108,7 @@ function dashCompute(){
   const kpis=[
     {name:'งานทั้งหมด (Total Jobs)',value:`${totalJ} แผน`,note:prevJobs?chg(totalJ,prevJobs.length):''},
     {name:'อัตราปิดงาน (Completion Rate)',value:doneRate==null?'–':`${doneRate}%`,note:due.length?`ปิดแล้ว ${doneDue} จาก ${due.length} แผนที่ถึงกำหนด${prevDoneRate!=null?` · ${P.pLabel} ${prevDoneRate}%`:''}`:'ยังไม่มีแผนที่ถึงกำหนด'},
-    {name:'อัตราใช้กำลังคน (Utilization)',value:`${util}%`,note:`${f1(manDays)} จาก ${capDays} คน-วัน (${active.length} คน × ${workDays.length} วัน จ.–ส.)`},
+    {name:'อัตราใช้กำลังคน (Utilization)',value:`${util}%`,note:`${f1(manDays)} จาก ${capDays} คน-วัน (${active.length} คน × ${workDays.length} วันทำงาน จ.–ส. ไม่รวมวันหยุด)`},
     {name:'คน-วันทำงาน (Man-days)',value:`${f1(manDays)} คน-วัน`,note:`ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน`},
     {name:'กำลังคนที่มีงาน (Active Manpower)',value:`${busyN} / ${active.length} คน`,note:`ว่างทั้งช่วง ${Math.max(0,active.length-busyN)} คน · ลา ${leaveDays} คน-วัน`},
     {name:'อัตราเลื่อน / ยกเลิก (Postpone & Cancel)',value:`${pcRate}%`,note:`เลื่อน ${stc.postponed} · ยกเลิก ${stc.cancelled} จาก ${allJ} แผน`},
@@ -185,9 +185,9 @@ function renderDash(){
   /* ---- 3. manpower ---- */
   h+=sec(3,'กำลังคน','Manpower');
   const grpTable=(rows,first)=>`<table class="mini"><thead><tr><th>${first}</th><th class="n">คน</th><th class="n">แผน</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.k)}</td><td class="n">${x.n}</td><td class="n">${x.jobs}</td><td class="n">${f1(x.md)}</td><td class="n"><span class="ibar sm"><i style="width:${Math.min(100,x.util)}%"></i></span>${x.util}%</td></tr>`).join('')||'<tr><td colspan="5" class="hint">ยังไม่มีข้อมูล</td></tr>'}</tbody></table>`;
-  h+=`<section class="panel span-12" style="--d:5"><header><h2>ภาระงานตามตำแหน่ง</h2><p>เรียงตามลำดับตำแหน่งในข้อมูลหลัก · ใช้กำลังคน = คน-วันทำงาน ÷ (จำนวนคนในตำแหน่ง × วัน จ.–ส.)</p></header>${grpTable(D.roleRows,'ตำแหน่ง')}</section>`;
+  h+=`<section class="panel span-12" style="--d:5"><header><h2>ภาระงานตามตำแหน่ง</h2><p>เรียงตามลำดับตำแหน่งในข้อมูลหลัก · ใช้กำลังคน = คน-วันทำงาน ÷ (จำนวนคนในตำแหน่ง × วันทำงาน จ.–ส. ไม่รวมวันหยุดนักขัตฤกษ์)</p></header>${grpTable(D.roleRows,'ตำแหน่ง')}</section>`;
   const maxJ=Math.max(1,...D.people.map(p=>p.jobs));const wdN=D.workDays.length;
-  h+=`<section class="panel span-12" style="--d:6"><header><h2>รายละเอียดรายคน</h2><p>คน-วัน นับงานครึ่งวัน (เช้าหรือบ่าย) เป็น 0.5 · ว่าง = วันจันทร์–เสาร์ที่ไม่มีแผนเลย · เรียงจากงานมากไปน้อย</p></header>
+  h+=`<section class="panel span-12" style="--d:6"><header><h2>รายละเอียดรายคน</h2><p>คน-วัน นับงานครึ่งวัน (เช้าหรือบ่าย) เป็น 0.5 · ว่าง = วันทำงาน (จันทร์–เสาร์ ไม่รวมวันหยุดนักขัตฤกษ์) ที่ไม่มีแผนเลย · เรียงจากงานมากไปน้อย</p></header>
     <div class="scroll-x plain" style="max-height:520px;overflow:auto"><table class="mini ptab"><thead><tr><th>#</th><th>ชื่อ</th><th>งาน (แผน)</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th><th class="n">เช้า</th><th class="n">บ่าย</th><th class="n">ทั้งวัน</th><th class="n">ลา (วัน)</th><th class="n">ว่าง (วัน)</th><th class="n">จัดชน</th><th>งานที่ทำมากสุด</th></tr></thead><tbody>
     ${D.people.map((p,i)=>`<tr${p.jobs?'':' class="idle"'}><td class="n hint">${i+1}</td><td><b>${esc(p.s.name)}</b><span class="sub">${esc(p.s.role||'—')}</span></td>
       <td><span class="ibar"><i style="width:${p.jobs/maxJ*100}%"></i></span><b class="num">${p.jobs}</b></td><td class="n">${f1(p.wd)}</td><td class="n">${pct(p.wd,wdN)}%</td><td class="n">${p.am||'–'}</td><td class="n">${p.pm||'–'}</td><td class="n">${p.full||'–'}</td>

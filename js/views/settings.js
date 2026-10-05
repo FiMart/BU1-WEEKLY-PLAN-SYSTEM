@@ -18,6 +18,7 @@ const MD_ICONS={
   sample:'<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/><path d="M10 11v5.5M14 11v5.5"/>',
   users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/><path d="m16.5 4.5 1.5 1.5 3-3"/>',
   backup:'<path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 17l3 3 3-3"/>',
+  holidays:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.6.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
   about:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/>',
   prefs:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
 };
@@ -88,6 +89,7 @@ function renderSettings(){
      desc:hasSample?'ตอนนี้มีพนักงาน รถ แผน และโปรเจกต์ตัวอย่างอยู่ในระบบ ลบออกก่อนเริ่มใช้งานจริง ข้อมูลที่ทีมเพิ่มเองจะไม่ถูกลบ':'ไม่มีข้อมูลตัวอย่างเหลืออยู่',
      body:`<div><button type="button" class="btn danger" data-action="clear-sample"${hasSample?'':' disabled'}>ลบข้อมูลตัวอย่างทั้งหมด</button></div>`});
   const us=usersSection();if(us)secs.unshift(us);
+  secs.splice(secs.findIndex(s=>s.id==='periods')+1,0,holidaySection());
   secs.push(backupSection(),prefsSection(),aboutSection());
   const cur=secs.find(s=>s.id===S.md)||secs[0];
   return `

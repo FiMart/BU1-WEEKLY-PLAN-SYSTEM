@@ -7,7 +7,7 @@ function renderProjects(){
   const days=Array.from({length:nd},(_,i)=>new Date(y,mo,i+1));const from=ymd(days[0]),to=ymd(days[nd-1]);const today=ymd(new Date());
   const tasks=rangeTasks(from,to);
   const list=S.projects.filter(p=>p.from&&p.to&&p.from<=to&&p.to>=from).sort((a,b)=>String(a.from).localeCompare(String(b.from))||String(a.name).localeCompare(String(b.name),'th'));
-  const need=(p,d)=>{const k=ymd(d);return k>=p.from&&k<=p.to&&(p.workSun||d.getDay()!==0)?(Number(p.headcount)||0):0};
+  const need=(p,d)=>{const k=ymd(d);return k>=p.from&&k<=p.to&&(p.workSun||isWorkDay(d))?(Number(p.headcount)||0):0};/* Sundays and public holidays need nobody unless the project works off days */
   const active=S.staff.filter(s=>s.active!==false).length;
   const avail=d=>{if(!tasks)return null;const k=ymd(d);const lv=new Set(tasks.filter(t=>t.date===k&&isWorking(t)&&isLeave(t)).flatMap(t=>t.staffIds||[]));return active-lv.size};
   let h=`<section class="weekbar" aria-label="เลือกเดือน"><div class="wk-nav"><button type="button" class="arrow" data-action="mprev" aria-label="เดือนก่อน">‹</button><button type="button" data-action="mthis">เดือนนี้</button><button type="button" class="arrow" data-action="mnext" aria-label="เดือนถัดไป">›</button></div>
@@ -15,17 +15,17 @@ function renderProjects(){
     <div class="wk-tools"><div class="seg"${isPhoneW()?' hidden':''} role="radiogroup" aria-label="มุมมอง"><label><input type="radio" name="pm-mode" value="day"${planDayMode()?' checked':''}><span>รายวัน</span></label><label><input type="radio" name="pm-mode" value="week"${planDayMode()?'':' checked'}><span>ทั้งเดือน</span></label></div>${S.canWrite?`<button type="button" class="btn primary" data-action="proj-new"><span class="plus">+</span> เพิ่มโปรเจกต์</button>`:''}</div></section>`;
   if(S.projEdit)h+=projForm();
   if(planDayMode())return h+projDayHtml({days,list,need,avail});
-  h+=`<div class="scroll-x tall"><table class="mp"><thead><tr><th class="nm">โปรเจกต์</th>${days.map(d=>`<th class="${d.getDay()===0?'sun':''}${ymd(d)===today?' today-col':''}">${TH_DAY[d.getDay()]}<b>${d.getDate()}</b></th>`).join('')}</tr></thead><tbody>`;
+  h+=`<div class="scroll-x tall"><table class="mp"><thead><tr><th class="nm">โปรเจกต์</th>${days.map(d=>`<th class="${!isWorkDay(d)?'sun':''}${ymd(d)===today?' today-col':''}">${TH_DAY[d.getDay()]}<b>${d.getDate()}</b></th>`).join('')}</tr></thead><tbody>`;
   for(const p of list){
     h+=`<tr><th class="nm">${S.canWrite?`<button type="button" class="proj-name" data-proj-edit="${esc(p.id)}" title="แก้ไขโปรเจกต์">`:'<div class="proj-name">'}<b>${esc(p.name)}</b><small>${esc(p.headcount)} คน · ${esc(fmtDay(p.from))} – ${esc(fmtDay(p.to))}${p.workSun?' · รวมวันอาทิตย์':''}</small>${S.canWrite?'</button>':'</div>'}</th>`;
-    h+=days.map(d=>{const n=need(p,d);return n?`<td class="on" data-tip="${esc(p.name)} · ${fmtDay(ymd(d))} ต้องใช้ ${n} คน">${n}</td>`:`<td class="${d.getDay()===0?'sun':''}"></td>`}).join('')+'</tr>';
+    h+=days.map(d=>{const n=need(p,d);return n?`<td class="on" data-tip="${esc(p.name)} · ${fmtDay(ymd(d))} ต้องใช้ ${n} คน">${n}</td>`:`<td class="${!isWorkDay(d)?'sun':''}"></td>`}).join('')+'</tr>';
   }
-  if(!list.length)h+=`<tr><th class="nm"><span class="hint">ยังไม่มีโปรเจกต์ในเดือนนี้</span></th>${days.map(d=>`<td class="${d.getDay()===0?'sun':''}"></td>`).join('')}</tr>`;
+  if(!list.length)h+=`<tr><th class="nm"><span class="hint">ยังไม่มีโปรเจกต์ในเดือนนี้</span></th>${days.map(d=>`<td class="${!isWorkDay(d)?'sun':''}"></td>`).join('')}</tr>`;
   const req=days.map(d=>list.reduce((a,p)=>a+need(p,d),0));const av=days.map(avail);
   h+=`<tr class="tot first"><th class="nm">ต้องใช้รวม (คน)</th>${req.map(n=>`<td>${n||''}</td>`).join('')}</tr>`;
   h+=`<tr class="tot"><th class="nm">คนที่มี (หักคนลา)</th>${av.map(n=>`<td>${n==null?'…':n}</td>`).join('')}</tr>`;
   h+=`<tr class="tot"><th class="nm">คงเหลือ</th>${av.map((n,i)=>{if(n==null)return '<td>…</td>';const r=n-req[i];return `<td class="${r<0?'neg':req[i]?'pos':''}" data-tip="${fmtDay(ymd(days[i]))}: มี ${n} คน ต้องใช้ ${req[i]} คน">${req[i]?(r<0?'⚠ ':'')+r:''}</td>`}).join('')}</tr>`;
-  h+=`</tbody></table></div><p class="hint">ตัวเลขในตารางคือจำนวนคนที่โปรเจกต์ต้องใช้ในวันนั้น ไม่นับวันอาทิตย์ เว้นแต่ติ๊ก "รวมวันอาทิตย์" · "คนที่มี" คือพนักงานที่ใช้งานอยู่ หักคนที่มีแผนลาในวันนั้น · ช่องแดงคือคนไม่พอ</p>`;
+  h+=`</tbody></table></div><p class="hint">ตัวเลขในตารางคือจำนวนคนที่โปรเจกต์ต้องใช้ในวันนั้น ไม่นับวันอาทิตย์และวันหยุดนักขัตฤกษ์ เว้นแต่ติ๊ก "รวมวันอาทิตย์" · "คนที่มี" คือพนักงานที่ใช้งานอยู่ หักคนที่มีแผนลาในวันนั้น · ช่องแดงคือคนไม่พอ</p>`;
   return h;
 }
 /* daily view (tablet / phone): the month's days as a scrolling strip, the chosen day's need vs available, active projects */

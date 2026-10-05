@@ -73,10 +73,10 @@ function availOn(k){
    every name in full; half-day free people carry a ว่างเช้า / ว่างบ่าย tag; a name opens a new plan for that person */
 const PERSON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.7 3.6-5.8 7-5.8s6.2 2.1 7 5.8"/></svg>';
 function availDay(d,a,today){
-  const k=ymd(d);const we=d.getDay()===0||d.getDay()===6;const order=positions();
+  const k=ymd(d);const hol=holidayOf(k);const we=isOffDay(d);const order=positions();
   const per=new Map([...a.full.map(s=>[s.id,'full']),...a.am.map(s=>[s.id,'am']),...a.pm.map(s=>[s.id,'pm'])]);
   const people=[...a.full,...a.am,...a.pm];
-  let h=`<div class="avp-day${we?' we':''}${k===today?' td':''}"><div class="avp-head" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}"><b>${EN_DAY[d.getDay()]}</b><span>${d.getDate()}</span>${we?'<em>วันหยุด</em>':''}${k===today?'<em class="td">วันนี้</em>':''}<i>${people.length} ว่าง</i></div>`;
+  let h=`<div class="avp-day${we?' we':''}${k===today?' td':''}"><div class="avp-head" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}"><b>${EN_DAY[d.getDay()]}</b><span>${d.getDate()}</span>${hol?`<em class="hol" title="${esc(hol)}">${esc(hol)}</em>`:we?'<em>วันหยุด</em>':''}${k===today?'<em class="td">วันนี้</em>':''}<i>${people.length} ว่าง</i></div>`;
   if(!people.length)h+='<p class="avp-none">ไม่มีคนว่าง</p>';
   for(const [role,list] of roleGroups(people)){
     const ci=order.indexOf(role);const color=POS_COLORS[(ci>=0?ci:order.length)%POS_COLORS.length];
@@ -116,13 +116,13 @@ function renderPlan(){
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
     return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
-  days.forEach((d,i)=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k).length;const we=d.getDay()===0||d.getDay()===6;const a=avail[i];
-    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span><span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}" title="แผนของวันนี้ ${n} จาก ${MAX_CARDS} แผน">${n}/${MAX_CARDS}</span>${S.staff.length?`<span class="dfree" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}">ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}</span>`:''}</th>`});
+  days.forEach((d,i)=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k).length;const we=isOffDay(d);const hol=holidayOf(k);const a=avail[i];
+    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}" title="แผนของวันนี้ ${n} จาก ${MAX_CARDS} แผน">${n}/${MAX_CARDS}</span>${S.staff.length?`<span class="dfree" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}">ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}</span>`:''}</th>`});
   h+='</tr></thead><tbody>';
   if(!shown.length)h+=`<tr class="no-rows"><td colspan="8">${S.tasks.length?'ไม่มีแผนงานที่ตรงกับตัวกรอง':'ยังไม่มีแผนในสัปดาห์นี้'}${S.canWrite?' · <button type="button" class="lnk" data-action="add">+ เพิ่มแผนงาน</button>':''}</td></tr>`;
   for(const g of shown){
     h+=`<tr><th class="gh" scope="row" style="--c:${safeColor(g.color)}"><span class="gh-name"><i></i>${esc(g.label)}</span><span class="gh-sub">${g.tasks.length} แผน</span></th>`;
-    for(const d of days){const k=ymd(d);const list=g.tasks.filter(t=>t.date===k).sort(byTime);const we=d.getDay()===0||d.getDay()===6;
+    for(const d of days){const k=ymd(d);const list=g.tasks.filter(t=>t.date===k).sort(byTime);const we=isOffDay(d);
       h+=`<td class="${we?'wkend':''}${k===today?' is-today':''}"><div class="wcell">${list.map(t=>wcard(t,conf,ci++)).join('')}${S.canWrite?`<button type="button" class="wadd" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)} วัน${TH_DAY_FULL[d.getDay()]}">+ เพิ่ม</button>`:''}</div></td>`}
     h+='</tr>';
   }
@@ -146,13 +146,13 @@ function planDay(){
    badge(k) returns [text, class, label]; attr is the data attribute the click handler reads; act names the ‹ › actions. */
 function dayStrip(days,sel,badge,attr,scroll){
   const today=ymd(new Date());
-  return `<div class="pd-strip${scroll?' scroll':''}" role="tablist" aria-label="เลือกวัน">${days.map(x=>{const xk=ymd(x);const [bt,bc,bl]=badge(xk);const we=x.getDay()===0||x.getDay()===6;
-    return `<button type="button" role="tab" class="pd-day${xk===sel?' on':''}${xk===today?' td':''}${we?' we':''}" data-${attr}="${xk}" aria-selected="${xk===sel}" aria-label="${esc(TH_DAY_FULL[x.getDay()]+' '+fmtShort(x)+(bl?' · '+bl:''))}"><small>${xk===today?'วันนี้':TH_DAY[x.getDay()]}</small><b>${x.getDate()}</b><span class="pd-n${bc?' '+bc:''}">${bt}</span></button>`}).join('')}</div>`;
+  return `<div class="pd-strip${scroll?' scroll':''}" role="tablist" aria-label="เลือกวัน">${days.map(x=>{const xk=ymd(x);const [bt,bc,bl]=badge(xk);const we=isOffDay(x);const xh=holidayOf(xk);
+    return `<button type="button" role="tab" class="pd-day${xk===sel?' on':''}${xk===today?' td':''}${we?' we':''}${xh?' hol':''}" data-${attr}="${xk}" aria-selected="${xk===sel}"${xh?` title="${esc(xh)}"`:''} aria-label="${esc(TH_DAY_FULL[x.getDay()]+' '+fmtShort(x)+(xh?' · '+xh:'')+(bl?' · '+bl:''))}"><small>${xk===today?'วันนี้':TH_DAY[x.getDay()]}</small><b>${x.getDate()}</b><span class="pd-n${bc?' '+bc:''}">${bt}</span></button>`}).join('')}</div>`;
 }
 function pdHead(d,sub,act){
-  const k=ymd(d);
+  const k=ymd(d);const hol=holidayOf(k);
   return `<div class="pd-head"><button type="button" class="icon-btn" data-action="${act}-prev" aria-label="วันก่อน">‹</button>
-    <div class="pd-title"><b>วัน${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)} ${be(d)}${k===ymd(new Date())?' · วันนี้':''}</b><span>${sub}</span></div>
+    <div class="pd-title"><b>วัน${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)} ${be(d)}${k===ymd(new Date())?' · วันนี้':''}</b>${hol?`<em class="pd-hol">วันหยุด · ${esc(hol)}</em>`:''}<span>${sub}</span></div>
     <button type="button" class="icon-btn" data-action="${act}-next" aria-label="วันถัดไป">›</button></div>`;
 }
 function planDayHtml({days,today,conf,shown,avail,showAv}){
