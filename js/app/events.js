@@ -86,6 +86,7 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.name==='pf-mode'){S.pmode=t.value;remember('bu1wp.pmode',t.value);S.anim='view';render();return}
   if(t.name==='pf-by'){S.pf.by=t.value;S.pf.groups=[];remember('bu1wp.by',t.value);S.anim='view';render();return}
   if(t.name==='v-status'&&editing){const val=t.value;
+    if(val==='notdone'){openNcr(ncrOfTask(editing)?ncrOfTask(editing).id:null,editing);return}/* ไม่เสร็จ is saved together with its NCR */
     if(NEEDS_REASON.has(val)){const w=$('#vReason');w.hidden=false;$('#vReasonLbl').textContent=reasonLabel(val);$('#vReasonSave').textContent=`บันทึกสถานะ “${stTh(val)}”`;
       const ta=$('#v-reason');if(editing.status!==val)ta.value='';setTimeout(()=>ta.focus(),30);return}
     saveViewStatus(val,'');return}

@@ -1,0 +1,66 @@
+/* BU1 Weekly Plan · typography (loads after the other stylesheets, before motion.css)
+   One superfamily for the whole app, the same as the PDF / print reports:
+     IBM Plex Sans Thai — all text, Thai and English, headings included (400 / 500 / 600 / 700)
+     IBM Plex Mono      — codes and counters: Plan No., NCR No., 0/20, times (400 / 500 / 600)
+   Thai inside a mono element (e.g. "ว่าง 2 คน") falls back to IBM Plex Sans Thai, not to a system font.
+   Rules for Thai: no wide letter-spacing (it pulls vowels and tone marks away from their letters),
+   line-height 1.3 or more on headings, 1.6 on body text, small text at least 11.5px. */
+:root{
+  --f-body:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  --f-disp:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono","IBM Plex Sans Thai",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+body{font-family:var(--f-body);font-size:14px;line-height:1.6;text-rendering:optimizeLegibility;font-kerning:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button,input,select,textarea{font-family:inherit}
+textarea{line-height:1.6}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
+
+/* headings: Thai needs room above and below for vowels and tone marks */
+h1,h2,h3,h4{line-height:1.35}
+.page-head h2{font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.dlg-head h2,.acct-wrap .dlg-head h2,.ncr-wrap .dlg-head h2,#dlg .dlg-head h2{font-weight:700;line-height:1.35;letter-spacing:0}
+.panel h2,.panel header h2{line-height:1.4}
+.wk-label strong,.wp-wk b{font-weight:700;letter-spacing:-.005em}
+.mp thead th b{line-height:1.35}
+
+/* numbers line up in tables, tiles and counters */
+.tile .val,.dnum,.num,.md-count,.pcount,.time,.wp-legend b,.nav-badge,.dc-v,.dc-grid span{font-variant-numeric:tabular-nums}
+.tile .val{font-weight:700;letter-spacing:-.01em}
+
+/* codes in mono, slightly tighter so Plan No. fits the cards */
+.mono,.pn,.tcode,.dv-f dd.mono{font-family:var(--f-mono);letter-spacing:0}
+/* these hold mostly Thai (counts with units, Thai dates, the LINE text, pasted names): sans with even digits */
+.cap,.md-count,.copy-area,.bulk textarea,.list .num,.ptab .num,.pick .code,.dc-free span,.lv-legend b small{font-family:var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:0}
+.copy-area{line-height:1.65}
+
+/* micro labels (table heads, field names, group heads) often hold Thai: smaller tracking, readable size */
+.grid .corner,.group-row th,.list thead th,.mini thead th,.edit-table thead th,.section-title,.grid tr.team-row th,
+.tp-group,.tp-group.sel b,.legend-strip .lg-title,.dv-f dt,.mp thead th.nm,.avp-grp>p,.wp thead th.corner{font-size:12px;letter-spacing:.02em;font-weight:600}
+.wp thead th b{letter-spacing:.06em}
+/* Latin-only brand lines keep their tracking */
+.crumb,.wp-brand{letter-spacing:.12em}
+.rpt-org{letter-spacing:.04em}
+.nav-brand .tagline{font-size:11px;letter-spacing:.08em}
+.avp-head b{letter-spacing:0}
+
+/* small text: at least 11.5px (the page is zoomed to 0.8–1.12 of this on laptops and monitors) */
+.wc-per,.today-pill,.chip-flag,.hol-pill,.cap,.sys-tag,.per,.pick .code,.tp-tag small,.avp-row small,.avp-head em,.pd-n,.jr .k,.mp thead th,
+.mc em,.proj-name small,.tile .lbl em,.dc-x,.tr-gh span,.about-v em,.dc-free span,.pcount,.ph .new,.ph.loading{font-size:11.5px}
+.wc-per{line-height:1.7}
+.pn,.tcode{font-size:11.5px}
+.sb-ver{font-size:11.5px}
+.tile .lbl{line-height:1.45}
+.tile .lbl em{letter-spacing:.02em}
+
+/* bold Thai at card size looks heavy: keep the strongest weight for names and titles only */
+.wc-det{font-weight:500}
+.wc-cust{font-weight:600}
+.tchip{font-weight:500}
+.dv-f dd{font-weight:500}
+.reason-box span{font-weight:500}
+
+/* phone bottom bar: 8 items, keep labels legible */
+@media (max-width:760px){
+  .bottom-nav button{font-size:10.5px;letter-spacing:0}
+  .page-head h2{line-height:1.3}
+}

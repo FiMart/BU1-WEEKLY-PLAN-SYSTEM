@@ -65,7 +65,8 @@
  "files":[],"createdAt":"2026-10-05T01:20:00.000Z","updatedAt":"2026-10-05T01:20:00.000Z","updatedBy":"name@company.co.th"}
 ```
 - `period` = `am` | `pm` | `full`
-- `status` = `planned` | `done` | `postponed` | `cancelled`
+- `status` = `planned` | `done` | `notdone` | `postponed` | `cancelled`
+- `ncrId` = id ของ NCR เมื่องานไม่เสร็จ (มีเฉพาะแผนที่มี NCR)
 - `files` = `[{id, name, size, type}]`
 
 **staff:** รายชื่อผู้ปฏิบัติงาน
@@ -100,6 +101,17 @@
 {"id":"flqef45gh6_0","dept_id":"BU1","fileId":"flqef45gh6","i":0,"n":3,"name":"report.pdf","data":"JVBERi0xLjQK…","createdAt":"2026-10-05T02:05:00.000Z","by":"name@company.co.th"}
 ```
 
+**ncr:** รายงานงานที่ไม่สำเร็จ (Non-Conformance Report) เปิดเมื่อแผนงานเป็น "ไม่เสร็จ" แล้วติดตามจนปิด (v3.7.0)
+```json
+{"id":"ncrlqk7m8n9","dept_id":"BU1","ncrNo":"NCR-26-10001","taskId":"tlq3x9k2a1","planNo":"PN-26-10001","date":"2026-10-05",
+ "jobTypeName":"Disconnect","customer":"บริษัท ตัวอย่าง จำกัด","location":"ชลบุรี","staffIds":["slq1a2b3c4"],
+ "category":"หน้างานลูกค้าไม่พร้อม","issue":"ลูกค้าไม่หยุดไลน์ ถอดได้ 2 จาก 4 ตัว","cause":"ลูกค้าเลื่อนหยุดไลน์","correction":"นัดเข้าทำต่อ 7 ต.ค.",
+ "action":"ยืนยันวันหยุดไลน์กับลูกค้าก่อนออกงาน 1 วัน","owner":"สมชาย ใจดี","due":"2026-10-07","state":"open","result":"",
+ "createdAt":"2026-10-05T09:00:00.000Z","createdBy":"name@company.co.th","updatedAt":"2026-10-05T09:00:00.000Z","updatedBy":"name@company.co.th","closedAt":"","closedBy":""}
+```
+- `state` = `open` | `progress` | `closed`
+- `ncrNo` ออกโดยแอป รูปแบบ `NCR-YY-MMNNN` (นับต่อเดือน)
+
 ### 2. ไฟล์ data layer
 
 | ไฟล์ | หน้าที่ |
@@ -124,7 +136,7 @@
 | level | ในแอป BU1 | เขียนได้ (RLS) |
 |---|---|---|
 | admin | ทำได้ทุกอย่าง และจัดการผู้ใช้ BU1 (จัดการข้อมูล › ผู้ใช้งานระบบ) | ทุกตาราง |
-| engineer | เพิ่ม/แก้แผน เปลี่ยนสถานะ แนบไฟล์ แผนกำลังคน · ไม่แก้ข้อมูลหลัก ไม่ลบแผน | tasks (insert/update), projects, photos, filechunks |
+| engineer | เพิ่ม/แก้แผน เปลี่ยนสถานะ แนบไฟล์ แผนกำลังคน · ไม่แก้ข้อมูลหลัก ไม่ลบแผน | tasks (insert/update), projects, photos, filechunks, ncr (insert/update) |
 | ga | ระบุรถ/ทะเบียนในแผนที่ขอรถส่วนกลาง | tasks (update) |
 | sale, viewer | ดูอย่างเดียว | — |
 
@@ -155,12 +167,13 @@
 | projects | ไม่กี่แถวต่อเดือน |
 | photos | ไม่เกิน 8 รูปต่อแผน คาดว่า 50–300 แถวต่อเดือน (แถวละ ~100–300 KB) |
 | filechunks | ไม่เกิน 5 ไฟล์ต่อแผน ไฟล์ละไม่เกิน 4 MB (สูงสุด 23 ชิ้น) |
+| ncr | ไม่กี่แถวต่อเดือน (เฉพาะงานที่ไม่เสร็จ) |
 
 หน้าจอหลักดึงแผนทีละสัปดาห์หรือเดือนตาม `data->>date` และ `schema.sql` สร้าง index ไว้แล้ว ส่วนหน้าค้นหาย้อนหลังดึงแผนทั้งหมดแบบแบ่งหน้า
 
 ### 6. Realtime
 
-**ต้องการ** เพราะทีมเปิดดูแผนพร้อมกันระหว่างวัน ตารางที่ใช้คือ `tasks, staff, resources, projects, config`
+**ต้องการ** เพราะทีมเปิดดูแผนพร้อมกันระหว่างวัน ตารางที่ใช้คือ `tasks, staff, resources, projects, config, ncr`
 
 ถ้ายังไม่เปิด realtime แอปยังใช้งานได้ โดยโหลดใหม่หลังบันทึกของตัวเองและเมื่อกลับมาที่หน้าต่าง
 

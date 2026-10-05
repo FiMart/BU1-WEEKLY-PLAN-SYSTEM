@@ -53,7 +53,7 @@ function wcard(t,conf,i){
     ${det?`<span class="wc-det">${esc(det)}</span>`:''}
     ${ch?`<span class="wc-chips">${ch}</span>`:''}
     <span class="wc-pp">${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest">${esc(g)}</span>`).join('')}</span>
-    ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${t.status==='postponed'?'↻ เลื่อน':'✕ ยกเลิก'}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
+    ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
     ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
     ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
   </button>`;
@@ -109,7 +109,7 @@ function renderPlan(){
       <div class="wp-wk"><b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b><span>สัปดาห์ที่ ${isoWeek(S.week)} · ${esc(weekName(S.week))} · ${isThis?'สัปดาห์นี้':'<button type="button" class="lnk" data-action="thisweek">กลับสัปดาห์นี้</button>'}</span></div>
       <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
       <label class="wp-jump" title="สร้าง / ไปสัปดาห์ของวันที่เลือก"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><input type="date" id="wkJump2" value="${ymd(S.week)}" aria-label="สร้าง / ไปสัปดาห์ของวันที่เลือก"></label></div>
-    <div class="wp-legend">${[['planned','var(--muted)','วางแผน'],['done','var(--good)','เสร็จ'],['postponed','var(--warn)','เลื่อน']].map(([s,c,l])=>`<span><i style="background:${c}"></i>${l} <b data-n="${cnt(s)}">${cnt(s)}</b></span>`).join('')}${confN?`<span class="alert">⚠ จัดชน <b data-n="${confN}">${confN}</b></span>`:''}</div>
+    <div class="wp-legend">${[['planned','var(--muted)','วางแผน'],['done','var(--good)','เสร็จ'],['postponed','var(--warn)','เลื่อน'],['notdone','var(--crit)','ไม่เสร็จ']].filter(([s])=>s!=='notdone'||cnt(s)).map(([s,c,l])=>`<span><i style="background:${c}"></i>${l} <b data-n="${cnt(s)}">${cnt(s)}</b></span>`).join('')}${confN?`<span class="alert">⚠ จัดชน <b data-n="${confN}">${confN}</b></span>`:''}</div>
   </header>`;
   const total=S.tasks.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
   $('#pf-count').textContent=vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`;

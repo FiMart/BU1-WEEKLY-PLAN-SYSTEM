@@ -7,11 +7,12 @@ const PAGES={
   people:['สรุปรายคนรายวัน','ช่วงเวลาของงานแรกและงานสุดท้าย จำนวนงาน และใครว่างในแต่ละวัน ติ๊กชื่อเพื่อลงแผนให้หลายคนพร้อมกัน'],
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
   search:['ค้นหางานย้อนหลัง','ค้นด้วย Plan No. ชื่อลูกค้า หรือชื่อพนักงาน จากแผนทุกสัปดาห์'],
+  ncr:['NCR · งานไม่สำเร็จ','บันทึกงานที่ไม่สำเร็จ (Non-Conformance Report) สาเหตุ การแก้ไข และติดตามจนปิด NCR'],
   dash:['Dashboard','รายงานผลการปฏิบัติงานสำหรับหัวหน้างานและผู้บริหาร รายสัปดาห์ รายเดือน รายไตรมาส และรายปี'],
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
@@ -29,6 +30,8 @@ function render(){
   if(S.view==='search')fillSearch();
   if(S.view==='settings')filterMd();
   if(S.view==='people')syncRowPicks();
+  if(S.view==='ncr')fillNcrTable();
+  {const b=$('#ncrBadge');if(b){const n=S.ncr.filter(x=>x.state!=='closed').length;b.hidden=!n;b.textContent=n}}
   {const on=main.querySelector('.pd-strip.scroll .pd-day.on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}
   if(ready){if(anim&&(S.view==='dash'||S.view==='plan'))countUp(main);S.anim=null;flashIds.clear()}
 }

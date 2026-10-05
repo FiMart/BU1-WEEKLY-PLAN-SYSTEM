@@ -38,16 +38,31 @@ function loadLib(src,glob){
   if(window[glob])return Promise.resolve(window[glob]);
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>window[glob]?res(window[glob]):rej(new Error('lib'));s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)});
 }
+/* the page's Google Fonts (Thai + Latin subsets) as @font-face rules with data URLs, so the PNG uses IBM Plex Sans Thai
+   instead of a system font; '' when the fonts cannot be fetched (the image then falls back to system fonts) */
+let shotFonts=null;
+async function shotFontCSS(){
+  if(shotFonts!=null)return shotFonts;
+  try{
+    const link=[...document.querySelectorAll('link[rel="stylesheet"]')].find(l=>/fonts\.googleapis\.com/.test(l.href));if(!link)return shotFonts='';
+    const css=await (await fetch(link.href)).text();
+    const blocks=css.split('/*').slice(1).map(b=>'/*'+b).filter(b=>/^\/\* (thai|latin) \*\//.test(b));
+    const toData=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)});
+    const out=await Promise.all(blocks.map(async b=>{const m=b.match(/url\((https:[^)]+)\)/);if(!m)return '';const r=await fetch(m[1]);if(!r.ok)throw new Error('font');return b.replace(m[1],await toData(await r.blob()))}));
+    return shotFonts=out.join('\n');
+  }catch(e){return shotFonts=''}
+}
 async function takeShot(btn){
   const el=document.querySelector('#view .wp-panel');if(!el||!downloads)return;
   btn.disabled=true;
   try{
-    const lib=await loadLib('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js','htmlToImage');
+    const [lib,fontCSS]=await Promise.all([loadLib('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js','htmlToImage'),shotFontCSS()]);
     /* capture at zoom 1 with an explicit width (the whole table, not the scrolled window), otherwise the size resolves wrongly and the image comes out blank */
     document.body.style.zoom='1';el.classList.add('capture');
     const sc=el.querySelector('.wp-scroll');const w=Math.ceil(Math.max(el.clientWidth,sc?sc.scrollWidth:0));el.style.width=w+'px';
     const h=Math.ceil(el.scrollHeight);
-    const blob=await lib.toBlob(el,{pixelRatio:2,backgroundColor:getComputedStyle(el).backgroundColor,skipFonts:true,width:w,height:h,
+    const blob=await lib.toBlob(el,{pixelRatio:2,backgroundColor:getComputedStyle(el).backgroundColor,width:w,height:h,
+      ...(fontCSS?{fontEmbedCSS:fontCSS}:{skipFonts:true}),
       filter:n=>!(n.classList&&(n.classList.contains('wadd')||n.classList.contains('wp-jump')||n.classList.contains('pd-add')||n.classList.contains('pd-addday')))});
     if(!blob||blob.size<20000)throw new Error('empty');
     await saveFile(`${fileWeek()}${planDayMode()?'_'+planDay():''}.png`,blob,'บันทึกรูปตารางแล้ว ส่งต่อใน LINE ได้เลย');

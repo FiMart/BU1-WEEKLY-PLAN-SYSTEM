@@ -34,6 +34,7 @@ function wireData(){
   db.collection('staff').onSnapshot(s=>{S.staff=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.staffReady=true;render();migrateRoles()},dbErr);
   db.collection('resources').onSnapshot(s=>{S.resources=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.resReady=true;render()},dbErr);
   db.collection('projects').onSnapshot(s=>{S.projects=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.projReady=true;render()},dbErr);
+  db.collection('ncr').onSnapshot(s=>{S.ncr=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.ncrReady=true;render()},dbErr);
   db.doc('config/main').onSnapshot(s=>{S.cfg=s.exists?s.data():{};S.cfgReady=true;render();migrateRoles()},dbErr);
   subscribeWeek();
 }

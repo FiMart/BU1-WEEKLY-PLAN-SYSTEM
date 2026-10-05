@@ -1,0 +1,79 @@
+/* BU1 Weekly Plan · NCR (งานไม่สำเร็จ): status "ไม่เสร็จ", NCR dialog, NCR page */
+/* status "ไม่เสร็จ" */
+.s-notdone{color:var(--crit)}
+.wc-dot.s-notdone{background:var(--crit)}
+.reason-box.notdone{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));background:var(--crit-soft)}
+.reason-box.notdone b{color:var(--crit-ink)}
+.fstat.notdone{color:var(--crit-ink);background:var(--crit-soft)}
+
+/* NCR box in a plan's drawer */
+.ncr-link{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:10px 14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line));background:color-mix(in srgb,var(--c,var(--accent)) 9%,var(--surface))}
+.ncr-link b{font-size:13.5px;color:var(--ink)}
+.ncr-link span{grid-column:1;font-size:12.5px;color:var(--muted)}
+.ncr-link .btn{grid-column:2;grid-row:1/span 2}
+.ncr-link.warn{--c:var(--crit)}
+.ncr-link.warn b{color:var(--crit-ink)}
+
+/* NCR dialog */
+.ncr-wrap .dlg-head{border-left:5px solid var(--crit)}
+.ncr-wrap .dlg-head h2{font:700 19px/1.25 var(--f-disp)}
+.ncr-body{padding:16px 20px 18px;overflow:auto;display:grid;gap:14px}
+.ncr-plan{display:grid;gap:2px;padding:10px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-2);font-size:13px;color:var(--ink-2)}
+.ncr-plan b{font-size:14.5px;color:var(--ink)}
+.ncr-plan em{font-style:normal;color:var(--crit-ink);font-weight:600;font-size:12.5px;margin-top:2px}
+.ncr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.ncr-grid .field.wide{grid-column:1/-1}
+.ncr-grid textarea{resize:vertical;min-height:64px}
+.req{color:var(--crit)}
+.ncr-meta{margin:0;font-size:12px}
+.ncr-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line-2)}
+.ncr-foot .grow{flex:1}
+
+/* NCR page */
+.ncr-tile{text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line)}
+.ncr-tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.ncr-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ncr-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.ncr-tools input{flex:1 1 220px;min-height:38px}
+.ncr-tab tbody tr{cursor:pointer}
+.ncr-tab tbody tr:hover{background:var(--surface-2)}
+.ncr-tab td.why{min-width:220px;max-width:360px;white-space:pre-line;overflow-wrap:anywhere}
+.ncr-tab td.bad{color:var(--crit-ink);font-weight:600}
+.ncr-tab .sub{display:block;font-size:11.5px;color:var(--muted)}
+.ncr-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap;padding:2px 9px;border-radius:999px;color:var(--ink);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.ncr-st::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+
+/* open-NCR count on the sidebar */
+.nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--crit);color:#fff;font:700 11px/20px var(--f-body);text-align:center}
+body.mini .nav-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;font-size:10px;line-height:16px;margin:0}
+.ncr-tab td:nth-child(1),.ncr-tab td:nth-child(2),.ncr-tab td:nth-child(7){white-space:nowrap}
+
+@media (max-width:760px){
+  .bottom-nav{grid-template-columns:repeat(8,1fr)}
+  .bottom-nav button{padding:7px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ncr-grid{grid-template-columns:1fr}
+  .ncr-body{padding:14px 14px 16px}
+  .ncr-foot{padding-left:14px;padding-right:14px}
+  .ncr-foot .grow{display:none}
+  .ncr-foot #ncrSave{order:-1;flex:1 1 100%}
+  .ncr-foot .btn{flex:1 1 auto}
+  /* NCR list as cards: NCR No. + status · date + job · problem · customer · owner + due */
+  .ncr-tab thead{display:none}
+  .ncr-tab,.ncr-tab tbody{display:block;min-width:0;width:100%}
+  .ncr-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"no st" "dt dt" "job job" "why why" "cust cust" "own due";gap:4px 10px;padding:12px 2px;border-bottom:1px solid var(--line-2)}
+  .ncr-tab tbody td{padding:0;border:0;min-width:0;max-width:none;text-align:left}
+  .ncr-tab td:nth-child(1){grid-area:no;font-weight:600}
+  .ncr-tab td:nth-child(2){grid-area:dt;font-size:12px;color:var(--muted)}
+  .ncr-tab td:nth-child(3){grid-area:job}
+  .ncr-tab td:nth-child(4){grid-area:cust;font-size:12.5px;color:var(--ink-2)}
+  .ncr-tab td:nth-child(5){grid-area:why;min-width:0}
+  .ncr-tab td:nth-child(6){grid-area:own;font-size:12.5px}
+  .ncr-tab td:nth-child(7){grid-area:due;font-size:12.5px}
+  .ncr-tab td:nth-child(8){grid-area:st}
+  .ncr-tab td:nth-child(6)::before{content:"ผู้รับผิดชอบ ";color:var(--muted)}
+  .ncr-tab td:nth-child(7)::before{content:"กำหนด ";color:var(--muted);font-weight:400}
+  .ncr-tab td[colspan]{grid-column:1/-1;grid-row:1}
+  .ncr-tab .sub{display:inline;margin-left:6px}
+  .ncr-link{grid-template-columns:1fr}
+  .ncr-link .btn{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}
+}

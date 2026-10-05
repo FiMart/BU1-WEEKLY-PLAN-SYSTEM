@@ -11,7 +11,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <noscript><link rel="icon" type="image/png" href="assets/favicon-32.png"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Bai+Jamjuree:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/views.css">
 <link rel="stylesheet" href="css/shell.css">
@@ -24,8 +24,10 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/available.css">
 <link rel="stylesheet" href="css/plan-day.css">
+<link rel="stylesheet" href="css/ncr.css">
 <link rel="stylesheet" href="css/responsive.css">
 <link rel="stylesheet" href="css/scale.css">
+<link rel="stylesheet" href="css/type.css">
 <link rel="stylesheet" href="css/motion.css">
 
 <aside class="side" id="side" aria-label="เมนูหลัก">
@@ -38,6 +40,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <button type="button" role="tab" data-view="people" title="สรุปรายคน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg><span>สรุปรายคน</span></button>
     <button type="button" role="tab" data-view="projects" title="กำลังคนโปรเจกต์"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg><span>กำลังคนโปรเจกต์</span></button>
     <button type="button" role="tab" data-view="search" title="ค้นหาย้อนหลัง"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>ค้นหาย้อนหลัง</span></button>
+    <button type="button" role="tab" data-view="ncr" title="NCR · งานไม่สำเร็จ"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4.5V3h6v1.5M12 9v4.5M12 16.6v.1"/></svg><span>NCR</span><b class="nav-badge" id="ncrBadge" hidden></b></button>
     <button type="button" role="tab" data-view="settings" title="จัดการข้อมูลหลัก"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>จัดการข้อมูล</span></button>
     <button type="button" role="tab" data-view="help" title="วิธีใช้"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.8h.01"/></svg><span>วิธีใช้</span></button>
   </nav>
@@ -46,7 +49,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v3.6.0 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v3.8.0 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -61,6 +64,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
   <button type="button" role="tab" data-view="projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg>กำลังคน</button>
   <button type="button" role="tab" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>ค้นหา</button>
   <button type="button" role="tab" data-view="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg>สรุป</button>
+  <button type="button" role="tab" data-view="ncr"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4.5V3h6v1.5M12 9v4.5M12 16.6v.1"/></svg>NCR</button>
   <button type="button" role="tab" data-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>ข้อมูลหลัก</button>
   <button type="button" role="tab" data-view="help"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.8h.01"/></svg>วิธีใช้</button>
 </nav>
@@ -226,6 +230,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <datalist id="dl-locations"></datalist>
 <datalist id="dl-contacts"></datalist>
 <datalist id="dl-guests"></datalist>
+<dialog id="ncrDlg" class="ncr-dlg" aria-labelledby="ncrTitle">
+  <form id="ncrForm" class="ncr-wrap" novalidate>
+    <header class="dlg-head"><div><h2 id="ncrTitle">NCR</h2><p class="dlg-sub" id="ncrSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-ncr-close aria-label="ปิด">✕</button></header>
+    <div class="ncr-body" id="ncrBody"></div>
+    <footer class="ncr-foot"><button type="button" class="btn danger" id="ncrDel" hidden>ลบ NCR</button><button type="button" class="btn" id="ncrPrint" hidden>พิมพ์ใบ NCR</button><span class="grow"></span><button type="button" class="btn ghost" data-ncr-close>ปิด</button><button type="submit" class="btn primary" id="ncrSave">บันทึก NCR</button></footer>
+  </form>
+</dialog>
 <dialog id="acctDlg" class="acct-dlg" aria-labelledby="acctTitle">
   <div class="acct-wrap">
     <header class="dlg-head"><h2>บัญชีของฉัน</h2><span class="grow"></span><button type="button" class="icon-btn" data-acct-close aria-label="ปิด">✕</button></header>
@@ -367,6 +378,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/features/backup.js"></script>
 <script src="js/features/account.js"></script>
 <script src="js/features/about.js"></script>
+<script src="js/features/ncr.js"></script>
 <script src="js/features/export.js"></script>
 <script src="js/app/events.js"></script>
 <script src="js/app/boot.js"></script>

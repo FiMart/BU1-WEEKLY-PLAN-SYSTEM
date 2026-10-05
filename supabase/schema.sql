@@ -7,10 +7,12 @@
 --   * read: departments from core.my_depts() (setof text, so it is wrapped in a sub-select inside policies)
 --   * write: by role = data->>'level' of the person's public.user_roles row for that department
 --       admin    → everything
---       engineer → plans (tasks), projects, photos, attachment chunks · no master data, no deleting plans
+--       engineer → plans (tasks), projects, photos, attachment chunks, NCR · no master data, no deleting plans or NCR
 --       ga       → may update plans (the app lets GA change only the car fields)
 --       sale, viewer → read only
--- Entities: tasks · staff · resources · projects · config · photos · filechunks   (see supabase/HANDOFF.md)
+-- Entities: tasks · staff · resources · projects · config · photos · filechunks · ncr   (see supabase/HANDOFF.md)
+-- v3.7.0 adds bu1wp.ncr (งานไม่เสร็จ / NCR). If the other tables already exist, re-running this file only creates ncr
+-- and re-applies the same policies.
 
 create schema if not exists bu1wp;
 grant usage on schema bu1wp to authenticated;
@@ -38,7 +40,8 @@ declare
     ['projects',   'admin,engineer', 'admin,engineer',    'admin,engineer'],
     ['photos',     'admin,engineer', 'admin,engineer',    'admin,engineer'],
     ['filechunks', 'admin,engineer', 'admin,engineer',    'admin,engineer'],
-    ['staff',      'admin',          'admin',             'admin'],
+    ['ncr',        'admin,engineer', 'admin,engineer',    'admin'],
+    ['staff',     'admin',          'admin',             'admin'],
     ['resources',  'admin',          'admin',             'admin'],
     ['config',     'admin',          'admin',             'admin']
   ];
@@ -77,12 +80,17 @@ end $$ language plpgsql;
 create index if not exists tasks_dept_date  on bu1wp.tasks ((dept_id), (data->>'date'));
 create index if not exists tasks_plan_no    on bu1wp.tasks ((dept_id), (data->>'planNo'));
 create index if not exists chunks_file      on bu1wp.filechunks ((dept_id), (data->>'fileId'));
+create index if not exists ncr_task         on bu1wp.ncr ((dept_id), (data->>'taskId'));
 
 -- realtime (team sees changes live). DELETE payloads carry the primary key, which includes dept_id,
 -- so the app filters dept_id on the client and no replica identity change is needed.
-do $$ begin
-  alter publication supabase_realtime add table bu1wp.tasks, bu1wp.staff, bu1wp.resources, bu1wp.projects, bu1wp.config;
-exception when duplicate_object then null; end $$;
+-- One table per statement, so a table that is already in the publication does not stop the others.
+do $$ declare t text; begin
+  foreach t in array array['tasks','staff','resources','projects','config','ncr'] loop
+    begin execute format('alter publication supabase_realtime add table bu1wp.%I', t);
+    exception when duplicate_object then null; end;
+  end loop;
+end $$;
 
 -- people and roles of BU1 are rows in public.user_roles: id = e-mail (lower case), dept_id = 'BU1',
 -- data = {"id": e-mail, "email": e-mail, "level": admin|engineer|sale|ga|viewer, "name": optional}.

@@ -89,7 +89,8 @@ function renderDrawerView(t){
   const people=(t.staffIds||[]).map(id=>{const s=staffById(id)||{};const n=staffName(id);return `<span class="${confStaff.has(id)?'conf':''}"><span class="avatar" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${s.role?` <small>${esc(s.role)}</small>`:''}</span>`})
     .concat((t.guests||[]).map(g=>`<span class="guest"><span class="avatar" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small></span>`));
   $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span><span class="badge" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
-    ${NEEDS_REASON.has(t.status)?`<div class="reason-box ${esc(t.status)}"><b>${t.status==='postponed'?'↻ เลื่อน':'✕ ยกเลิก'} · เหตุผล / ปัญหาที่หน้างาน</b><span>${t.statusNote?esc(t.statusNote):'<i>ยังไม่ได้ใส่เหตุผล</i>'}</span></div>`:''}
+    ${NEEDS_REASON.has(t.status)?`<div class="reason-box ${esc(t.status)}"><b>${statusFlag(t.status)} · เหตุผล / ปัญหาที่หน้างาน</b><span>${t.statusNote?esc(t.statusNote):'<i>ยังไม่ได้ใส่เหตุผล</i>'}</span></div>`:''}
+    ${t.status==='notdone'||t.ncrId?ncrLinkHtml(t):''}
     <div><button type="button" class="btn sm" data-action="copy-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg> คัดลอกข้อความ</button></div>
     ${conf.length?`<div class="conf-box"><b>⚠ ${esc(confLabel(conf))}</b>${conf.slice(0,4).map(c=>`<span>ชนกับ ${esc(pName(c.other))} · ${esc(typeLabel(c.other))}${c.other.planNo?' '+esc(c.other.planNo):''}${c.other.customer?' · '+esc(c.other.customer):''}</span>`).join('')}</div>`:''}
     <dl class="dv-f">
@@ -198,13 +199,14 @@ form.addEventListener('submit',async e=>{
   try{
     if(photoItems.some(p=>p.isNew)){btn.textContent='กำลังบันทึกรูป…';await persistNewPhotos()}
     if(fileItems.some(f=>f.isNew)){await persistNewFiles((f,i,n)=>{btn.textContent=`อัปโหลดไฟล์ ${i+1}/${n}…`})}
-    const name=v.planNo||typeLabel(v);
+    const name=v.planNo||typeLabel(v);let ncrFor=null;
     if(editing){
       const data=Object.assign({},editing,v,{sample:!!editing.sample,createdAt:editing.createdAt||now},meta());delete data.id;delete data.start;delete data.end;delete data.type;
       await Store.set('tasks',editing.id,data);
       const removed=(editing.photoIds||[]).filter(id=>!v.photoIds.includes(id));if(removed.length)cleanupPhotos(removed);
       const removedF=(editing.fileIds||[]).filter(id=>!v.fileIds.includes(id));if(removedF.length)cleanupFiles(removedF);
       toast(inWeek(v.date)?`บันทึก ${name} แล้ว`:`บันทึก ${name} แล้ว แผนย้ายไป${fmtDay(v.date)}`);
+      if(v.status==='notdone'&&!ncrOfTask(editing)&&can('status'))ncrFor=Object.assign({id:editing.id},data);/* ไม่เสร็จ without an NCR yet */
     }else{
       const dates=datesFor(v);
       for(const d of dates){await Store.set('tasks',newId('t'),Object.assign({},v,{date:d,sample:false,createdAt:now},meta()))}
@@ -212,6 +214,7 @@ form.addEventListener('submit',async e=>{
       toast(dates.length>1?`สร้าง ${name} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:(inWeek(dates[0])?`สร้าง ${name} แล้ว`:`สร้าง ${name} แล้ว ในวัน${fmtDay(dates[0])}`));
     }
     dlg.close();
+    if(ncrFor)openNcr(null,ncrFor);
   }catch(err){formError(errText(err));noteWriteError(err)}
   finally{btn.disabled=false;btn.textContent='บันทึก';checkConflicts()}
 });

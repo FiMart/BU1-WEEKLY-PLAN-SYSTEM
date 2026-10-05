@@ -1,5 +1,5 @@
 /* BU1 Weekly Plan · Field Ops theme: palette, typography, components */
-/* ===== v4 · "Field Ops" redesign: ink-navy rail, cool canvas, Bai Jamjuree + Anuphan, motion ===== */
+/* ===== v4 · "Field Ops" redesign: ink-navy rail, cool canvas, IBM Plex Sans Thai (since v3.8.0), motion ===== */
 :root{
   --bg:#F1F4F9; --band:#F1F4F9; --surface:#FFFFFF; --surface-2:#F6F8FC; --sunken:#EAEEF5; --ink:#0D1626; --ink-2:#39465B; --muted:#68768C;
   --line:#DAE0EA; --line-2:#E8ECF3; --accent:#1D5BE0; --accent-hover:#1649B8; --accent-ink:#FFFFFF; --accent-soft:#E3EBFD; --sky:#0B98BA; --sky-soft:#DFF4FA; --today:#F4F8FF;
@@ -9,9 +9,10 @@
   --shadow:0 4px 10px rgba(13,22,38,.06),0 24px 60px rgba(13,22,38,.18);
   --shadow-card:0 1px 2px rgba(13,22,38,.06),0 1px 1px rgba(13,22,38,.03);
   --r:18px; --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
-  --f-body:"Anuphan","IBM Plex Sans Thai","Leelawadee UI","Noto Sans Thai",system-ui,sans-serif;
-  --f-disp:"Bai Jamjuree","Anuphan","Leelawadee UI",system-ui,sans-serif;
-  --f-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  /* fonts: IBM Plex Sans Thai + IBM Plex Mono (css/type.css has the typography rules) */
+  --f-body:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  --f-disp:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono","IBM Plex Sans Thai",ui-monospace,"Cascadia Mono",Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){

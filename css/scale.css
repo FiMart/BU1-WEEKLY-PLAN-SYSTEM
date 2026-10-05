@@ -17,6 +17,7 @@ dialog form{max-height:calc(100 * var(--vh) - 24px)}
 #dlg.wide{width:min(1000px,calc(100 * var(--vw)))}
 .acct-dlg{width:min(560px,calc(100 * var(--vw) - 24px))}
 .acct-wrap{max-height:calc(100 * var(--vh) - 24px)}
+.ncr-dlg{width:min(760px,calc(100 * var(--vw) - 24px))}
 .lightbox{width:min(1100px,calc(100 * var(--vw) - 24px));max-height:calc(100 * var(--vh) - 24px)}
 .lightbox img{max-height:calc(100 * var(--vh) - 100px)}
 .toast,.selbar{max-width:calc(100 * var(--vw) - 32px)}

@@ -2,7 +2,7 @@
 /* BU1 Weekly Plan · dashboard: an organisation report for a week, month, quarter or year, with A4 print and Excel exports */
 /* ---------- view: dashboard ---------- */
 const DASH_MODES=[['week','รายสัปดาห์'],['month','รายเดือน'],['quarter','รายไตรมาส'],['year','รายปี']];
-const DASH_SEG=[['done','var(--good)'],['planned','var(--muted)'],['postponed','var(--warn)']];
+const DASH_SEG=[['done','var(--good)'],['notdone','var(--crit)'],['planned','var(--muted)'],['postponed','var(--warn)']];
 const DASH_ORG='BU1 Lab · Laboratory Department';
 const f1=n=>(Math.round(n*10)/10).toLocaleString('th-TH',{maximumFractionDigits:1});
 const pct=(a,b)=>b?Math.round(a/b*100):0;
@@ -104,6 +104,9 @@ function dashCompute(){
   }
 
   /* KPIs and key findings in plain text, shared by the page, print and Excel */
+  /* NCR of plans that ended ไม่เสร็จ in this period */
+  const ncrIn=S.ncr.filter(n=>n.date>=from&&n.date<=to).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const ncrOpen=ncrIn.filter(n=>n.state!=='closed').length;const ncrLate=ncrIn.filter(ncrOverdue).length;
   const chg=(cur,prv)=>cur===prv?`เท่ากับ${P.pLabel}`:prv?`${cur>prv?'เพิ่มขึ้น':'ลดลง'} ${Math.abs(cur-prv)} แผน (${Math.abs(Math.round((cur-prv)/prv*100))}%) จาก${P.pLabel}`:`${P.pLabel}ไม่มีแผนงาน`;
   const kpis=[
     {name:'งานทั้งหมด (Total Jobs)',value:`${totalJ} แผน`,note:prevJobs?chg(totalJ,prevJobs.length):''},
@@ -113,6 +116,7 @@ function dashCompute(){
     {name:'กำลังคนที่มีงาน (Active Manpower)',value:`${busyN} / ${active.length} คน`,note:`ว่างทั้งช่วง ${Math.max(0,active.length-busyN)} คน · ลา ${leaveDays} คน-วัน`},
     {name:'อัตราเลื่อน / ยกเลิก (Postpone & Cancel)',value:`${pcRate}%`,note:`เลื่อน ${stc.postponed} · ยกเลิก ${stc.cancelled} จาก ${allJ} แผน`},
     {name:'ประเด็นต้องติดตาม (Open Issues)',value:`${confN+lateN+gaN} รายการ`,note:`จัดชน ${confN} · เลยวันยังไม่ปิด ${lateN} · รอ GA ระบุรถ ${gaN}`},
+    {name:'งานไม่เสร็จ (NCR)',value:`${stc.notdone||0} แผน`,note:`NCR ในช่วงนี้ ${ncrIn.length} รายการ · ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}`},
   ];
   const findings=[];
   findings.push({t:'',s:`มีแผนงานทั้งหมด ${totalJ} แผน${prevJobs?` ${chg(totalJ,prevJobs.length)}`:''} ใช้ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน`});
@@ -121,11 +125,12 @@ function dashCompute(){
   if(types[0])findings.push({t:'',s:`งานหลักคือ ${types[0].label} ${types[0].n} แผน (${pct(types[0].n,totalJ)}%)${types[1]?` รองลงมาคือ ${types[1].label} ${types[1].n} แผน`:''}`});
   if(custList[0])findings.push({t:'',s:`ลูกค้าที่มีงานมากที่สุดคือ ${custList[0][0]} ${custList[0][1]} แผน (${pct(custList[0][1],totalJ)}%) จากลูกค้าทั้งหมด ${cust.size} ราย`});
   const topP=people.find(p=>p.jobs);if(topP)findings.push({t:'',s:`พนักงานที่มีงานมากที่สุดคือ ${topP.s.name} ${topP.jobs} แผน (${f1(topP.wd)} คน-วัน)`});
+  if(stc.notdone||ncrIn.length)findings.push({t:ncrOpen?'bad':'warn',s:`งานไม่เสร็จ ${stc.notdone||0} แผน · NCR ${ncrIn.length} รายการ (ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}) ดูรายละเอียดที่หน้า NCR`});
   if(pcN)findings.push({t:'warn',s:`เลื่อน ${stc.postponed} แผน และยกเลิก ${stc.cancelled} แผน (${pcRate}% ของแผนทั้งหมด) ดูเหตุผลในหัวข้อ 6`});
   const issues=[confN&&`จัดชน ${confN} แผน`,lateN&&`เลยวันแล้วยังไม่ปิด ${lateN} แผน`,gaN&&`รอ GA ระบุรถ ${gaN} แผน`].filter(Boolean);
   findings.push(issues.length?{t:'bad',s:`ประเด็นที่ต้องดำเนินการ: ${issues.join(' · ')}`}:{t:'good',s:'ไม่มีประเด็นค้างที่ต้องดำเนินการ'});
 
-  return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,
+  return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,ncrIn,ncrOpen,ncrLate,
     people,manDays,capDays,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
     pairs,follow,buckets,heat,kpis,findings,custKeyOf};
 }
@@ -157,7 +162,8 @@ function renderDash(){
     ${tile(2,'อัตราใช้กำลังคน','Utilization',num(D.util),'%',esc(D.kpis[2].note),D.util>=90?'warnt':'',D.util)}
     ${tile(3,'กำลังคนที่มีงาน','Active Manpower',num(D.busyN),`/ ${D.active.length} คน`,esc(D.kpis[4].note))}
     ${tile(4,'อัตราเลื่อน / ยกเลิก','Postpone & Cancel',num(D.pcRate),'%',esc(D.kpis[5].note),D.pcN?'warnt':'')}
-    ${tile(5,'ประเด็นต้องติดตาม','Open Issues',(iss?'⚠ ':'')+num(iss),'รายการ',iss?`${esc(D.kpis[6].note)} · <button type="button" class="lnk" data-action="jump-conf" data-target="#dashIssues">ดูรายละเอียด ↓</button>`:'ไม่มีประเด็นค้าง',iss?'alert':'')}
+    ${tile(5,'งานไม่เสร็จ / NCR','Not done · NCR',num(D.stc.notdone||0),'แผน',`${esc(D.kpis[7].note)}${D.ncrIn.length?' · <button type="button" class="lnk" data-view="ncr">เปิดหน้า NCR</button>':''}`,D.ncrOpen?'alert':'')}
+    ${tile(6,'ประเด็นต้องติดตาม','Open Issues',(iss?'⚠ ':'')+num(iss),'รายการ',iss?`${esc(D.kpis[6].note)} · <button type="button" class="lnk" data-action="jump-conf" data-target="#dashIssues">ดูรายละเอียด ↓</button>`:'ไม่มีประเด็นค้าง',iss?'alert':'')}
   </div>`;
   h+=`<section class="panel span-12" style="--d:1"><header><h2>ประเด็นสำคัญ</h2><p>สรุปอัตโนมัติจากแผนงานในช่วงนี้ ใช้ประกอบการรายงานหัวหน้างานและผู้บริหาร</p></header><ul class="findings">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul></section>`;
 
@@ -242,7 +248,7 @@ function dashRows(D){
   const grp=x=>[x.k,x.n,x.jobs,Math.round(x.md*10)/10,x.util];
   return {
     kpi:{sheet:'KPI',title:'ตัวชี้วัดหลัก (KPI)',head:['ตัวชี้วัด','ค่า','รายละเอียด'],rows:D.kpis.map(k=>[k.name,k.value,k.note])},
-    trend:{sheet:'แนวโน้ม',title:`แนวโน้มงานราย${unitName}`,head:[unitName,'รวม (แผน)','เสร็จแล้ว','วางแผน','เลื่อน'],num:[1,2,3,4],rows:D.buckets.map(b=>[b.name,b.n,b.c.done,b.c.planned,b.c.postponed])},
+    trend:{sheet:'แนวโน้ม',title:`แนวโน้มงานราย${unitName}`,head:[unitName,'รวม (แผน)','เสร็จแล้ว','ไม่เสร็จ','วางแผน','เลื่อน'],num:[1,2,3,4,5],rows:D.buckets.map(b=>[b.name,b.n,b.c.done,b.c.notdone,b.c.planned,b.c.postponed])},
     status:{sheet:'สถานะ',title:'สถานะงาน',head:['สถานะ','แผน','%'],num:[1,2],rows:STATUSES.map(s=>[s.th,D.stc[s.id],pct(D.stc[s.id],D.allJ)])},
     role:{sheet:'ตำแหน่ง',title:'ภาระงานตามตำแหน่ง',head:['ตำแหน่ง','คน','แผน','คน-วัน','ใช้กำลังคน (%)'],num:[1,2,3,4],rows:D.roleRows.map(grp)},
     person:{sheet:'รายคน',title:'รายละเอียดรายคน',head:['#','ชื่อ','ตำแหน่ง','งาน (แผน)','คน-วัน','ใช้กำลังคน (%)','เช้า','บ่าย','ทั้งวัน','ลา (วัน)','ว่าง (วัน)','จัดชน','งานที่ทำมากสุด'],num:[0,3,4,5,6,7,8,9,10,11],
@@ -253,6 +259,8 @@ function dashRows(D){
     sale:{sheet:'Sale',title:'งานตาม Sale',head:['Sale','แผน','%'],num:[1,2],rows:D.saleList.map(([k,n])=>[k,n,pct(n,D.totalJ)])},
     conf:{sheet:'จัดชน',title:'แผนงานที่จัดชน',head:['วันที่','แผนงาน','ชนกับแผนงาน','สาเหตุ'],rows:D.pairs.map(p=>[fmtDay(p.a.date),`${pName(p.a)} · ${planTxt(p.a)}`,`${pName(p.b)} · ${planTxt(p.b)}`,
       [p.staff.length?`${p.leave?'ติดลา':'คนชน'}: ${p.staff.map(staffName).join(', ')}`:'',p.veh?`รถที่ใช้งานซ้ำกัน: ${p.veh}`:''].filter(Boolean).join(' · ')])},
+    ncr:{sheet:'NCR',title:'NCR · งานไม่สำเร็จ',head:['NCR No.','วันที่','งาน','Plan No.','ลูกค้า','หมวดปัญหา','ปัญหา','สาเหตุ','การแก้ไข / ป้องกัน','ผู้รับผิดชอบ','กำหนดเสร็จ','สถานะ'],
+      rows:D.ncrIn.map(n=>[n.ncrNo||'',n.date?fmtDay(n.date):'',n.jobTypeName||'',n.planNo||'',n.customer||'',n.category||'',n.issue||'',n.cause||'',[n.correction,n.action].filter(Boolean).join(' / '),n.owner||'',n.due?thDate(n.due):'',ncrStateOf(n).th+(ncrOverdue(n)?' (เกินกำหนด)':'')])},
     follow:{sheet:'ติดตาม',title:'งานที่ต้องติดตาม',head:['วันที่','หัวข้องาน','Plan No.','ลูกค้า','สถานะ','เหตุผล / สิ่งที่ต้องทำ','ทีม'],rows:D.follow.map(t=>[fmtDay(t.date),typeLabel(t),t.planNo||'',t.customer||'',followStat(t),followWhy(t),teamNames(t).join(', ')])},
     plans:{sheet:'แผนงานทั้งหมด',title:'แผนงานทั้งหมดในช่วงนี้',head:['วันที่','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Team Service','Transport','สถานะ'],
       rows:D.all.slice().sort(byTime).map(t=>[t.date,typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),teamNames(t).join(', '),transportText(t),statusText(t)])},
@@ -287,7 +295,7 @@ ${sec(2,'ผลการดำเนินงาน','Performance')}<div class="
 ${sec(3,'กำลังคน','Manpower')}${tbl(T.role)}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,12),rows:T.person.rows.map(r=>r.slice(0,12))}))}
 ${sec(4,'ลูกค้าและประเภทงาน','Customers & Job Types')}<div class="two"><div>${tbl(T.types)}</div><div>${tbl(Object.assign({},T.cust,{title:T.cust.rows.length>15?'งานตามลูกค้า (15 อันดับแรก)':T.cust.title,rows:T.cust.rows.slice(0,15)}))}</div></div>
 ${sec(5,'ทรัพยากรและผู้ประสานงาน','Resources & Sales')}<div class="two"><div>${tbl(T.veh)}</div><div>${tbl(T.sale)}</div></div>
-${sec(6,'ประเด็นที่ต้องติดตาม','Issues & Follow-up')}${tbl(T.conf)}${tbl(T.follow)}
+${sec(6,'ประเด็นที่ต้องติดตาม','Issues & Follow-up')}${tbl(Object.assign({},T.ncr,{head:T.ncr.head.filter((x,i)=>![2,7,8].includes(i)),rows:T.ncr.rows.map(r=>r.filter((x,i)=>![2,7,8].includes(i)))}))}${tbl(T.conf)}${tbl(T.follow)}
 <div class="sig"><div><span></span>ผู้จัดทำ</div><div><span></span>หัวหน้า Lab / ผู้ตรวจสอบ</div><div><span></span>ผู้อนุมัติ</div></div></body></html>`;
   await saveFile(dashFile(P)+'.html',html,'ดาวน์โหลดแล้ว เปิดไฟล์แล้วกด "พิมพ์ / บันทึกเป็น PDF" เลือก A4 แนวตั้ง');
 }
@@ -301,7 +309,7 @@ async function dashXlsx(btn){
     const widths=aoa=>{const w=[];aoa.forEach(r=>r.forEach((v,i)=>{w[i]=Math.max(w[i]||8,Math.min(50,String(v==null?'':v).length+2))}));return w.map(wch=>({wch}))};
     const add=(name,head,body)=>{const ws=X.utils.aoa_to_sheet([title,stamp,[],...head,...body]);ws['!cols']=widths([...head,...body]);X.utils.book_append_sheet(wb,ws,name)};
     add('สรุป',[[T.kpi.title],T.kpi.head],[...T.kpi.rows,[],['ประเด็นสำคัญ'],...D.findings.map(f=>['• '+f.s])]);
-    for(const k of ['trend','status','role','person','types','cust','veh','sale','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
+    for(const k of ['trend','status','role','person','types','cust','veh','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
     await saveFile(dashFile(P)+'.xlsx',X.write(wb,{type:'array',bookType:'xlsx'}));
   }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
   finally{btn.disabled=false;btn.textContent=old}

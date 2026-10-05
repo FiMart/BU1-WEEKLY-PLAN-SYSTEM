@@ -12,7 +12,7 @@
    Traps from the guide that are handled here: list() pages through 1,000-row windows with order + count; remove() sends
    ids 200 at a time (HTTP 414); errors are thrown, never swallowed; realtime is filtered by dept_id on the client
    (a DELETE payload carries only the primary key, so a server-side filter would drop delete events). */
-const DB_ENTITIES=['tasks','staff','resources','projects','config','photos','filechunks'];
+const DB_ENTITIES=['tasks','staff','resources','projects','config','photos','filechunks','ncr'];
 const DB_PAGE=1000,DB_IDS=200,DB_UPSERT=500;
 
 /* table per entity in the app's own schema (default "bu1wp"): id text, dept_id text, data jsonb, updated_at, updated_by */
