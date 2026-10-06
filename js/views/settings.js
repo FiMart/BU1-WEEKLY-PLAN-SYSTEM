@@ -59,14 +59,15 @@ function renderSettings(){
       </tbody></table></div>
       ${can('master')?`<form class="add-row" data-add="vehicle"><input name="group" id="add-rs-group" list="dl-vgroups" placeholder="ประเภทรถ เช่น รถกระบะ" maxlength="60" aria-label="ประเภทรถ" style="flex-basis:150px"><input name="name" id="add-rs-name" class="mono" placeholder="ชื่อรถ / ทะเบียน" maxlength="60" required aria-label="ชื่อรถ / ทะเบียน"><input name="code" id="add-rs-code" placeholder="รายละเอียด เช่น GC · ขจ 8723" maxlength="60" aria-label="รายละเอียด"><button class="btn primary" type="submit">เพิ่มรถ</button></form>`:''}`},
     {id:'types',title:'หัวข้องาน',sub:'ประเภทงาน · ชื่อและสีของแผน',count:types.length,
-     desc:'ชื่อและสีของแผนแต่ละประเภท "ลา" ใช้ตรวจการจัดงานในวันลา "อื่นๆ" ให้พิมพ์หัวข้อเองในแผน สองประเภทนี้ลบไม่ได้',
-     body:`<div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>สี</th><th>ชื่อ</th><th>ใช้งาน</th><th></th></tr></thead><tbody>
+     desc:'ชื่อ สี และสายงานของแผนแต่ละประเภท · สายงานใช้เลือกให้อัตโนมัติตอนลงแผน (Flow Meter / Instrument / ใช้ได้ทั้งสองสาย) · "ลา" ใช้ตรวจการจัดงานในวันลา "อื่นๆ" ให้พิมพ์หัวข้อเองในแผน สองประเภทนี้ลบไม่ได้',
+     body:`<div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>สี</th><th>ชื่อ</th><th>สายงาน</th><th>ใช้งาน</th><th></th></tr></thead><tbody>
       ${types.map((t,i)=>`<tr class="${t.active===false?'inactive':''}"><td><input type="color" class="swatch-in" id="ty-c-${i}" data-type-idx="${i}" data-type-field="color" value="${safeColor(t.color)}"${dis} aria-label="สีของ ${esc(t.name)}"></td>
         <td><input id="ty-n-${i}" data-type-idx="${i}" data-type-field="name" value="${esc(t.name)}" maxlength="40"${dis} aria-label="ชื่อประเภท"></td>
+        <td>${t.id==='leave'?'<span class="hint">—</span>':`<select id="ty-l-${i}" data-type-idx="${i}" data-type-field="line"${dis} aria-label="สายงานของ ${esc(t.name)}">${lineOptions(t.line)}</select>`}</td>
         <td><input type="checkbox" id="ty-a-${i}" data-type-idx="${i}" data-type-field="active"${t.active!==false?' checked':''}${dis||(SYSTEM_TYPES.has(t.id)?' disabled':'')} aria-label="ใช้งาน"></td>
         <td>${SYSTEM_TYPES.has(t.id)?'<span class="sys-tag">ประเภทระบบ</span>':can('master')?`<button type="button" class="btn sm danger" data-action="del-type" data-idx="${i}">ลบ</button>`:''}</td></tr>`).join('')}
       </tbody></table></div>
-      ${can('master')?`<form class="add-row" data-add-type><input type="color" name="color" id="add-ty-color" class="swatch-in" value="#2a78d6" aria-label="สี"><input name="name" id="add-ty-name" placeholder="ชื่อประเภทงานใหม่" maxlength="40" required aria-label="ชื่อประเภท"><button class="btn primary" type="submit">เพิ่มประเภท</button></form>`:''}`},
+      ${can('master')?`<form class="add-row" data-add-type><input type="color" name="color" id="add-ty-color" class="swatch-in" value="#2a78d6" aria-label="สี"><input name="name" id="add-ty-name" placeholder="ชื่อประเภทงานใหม่" maxlength="40" required aria-label="ชื่อประเภท"><select name="line" id="add-ty-line" aria-label="สายงาน">${lineOptions(S.line)}</select><button class="btn primary" type="submit">เพิ่มประเภท</button></form>`:''}`},
     {id:'sales',title:'รายชื่อ Sale',sub:'ชื่อและเบอร์โทร',count:sales().length,
      desc:'ตัวเลือกในช่อง Sale ของแผนงาน เบอร์โทรจะแสดงใต้ช่อง Sale และในไฟล์พิมพ์',
      body:`<div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>ชื่อ Sale</th><th>เบอร์โทร</th><th></th></tr></thead><tbody>

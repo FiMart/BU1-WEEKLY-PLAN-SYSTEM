@@ -23,7 +23,7 @@ function renderBooking(){
 }
 function bkFiltered(all,skipCust){
   const q=norm(S.bk.q);const {from,to,st,veh,cust}=S.bk;
-  return all.filter(t=>!isLeave(t)&&(!from||t.date>=from)&&(!to||t.date<=to)&&(!st||(t.status||'planned')===st)
+  return all.filter(t=>!isLeave(t)&&lineMatch(t)&&(!from||t.date>=from)&&(!to||t.date<=to)&&(!st||(t.status||'planned')===st)
     &&(!veh||norm(t.transport).split(/\s*,\s*/).includes(norm(veh))||norm(t.transport)===norm(veh))
     &&(skipCust||!cust||norm(t.customer)===norm(cust))
     &&(!q||norm([t.planNo,t.customer,t.location,t.areaId&&typeof areaName==='function'?areaName(t.areaId):'',detailOf(t),typeLabel(t)].join(' ')).includes(q)));
@@ -51,7 +51,7 @@ function fillBooking(){
     return `<tr class="bk-row" data-edit="${esc(t.id)}" tabindex="0">
       <td class="num">${esc(t.planNo||'–')}${multi?' <span class="multi-badge" title="Plan No. นี้มีหลายวัน">หลายวัน</span>':''}</td>
       <td>${esc(t.customer||'–')}</td>
-      <td><span class="tdot" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span></td>
+      <td><span class="tdot" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span>${LINE[lineOf(t)]?`<span class="sub">${esc(LINE[lineOf(t)].name)}</span>`:''}</td>
       <td>${esc(t.location||'–')}${t.areaId&&typeof areaName==='function'?`<span class="sub">พื้นที่ ${esc(areaName(t.areaId))}</span>`:''}</td>
       <td class="num"><b>${EN_DAY[d.getDay()]}</b> ${esc(fmtShort(d))} ${String(be(d)).slice(-2)}<span class="sub">${esc(pName(t))}${t.timeNote?' · '+esc(t.timeNote):''}</span></td>
       <td>${ch||esc(t.transport||'–')}</td>
@@ -59,7 +59,7 @@ function fillBooking(){
       <td class="booker" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
       <td><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
     ||`<tr><td colspan="9" class="hint" style="padding:20px 12px">ไม่พบงานที่ตรงกับตัวกรอง</td></tr>`;
-  $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)).length.toLocaleString('th-TH')} แผนในระบบ · กดแถวเพื่อเปิดแผน`;
+  $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)&&lineMatch(t)).length.toLocaleString('th-TH')} แผน${S.line?` ${lineName()}`:''}ในระบบ · กดแถวเพื่อเปิดแผน`;
 }
 document.addEventListener('input',e=>{if(e.target.id==='bk-q'){S.bk.q=e.target.value;fillBooking()}});
 document.addEventListener('change',e=>{const t=e.target;

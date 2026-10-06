@@ -86,16 +86,17 @@ function renderFiles(){
 function loadFiles(t){fileItems=(t&&t.files||[]).map(f=>Object.assign({},f,{isNew:false}));renderFiles()}
 const fileMeta=()=>fileItems.map(f=>({id:f.id,name:f.name,size:f.size,type:f.type||''}));
 const toB64=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)};
-async function persistNewFiles(onProg){
+/* one file's bytes as chunks filechunks/<id>_<i> (also used by the Service Report, js/dialog/report.js) */
+async function putFileChunks(f,onProg){
   const now=new Date().toISOString();
-  for(const f of fileItems.filter(x=>x.isNew)){
-    const u8=new Uint8Array(await f.blob.arrayBuffer());const n=Math.max(1,Math.ceil(u8.length/CHUNK));
-    for(let i=0;i<n;i++){if(onProg)onProg(f,i,n);await Store.set('filechunks',`${f.id}_${i}`,{fileId:f.id,i,n,name:f.name,data:toB64(u8.subarray(i*CHUNK,(i+1)*CHUNK)),createdAt:now,by:S.me||null})}
-    f.isNew=false;delete f.blob;
-  }
+  const u8=new Uint8Array(await f.blob.arrayBuffer());const n=Math.max(1,Math.ceil(u8.length/CHUNK));
+  for(let i=0;i<n;i++){if(onProg)onProg(f,i,n);await Store.set('filechunks',`${f.id}_${i}`,{fileId:f.id,i,n,name:f.name,data:toB64(u8.subarray(i*CHUNK,(i+1)*CHUNK)),createdAt:now,by:S.me||null})}
 }
-async function downloadFile(id,btn){
-  const f=fileItems.find(x=>x.id===id)||{name:'file'};
+async function persistNewFiles(onProg){
+  for(const f of fileItems.filter(x=>x.isNew)){await putFileChunks(f,onProg);f.isNew=false;delete f.blob}
+}
+async function downloadFile(id,btn,meta){
+  const f=meta||fileItems.find(x=>x.id===id)||{name:'file'};
   if(!downloads){toast('หน้านี้ดาวน์โหลดไฟล์ไม่ได้ในมุมมองนี้ เปิดผ่านลิงก์ claude.ai');return}
   if(btn){btn.disabled=true;btn.textContent='กำลังโหลด…'}
   try{

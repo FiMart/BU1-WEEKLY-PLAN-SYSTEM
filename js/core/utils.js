@@ -23,12 +23,20 @@ const isWorking=t=>t.status!=='cancelled';
 function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.getDate()} ${EN_MON[sun.getMonth()]} ${String(sun.getFullYear()).slice(-2)}`}
 
 /* ---------- master data lookups ---------- */
-function jobTypes(){const l=S.cfg.jobTypes;return Array.isArray(l)&&l.length?l:DEFAULT_TYPES}
+/* saved types from before สายงาน existed (no line key at all) take the default type's line; '' = both lines */
+function jobTypes(){const l=S.cfg.jobTypes;if(!(Array.isArray(l)&&l.length))return DEFAULT_TYPES;
+  return l.map(t=>{if(!t||t.line!==undefined)return t;const d=DEFAULT_TYPES.find(x=>x.id===t.id);return d&&d.line?Object.assign({},t,{line:d.line}):t})}
+const lineOptions=cur=>`<option value="">ใช้ได้ทั้งสองสาย</option>`+LINES.map(l=>`<option value="${l.id}"${cur===l.id?' selected':''}>${esc(l.name)}</option>`).join('');
 const activeTypes=()=>jobTypes().filter(t=>t.active!==false);
 const typeIdOf=t=>t.jobType||LEGACY[t.type]||'other';
 function typeOf(t){const id=typeIdOf(t);return jobTypes().find(x=>x.id===id)||DEFAULT_TYPES.find(x=>x.id===id)||{id,name:t.jobTypeName||id,color:'#8a979c'}}
 function typeLabel(t){const ty=typeOf(t);if(ty.id==='other')return String(t.jobTypeOther||'').trim()||LEGACY_NAME[t.type]||ty.name;return ty.name}
 const isLeave=t=>typeIdOf(t)==='leave';
+/* สายงาน of a plan: its own, else its job type's; '' = not set (leave never has one) */
+const lineOf=t=>isLeave(t)?'':LINE[t.line]?t.line:LINE[typeOf(t).line]?typeOf(t).line:'';
+/* the open tab (S.line) shows its own plans, plans without a line, and leave (people are shared) */
+const lineMatch=t=>!S.line||!lineOf(t)||lineOf(t)===S.line;
+const lineName=()=>S.line&&LINE[S.line]?LINE[S.line].name:'';
 function periodOf(t){
   if(PERIOD[t.period])return t.period;
   if(t.start&&t.end){const a=toMin(t.start)<720,b=toMin(t.end)>780;return a&&b?'full':a?'am':'pm'}

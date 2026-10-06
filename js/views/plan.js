@@ -17,7 +17,7 @@ function planGroups(list){
   if(leave)out.push(leave);
   return out;
 }
-const planMatch=t=>{const q=norm(S.pf.q);return (!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
+const planMatch=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
 let gchipHtml='';
 function renderChips(){
   let html='';
@@ -49,7 +49,7 @@ function wcard(t,conf,i){
   const sub=[t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · ');
   const det=headline(t);const ch=transportChip(t.transport,t);
   return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
-    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
+    <span class="wc-top">${lineTag(t)}<span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${reportsOf(t).length?`<span class="pcount sr" title="มี Service Report ${reportsOf(t).length} ไฟล์">${REP_ICON}${reportsOf(t).length}</span>`:''}${calChip(t)}${insChip(t)}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
     <span class="wc-sub"><span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${t.location?`<span class="wc-loc">L : <b>${esc(t.location)}</b></span>`:''}
     ${t.customer&&S.pf.by!=='cust'?`<span class="wc-cust">${esc(t.customer)}</span>`:''}
@@ -91,9 +91,30 @@ function availDay(d,a,today){
   if(a.leave)h+=`<p class="avp-leave">ลาทั้งวัน ${a.leave} คน</p>`;
   return h+'</div>';
 }
+/* week view: a table laid out like the board above it (the same 140 px label column and seven equal day columns),
+   rows = ตำแหน่ง, cells = the people of that position who are free that day (user, 6 Oct 2026: "สมส่วนกับหน้าเว็บ") */
+function availTable(days,avail,today){
+  const order=positions();const color=role=>{const ci=order.indexOf(role);return POS_COLORS[(ci>=0?ci:order.length)%POS_COLORS.length]};
+  const union=new Map();avail.forEach(a=>[...a.full,...a.am,...a.pm].forEach(s=>union.set(s.id,s)));
+  const roles=[...roleGroups([...union.values()]).keys()];
+  const byDay=avail.map(a=>({g:roleGroups([...a.full,...a.am,...a.pm]),per:new Map([...a.full.map(s=>[s.id,'full']),...a.am.map(s=>[s.id,'am']),...a.pm.map(s=>[s.id,'pm'])])}));
+  const team=role=>S.staff.filter(s=>s.active!==false&&roleOf(s)===role).length;
+  const cls=d=>{const k=ymd(d);return `${isOffDay(d)?'wkend':''}${k===today?' is-today':''}`};
+  const head=days.map((d,i)=>{const k=ymd(d);const a=avail[i];const hol=holidayOf(k);const n=a.full.length+a.am.length+a.pm.length;
+    return `<th class="${cls(d)}" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<i class="${n?'':'zero'}">${n} ว่าง${a.am.length+a.pm.length?` <small>ครึ่งวัน ${a.am.length+a.pm.length}</small>`:''}</i></th>`}).join('');
+  const row=role=>`<tr style="--pc:${color(role)}"><th scope="row" class="avp-role"><b>${esc(role)}</b><small>${team(role)} คน</small></th>${days.map((d,i)=>{const k=ymd(d);const list=byDay[i].g.get(role)||[];
+    return `<td class="${cls(d)}">${list.length?list.map(s=>{const p=byDay[i].per.get(s.id);const tag=p==='am'?'ว่างเช้า':p==='pm'?'ว่างบ่าย':'';
+      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}${tag?`<small>${tag}</small>`:''}</span>`;
+      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}">${inner}</button>`:`<div class="avp-row">${inner}</div>`}).join(''):'<span class="avp-dash" aria-label="ไม่มีคนว่าง">–</span>'}</td>`}).join('')}</tr>`;
+  const leave=avail.some(a=>a.leave)?`<tr class="avp-lv"><th scope="row" class="avp-role"><b>ลาทั้งวัน</b></th>${days.map((d,i)=>`<td class="${cls(d)}">${avail[i].leave?`${avail[i].leave} คน`:''}</td>`).join('')}</tr>`:'';
+  return `<div class="avp-scroll"><table class="avp-tbl"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup>
+    <thead><tr><th class="corner">ตำแหน่ง \\ วัน</th>${head}</tr></thead>
+    <tbody>${roles.length?roles.map(row).join(''):`<tr><td colspan="${days.length+1}" class="avp-none">ไม่มีคนว่างในสัปดาห์นี้</td></tr>`}${leave}</tbody></table></div>`;
+}
 function availPanel(days,avail,today){
-  return `<section class="avp" aria-label="ผู้ปฏิบัติงานที่ว่าง"><header class="avp-top">${PERSON_ICON}<div><h2>ผู้ปฏิบัติงานที่ว่าง (Available)</h2><p>คนที่ยังไม่ถูกจัดงานในแต่ละวัน — ใช้มอบหมายงานเพิ่ม${S.canWrite?' · กดชื่อเพื่อลงแผนให้คนนั้น':''}</p></div></header>
-    <div class="avp-scroll"><div class="avp-grid" style="--n:${days.length}">${days.map((d,i)=>availDay(d,avail[i],today)).join('')}</div></div></section>`;
+  const week=days.length>1;
+  return `<section class="avp${week?' wk':''}" aria-label="ผู้ปฏิบัติงานที่ว่าง"><header class="avp-top">${PERSON_ICON}<div><h2>ผู้ปฏิบัติงานที่ว่าง (Available)</h2><p>คนที่ยังไม่ถูกจัดงานในแต่ละวัน — ใช้มอบหมายงานเพิ่ม${S.canWrite?' · กดชื่อเพื่อลงแผนให้คนนั้น':''}</p></div></header>
+    ${week?availTable(days,avail,today):`<div class="avp-scroll"><div class="avp-grid" style="--n:${days.length}">${days.map((d,i)=>availDay(d,avail[i],today)).join('')}</div></div>`}</section>`;
 }
 function renderPlan(){
   if(notReady())return loading('plan');
@@ -101,28 +122,30 @@ function renderPlan(){
   const days=Array.from({length:7},(_,i)=>addDays(S.week,i));const today=ymd(new Date());const conf=allConflicts();
   const base=S.tasks.filter(planMatch);const groups=planGroups(base);
   const shown=S.pf.groups.length?groups.filter(g=>S.pf.groups.includes(g.key)):groups;
-  const work=S.tasks.filter(t=>isWorking(t)&&!isLeave(t));const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
-  const confN=S.tasks.filter(t=>conf.has(t.id)).length;
+  /* counts follow the open สายงาน tab (LT); who is free and clashes stay across both lines (one team) */
+  const LT=S.tasks.filter(lineMatch);
+  const work=LT.filter(t=>isWorking(t)&&!isLeave(t));const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
+  const confN=LT.filter(t=>conf.has(t.id)).length;
   const last=days[6];const isThis=ymd(S.week)===ymd(mondayOf(new Date()));
   let ci=0;
   let h=S.staff.length?'':`<div class="banner warn"><b>ยังไม่มีรายชื่อพนักงาน</b> เพิ่มรายชื่อก่อนเพื่อเลือก Team Service ในแผน <button type="button" class="lnk" data-go="settings">ไปที่จัดการข้อมูล</button></div>`;
-  h+=`<section class="wp-panel" aria-label="แผนงานสัปดาห์ ${esc(weekName(S.week))}"><header class="wp-head">
-    <div class="wp-brand">BU1 · Weekly Planning</div>
+  h+=`<section class="wp-panel" aria-label="แผนงานสัปดาห์ ${esc(weekName(S.week))}${S.line?' · '+esc(lineName()):''}"><header class="wp-head">
+    <div class="wp-brand">BU1 · Weekly Planning${S.line?`<span class="wp-line" style="--lc:${LINE[S.line].color}">${esc(lineName())}</span>`:''}</div>
     <div class="wp-nav"><button type="button" class="icon-btn" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
       <div class="wp-wk"><b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b><span>สัปดาห์ที่ ${isoWeek(S.week)} · ${esc(weekName(S.week))} · ${isThis?'สัปดาห์นี้':'<button type="button" class="lnk" data-action="thisweek">กลับสัปดาห์นี้</button>'}</span></div>
       <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
       <label class="wp-jump" title="สร้าง / ไปสัปดาห์ของวันที่เลือก"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><input type="date" id="wkJump2" value="${ymd(S.week)}" aria-label="สร้าง / ไปสัปดาห์ของวันที่เลือก"></label></div>
     <div class="wp-legend">${[['planned','var(--muted)','วางแผน'],['done','var(--good)','เสร็จ'],['postponed','var(--warn)','เลื่อน'],['notdone','var(--crit)','ไม่เสร็จ']].filter(([s])=>s!=='notdone'||cnt(s)).map(([s,c,l])=>`<span><i style="background:${c}"></i>${l} <b data-n="${cnt(s)}">${cnt(s)}</b></span>`).join('')}${confN?`<span class="alert">⚠ จัดชน <b data-n="${confN}">${confN}</b></span>`:''}</div>
   </header>`;
-  const total=S.tasks.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
+  const total=LT.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
   $('#pf-count').textContent=vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`;
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
-    return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+(showAv?availPanel([days[i]],[avail[i]],today):'')}
+    return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+calWeekHtml()+insWeekHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
-  days.forEach((d,i)=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k).length;const we=isOffDay(d);const hol=holidayOf(k);const a=avail[i];
+  days.forEach((d,i)=>{const k=ymd(d);const n=LT.filter(t=>t.date===k).length;const we=isOffDay(d);const hol=holidayOf(k);const a=avail[i];
     h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}" title="แผนของวันนี้ ${n} จาก ${MAX_CARDS} แผน">${n}/${MAX_CARDS}</span>${S.staff.length?`<span class="dfree" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}">ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}</span>`:''}</th>`});
   h+='</tr></thead><tbody>';
-  if(!shown.length)h+=`<tr class="no-rows"><td colspan="8">${S.tasks.length?'ไม่มีแผนงานที่ตรงกับตัวกรอง':'ยังไม่มีแผนในสัปดาห์นี้'}${S.canWrite?' · <button type="button" class="lnk" data-action="add">+ เพิ่มแผนงาน</button>':''}</td></tr>`;
+  if(!shown.length)h+=`<tr class="no-rows"><td colspan="8">${LT.length?'ไม่มีแผนงานที่ตรงกับตัวกรอง':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในสัปดาห์นี้`:'ยังไม่มีแผนในสัปดาห์นี้'}${S.canWrite?' · <button type="button" class="lnk" data-action="add">+ เพิ่มแผนงาน</button>':''}</td></tr>`;
   for(const g of shown){
     h+=`<tr><th class="gh" scope="row" style="--c:${safeColor(g.color)}"><span class="gh-name"><i></i>${esc(g.label)}</span><span class="gh-sub">${g.tasks.length} แผน</span></th>`;
     for(const d of days){const k=ymd(d);const list=g.tasks.filter(t=>t.date===k).sort(byTime);const we=isOffDay(d);
@@ -130,7 +153,8 @@ function renderPlan(){
     h+='</tr>';
   }
   h+='</tbody></table></div></section>';
-  /* ผู้ปฏิบัติงานที่ว่าง sits below the board */
+  /* Flow Meter: the week's "Weekly plan calibration" sheet, then ผู้ปฏิบัติงานที่ว่าง below the board */
+  h+=calWeekHtml()+insWeekHtml();
   if(showAv)h+=availPanel(days,avail,today);
   return h;
 }
@@ -160,11 +184,11 @@ function pdHead(d,sub,act){
 }
 function planDayHtml({days,today,conf,shown,avail,showAv}){
   const k=planDay();const idx=days.findIndex(d=>ymd(d)===k);const d=days[idx];const a=avail[idx];
-  const n=S.tasks.filter(t=>t.date===k).length;
-  let h=dayStrip(days,k,xk=>{const xn=S.tasks.filter(t=>t.date===xk).length;return [xn,xn>MAX_CARDS?'over':!xn?'zero':'',`${xn} แผน`]},'pday');
+  const LT=S.tasks.filter(lineMatch);const n=LT.filter(t=>t.date===k).length;
+  let h=dayStrip(days,k,xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,xn>MAX_CARDS?'over':!xn?'zero':'',`${xn} แผน`]},'pday');
   h+=pdHead(d,`<span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}">${n}/${MAX_CARDS}</span> แผน${S.staff.length?` · ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
   const groups=shown.map(g=>({g,list:g.tasks.filter(t=>t.date===k).sort(byTime)})).filter(x=>x.list.length);
-  if(!groups.length)h+=`<div class="pd-empty">${n?'ไม่มีแผนงานที่ตรงกับตัวกรองในวันนี้':'ยังไม่มีแผนในวันนี้'}</div>`;
+  if(!groups.length)h+=`<div class="pd-empty">${n?'ไม่มีแผนงานที่ตรงกับตัวกรองในวันนี้':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในวันนี้`:'ยังไม่มีแผนในวันนี้'}</div>`;
   let ci=0;
   for(const {g,list} of groups){
     const add=S.canWrite?`<button type="button" class="btn sm pd-add" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)}">+ เพิ่ม</button>`:'';

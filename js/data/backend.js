@@ -17,6 +17,9 @@
      staff      → public.people {id, name, position}       resources → public.cranes {id, name, plate, type, vendor}
      config     → public.app_settings id "bu1wp_config"     (job types, positions, Sale list)
      ncr        → public.app_settings id "bu1wp_ncr:<id>"   (one row per NCR; no own table yet — see REQUEST-TO-BU2)
+     mpfm       → public.app_settings id "bu1wp_mpfm:<id>"  (Master Plan Flow Meter, one row per meter, data.month = 'YYYY-MM';
+                  read one month at a time — user, 6 Oct 2026; no own table, like NCR)
+     mpins      → public.app_settings id "bu1wp_mpins:<id>" (Master Plan Instrument, one row per request, same month reading)
      photos     → public.app_settings id "bu1wp_photo:<id>" (resized JPEG as a data URL, ~0.2–0.4 MB a row)
      filechunks → public.app_settings id "bu1wp_file:<fileId>_<n>" (a file in base64 pieces of 180 kB; ≤ 4 MB a file)
        user decision 6 Oct 2026: keep attachments here until BU2 creates a Storage bucket for BU1 plan files (stopgap)
@@ -34,10 +37,10 @@ const CENTRAL_TYPES=[
   {id:'site_survey',name:'Site Survey',color:'#64748b'},
 ];
 /* entity -> public tables it is read from (for realtime) */
-const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],projects:[],photos:[],filechunks:[]};
+const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
 /* entities kept as rows of app_settings, one row per record, id = prefix + record id */
-const KV_PREFIX={ncr:NCR_PREFIX,photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
+const KV_PREFIX={ncr:NCR_PREFIX,mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
 
@@ -89,14 +92,14 @@ function supabaseBackend(client,{dept}){
     const cranes=asList(d.crane).map(id=>craneName(lk.cranes.get(id))||id);
     return {id:r.id,date:weekDate(d.week||r.week,d.day),
       period:d.session==='morning'?'am':d.session==='afternoon'?'pm':'full',
-      jobType:x.jobType||d.jobType||'routine',jobTypeOther:x.jobTypeOther||'',jobTypeName:x.jobTypeName||'',
+      jobType:x.jobType||d.jobType||'routine',jobTypeOther:x.jobTypeOther||'',jobTypeName:x.jobTypeName||'',line:x.line||'',
       planNo:d.jobNo||'',customer:CENTRAL_CUSTOMERS[d.customer]||d.customer||'',location:d.location||'',areaId:d.areaId||'',
       timeNote:x.timeNote!=null?x.timeNote:[d.startTime,d.endTime].filter(Boolean).join('–')+(d.startTime?' น.':''),
       detail,request:x.request||'',transport:x.transport!=null?x.transport:cranes.join(', '),
       needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaCar:d.gaCar||null,
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
-      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),sharedTeam:!!d.allowSharedTeam,
+      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
   }
@@ -140,7 +143,9 @@ function supabaseBackend(client,{dept}){
   /* app_settings records: one by id, a file's chunks by fileId, or all of the entity */
   async function listKv(entity,f){
     const p=KV_PREFIX[entity];const fileId=entity==='filechunks'&&(f.eq||[]).find(([k])=>k==='fileId');
-    const narrow=f.id!=null?q=>q.eq('id',p+f.id):fileId?q=>q.like('id',p+fileId[1]+'_%'):q=>q.like('id',p+'%');
+    /* Master Plan: only the asked month (data.month) is read, not the whole year */
+    const month=(entity==='mpfm'||entity==='mpins')&&(f.eq||[]).find(([k])=>k==='month');
+    const narrow=f.id!=null?q=>q.eq('id',p+f.id):fileId?q=>q.like('id',p+fileId[1]+'_%'):month?q=>q.like('id',p+'%').eq('data->>month',String(month[1])):q=>q.like('id',p+'%');
     return (await selectAll('app_settings',narrow)).map(r=>Object.assign({},r.data||{},{id:r.id.slice(p.length)}));
   }
 
@@ -148,11 +153,14 @@ function supabaseBackend(client,{dept}){
   const isLeaveTask=t=>t.jobType==='leave';
   const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
-    return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',
+    return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */
       detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
+      calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */
+      insItems:asList(t.insItems),/* Weekly plan instrument rows + certificates (js/features/instrument.js) */
+      reports:asList(t.reports),/* Service Report files (js/dialog/report.js), bytes in app_settings like the files above */
       createdAt:t.createdAt||(old&&old.createdAt)||'',createdBy:t.createdBy||(old&&old.createdBy)||null,updatedAt:t.updatedAt||'',updatedBy:t.updatedBy||null}));
   }
   /* transport text -> crane ids, when every name matches a registered vehicle (plate or name) */
@@ -269,7 +277,7 @@ function supabaseBackend(client,{dept}){
       tables.forEach(table=>ch.on('postgres_changes',{event:'*',schema:'public',table},p=>{
         const r=(p.new&&p.new.dept_id)?p.new:(p.old||{});if(r.dept_id!==undefined&&r.dept_id!==dept)return;
         if(table==='cranes'||table==='equipment')lookups=null;
-        if(table==='app_settings'){const id=String(r.id||'');if(entity==='config'&&id!==CFG_ID)return;if(entity==='ncr'&&!id.startsWith(NCR_PREFIX))return}
+        if(table==='app_settings'){const id=String(r.id||'');if(entity==='config'&&id!==CFG_ID)return;if(KV_PREFIX[entity]&&!id.startsWith(KV_PREFIX[entity]))return}
         cb(p);
       }));
       ch.subscribe();

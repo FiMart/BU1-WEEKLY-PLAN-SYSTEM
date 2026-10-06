@@ -72,7 +72,24 @@ async function addVehicle(btn){
   finally{btn.disabled=false}
 }
 function syncSaleTel(){const tel=saleTel($('#f-sale').value);$('#f-saleTel').textContent=tel?`โทร ${tel}`:'';$('#f-saleTel').hidden=!tel}
+/* job types grouped by สายงาน (Flow Meter, Instrument, then the ones used by both) once any type has a line */
 function typeOptions(cur,blank){
   const l=activeTypes().slice();if(cur&&!l.some(t=>t.id===cur)){const t=jobTypes().find(x=>x.id===cur);l.push(t||{id:cur,name:cur})}
-  return (blank?`<option value="">${blank}</option>`:'')+l.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+  const opt=t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`;
+  const head=blank?`<option value="">${blank}</option>`:'';
+  if(!l.some(t=>LINE[t.line]))return head+l.map(opt).join('');
+  return head+LINES.map(ln=>{const g=l.filter(t=>t.line===ln.id);return g.length?`<optgroup label="${esc(ln.name)}">${g.map(opt).join('')}</optgroup>`:''}).join('')
+    +(()=>{const g=l.filter(t=>!LINE[t.line]);return g.length?`<optgroup label="ใช้ได้ทั้งสองสาย">${g.map(opt).join('')}</optgroup>`:''})();
 }
+/* สายงาน field of the plan form: hidden for leave; a job type that belongs to one line selects it.
+   Not required (user, 6 Oct 2026): "ทั้งสองสาย" (value '') = no line, the plan shows on both tabs */
+$('#f-line').innerHTML=LINES.concat([LINE_BOTH]).map(l=>`<label style="--lc:${l.color}"><input type="radio" name="f-line" id="f-line-${l.id||'both'}" value="${l.id}"><span><span class="ls-ico">${l.icon}</span><span class="ls-t"><b>${esc(l.short)}</b><small>${esc(l.id?l.tag:'ไม่ระบุสาย')}</small></span></span></label>`).join('');
+const curLine=()=>($('#f-type').value==='leave'?'':((document.querySelector('input[name="f-line"]:checked')||{}).value||''));
+function setLine(id){const v=LINE[id]?id:'';document.querySelectorAll('input[name="f-line"]').forEach(r=>{r.checked=r.value===v})}
+function syncLineField(fromType){
+  const leave=$('#f-type').value==='leave';document.querySelectorAll('#formFields .line-row').forEach(el=>{el.hidden=leave});
+  const ty=jobTypes().find(x=>x.id===$('#f-type').value);const own=ty&&LINE[ty.line]?ty.line:'';
+  if(fromType&&own)setLine(own);
+  $('#lblLine small').textContent=own?`หัวข้องานนี้เป็นของ ${LINE[own].short}`:'ไม่บังคับ · หัวข้องานนี้ใช้ได้ทั้งสองสาย';
+}
+$('#f-type').addEventListener('change',()=>syncLineField(true));

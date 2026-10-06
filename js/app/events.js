@@ -14,6 +14,7 @@ document.addEventListener('click',e=>{
   const go=t.closest('[data-go]');if(go){goView(go.dataset.go);window.scrollTo(0,0);return}
   if(!t.closest('#copyMenu'))$('#copyMenu').open=false;
   const md=t.closest('[data-md]');if(md){if(S.md!==md.dataset.md){S.md=md.dataset.md;S.mdq='';remember('bu1wp.md',S.md);S.anim='view';render();const b=$('#view .md-body');if(b&&window.innerWidth<=900)b.scrollIntoView({block:'start'})}return}
+  const ln=t.closest('[data-line-tab]');if(ln){const v=ln.dataset.lineTab;if(S.line!==v){S.line=v;S.pf.groups=[];remember('bu1wp.line',v);S.anim='view';render()}return}
   const gc=t.closest('[data-gchip]');if(gc){const k=gc.dataset.gchip;S.pf.groups=!k?[]:S.pf.groups.includes(k)?S.pf.groups.filter(x=>x!==k):S.pf.groups.concat(k);S.anim='view';render();return}
   const gw=t.closest('[data-goweek]');if(gw){S.week=mondayOf(parseD(gw.dataset.goweek));S.view='plan';rememberView('plan');S.anim='view';subscribeWeek();window.scrollTo(0,0);return}
   const pe=t.closest('[data-proj-edit]');if(pe){S.projEdit=pe.dataset.projEdit;render();setTimeout(()=>{const f=$('#pj-name');if(f){f.focus();f.scrollIntoView({block:'center'})}},30);return}
@@ -32,7 +33,7 @@ document.addEventListener('click',e=>{
     case 'mprev':setMonth(new Date(S.month.getFullYear(),S.month.getMonth()-1,1));break;
     case 'mnext':setMonth(new Date(S.month.getFullYear(),S.month.getMonth()+1,1));break;
     case 'mthis':setMonth(new Date());break;
-    case 'add':if(S.canWrite)openTask(null,{date:a.dataset.date,type:a.dataset.type,customer:a.dataset.cust,period:a.dataset.period,staff:[...new Set([...(a.dataset.staff?[a.dataset.staff]:[]),...(S.view==='people'?S.sel:[])])]});break;
+    case 'add':if(S.canWrite)openTask(null,{line:a.dataset.line||S.line,date:a.dataset.date,type:a.dataset.type,customer:a.dataset.cust,period:a.dataset.period,staff:[...new Set([...(a.dataset.staff?[a.dataset.staff]:[]),...(S.view==='people'?S.sel:[])])]});break;
     case 'edit-task':setMode('edit');setTimeout(()=>{const f=$('#f-type');if(f)f.focus()},30);break;
     case 'add-vehicle':if(can('master'))addVehicle(a);break;
     case 'copy-card':if(editing)copyText(cardText(editing),'คัดลอกแผนแล้ว วางใน LINE ได้เลย');break;
@@ -47,7 +48,7 @@ document.addEventListener('click',e=>{
     case 'jump-conf':{const s=$(a.dataset.target||'#dashConf');if(s)s.scrollIntoView({behavior:reduceMotion()?'auto':'smooth',block:'start'});break}
     case 'theme':toggleTheme();break;
     case 'side-mini':{const on=!document.body.classList.contains('mini');document.body.classList.toggle('mini',on);remember('bu1wp.mini',on?'1':'0');setTimeout(moveInd,240);break}
-    case 'add-sel':if(S.canWrite)openTask(null,{staff:[...S.sel]});break;
+    case 'add-sel':if(S.canWrite)openTask(null,{line:S.line,staff:[...S.sel]});break;
     case 'clear-sel':S.sel.clear();syncRowPicks();break;
     case 'close':dlg.close();break;
     case 'del-task':deleteTask();break;
@@ -129,7 +130,7 @@ document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)retu
   if(f.dataset.addType!==undefined){e.preventDefault();
     const fd=new FormData(f);const name=String(fd.get('name')||'').trim();if(!name)return;const l=typesCopy();
     if(l.some(t=>norm(t.name)===norm(name))){toast(`มี ${name} อยู่แล้ว`);return}
-    l.splice(Math.max(0,l.findIndex(t=>t.id==='leave')),0,{id:newId('ty'),name,color:safeColor(String(fd.get('color'))),active:true});f.reset();saveCfg({jobTypes:l},`เพิ่ม ${name} แล้ว`);return}
+    l.splice(Math.max(0,l.findIndex(t=>t.id==='leave')),0,{id:newId('ty'),name,color:safeColor(String(fd.get('color'))),line:LINE[fd.get('line')]?String(fd.get('line')):'',active:true});f.reset();saveCfg({jobTypes:l},`เพิ่ม ${name} แล้ว`);return}
   if(f.dataset.addPos!==undefined){e.preventDefault();
     const name=String(new FormData(f).get('name')||'').trim();if(!name)return;const l=positions().slice();if(l.includes(name)){toast(`มี ${name} อยู่แล้ว`);return}
     l.push(name);f.reset();saveCfg({positions:l},`เพิ่ม ${name} แล้ว`);return}

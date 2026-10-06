@@ -2,7 +2,7 @@
 /* BU1 Weekly Plan · backup and move data (claude.ai ⇄ Supabase ⇄ file)
    Export writes every collection to one JSON file; import writes it back (same id = overwrite).
    Use it to move the team's data from the claude.ai link to the Supabase site, or to keep a monthly backup. */
-const BACKUP_COLLS=['staff','resources','projects','tasks','ncr','photos','filechunks'];
+const BACKUP_COLLS=['staff','resources','projects','tasks','ncr','mpfm','mpins','photos','filechunks'];
 let importData=null;
 
 async function exportBackup(btn){

@@ -32,6 +32,7 @@ function supaDb(be){
   };
   /* live queries by entity, so a write reloads them at once even when realtime is not switched on */
   const live=new Map();const poke=e=>(live.get(e)||new Set()).forEach(fn=>fn());
+  const loaders=new Set();/* each live query's read, for refreshNow (pull to refresh) */
   /* auto refresh: realtime may not be switched on for the central tables, so every live query (and the cached
      month / Booking / search reads) is read again quietly — when the tab comes back, when the network returns, and
      every AUTO_MS while the page is open. Nothing is redrawn unless a row really changed */
@@ -71,9 +72,9 @@ function supaDb(be){
       finally{busy=false;if(again&&alive){again=false;soon()}}
     };
     const soon=()=>{clearTimeout(timer);timer=setTimeout(load,250)};
-    if(!live.has(e))live.set(e,new Set());live.get(e).add(soon);
+    if(!live.has(e))live.set(e,new Set());live.get(e).add(soon);loaders.add(load);
     load();const off=be.watch(e,soon);
-    return ()=>{alive=false;clearTimeout(timer);live.get(e).delete(soon);off()};
+    return ()=>{alive=false;clearTimeout(timer);live.get(e).delete(soon);loaders.delete(load);off()};
   }
   function query(e,wh){
     return {where:(f,op,v)=>query(e,wh.concat([[f,op,v]])),get:async()=>snapOf(await fetchRows(e,wh)),onSnapshot:(cb,err)=>watch(e,wh,cb,err)};
@@ -90,6 +91,8 @@ function supaDb(be){
   }
   const collection=c=>Object.assign(query(c,[]),{doc:id=>docRef(c,id)});
   return {collection,doc:path=>{const [c,id]=String(path).split('/');return docRef(c,id)},
+    /* read everything on screen again now and resolve when done (pull to refresh) */
+    async refreshNow(){invalidate();await Promise.all([...loaders].map(f=>f()));render()},
     /* bulk upsert for backup import: rows of one entity [{id, ...fields}] */
     async bulk(entity,rows){await wguard(be.upsert(entity,rows));poke(entity)}};
 }

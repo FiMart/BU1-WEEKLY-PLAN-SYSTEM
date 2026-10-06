@@ -3,7 +3,7 @@
 /* ---------- store (shared db, or in-memory when db is unavailable) ----------
    The app's single read / write path: views call Store (or the live queries in boot.js), never a storage API directly.
    db is the claude.ai db, or the Supabase adapter (js/data/supabase.js on js/data/backend.js); without db it is memory. */
-const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map()};
+const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map(),mpfm:new Map(),mpins:new Map()};
 /* plans saved with the removed status "progress" (กำลังดำเนินการ) are read as "planned" */
 const normTask=t=>{if(t&&t.status==='progress')t.status='planned';return t};
 const rows=m=>[...m].map(([id,d])=>normTask(Object.assign({id},d)));
@@ -11,6 +11,7 @@ const docRows=s=>s.docs.map(d=>normTask(Object.assign({id:d.id},d.data())));
 function localPublish(){
   S.staff=rows(L.staff);S.resources=rows(L.resources);S.projects=rows(L.projects);S.ncr=rows(L.ncr);
   const {from,to}=weekRange();S.tasks=rows(L.tasks).filter(t=>t.date>=from&&t.date<=to);
+  if(S.mpKey){const [tb,m]=S.mpKey.split('|');S.mpRows=rows(L[MP_ENT[tb]]).filter(r=>r.month===m)}/* Master Plan of the open tab and month */
   S.cfg=Object.assign({},L.config.get('main')||{});S.tasksReady=true;S.projReady=true;invalidate();render();
 }
 function afterWrite(c){if(c==='tasks'&&!S.bulk){invalidate();render()}}

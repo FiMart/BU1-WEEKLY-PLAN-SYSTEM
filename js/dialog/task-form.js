@@ -8,15 +8,17 @@ function openTask(id,preset){
   const tid=t?typeIdOf(t):(p.type&&jobTypes().some(x=>x.id===p.type)?p.type:'');
   $('#f-type').innerHTML=typeOptions(tid,'— เลือกหัวข้องาน —');$('#f-type').value=tid;
   $('#f-typeOther').value=t&&tid==='other'?typeLabel(t)==='อื่นๆ'?'':typeLabel(t):'';syncTypeOther();
+  /* สายงาน: the plan's own, else its job type's, else (new plan) the open tab */
+  setLine(t?lineOf(t):(LINE[(jobTypes().find(x=>x.id===tid)||{}).line]?jobTypes().find(x=>x.id===tid).line:LINE[p.line]?p.line:''));syncLineField(false);
   $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;
-  const sl=sales().map(s=>s.name);if(v.sale&&!sl.some(n=>norm(n)===norm(v.sale)))sl.push(v.sale);
+  const sl=sales().map(s=>s.name);DEFAULT_SALES.forEach(n=>{if(!sl.some(x=>norm(x)===norm(n)))sl.push(n)});if(v.sale&&!sl.some(n=>norm(n)===norm(v.sale)))sl.push(v.sale);
   $('#f-sale').innerHTML=`<option value="">— เลือก Sale —</option>`+sl.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');$('#f-sale').value=v.sale||'';syncSaleTel();
   $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');$('#f-sharedTeam').checked=!!v.sharedTeam;syncSharedArea();
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
   fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;syncNeedGA();syncTrAdd();renderTrGrid();
   $('#f-contact').value=v.contact||'';$('#f-contactTel').value=v.contactTel||'';
-  pickGuests=(v.guests||[]).slice();$('#tpGuest').value='';loadPrep(v);
+  pickGuests=(v.guests||[]).slice();$('#tpGuest').value='';loadPrep(v);loadCal(v);loadIns(v);
   if(t)renderDrawerView(t);else $('#dView').innerHTML='';
   loadPhotos(v.photoIds||[]);loadFiles(t);
   const st=form.querySelector(`#f-st-${v.status||'planned'}`);if(st)st.checked=true;
@@ -87,7 +89,9 @@ async function saveViewStatus(val,note){
   try{await Store.update('tasks',id,Object.assign({status:val,statusNote:NEEDS_REASON.has(val)?note:''},meta()));
     editing=Object.assign({},editing,{status:val,statusNote:NEEDS_REASON.has(val)?note:''});
     const r=$('#f-st-'+val);if(r)r.checked=true;$('#f-reason').value=editing.statusNote;syncReason();
-    renderDrawerView(editing);renderPhotos();renderFiles();toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
+    renderDrawerView(editing);renderPhotos();renderFiles();
+    if(val==='done'&&!reportsOf(editing).length){toast('บันทึกสถานะ “เสร็จแล้ว” แล้ว · แนบ Service Report ได้ด้านล่าง (ไม่บังคับ)');const b=$('#vReport');if(b)b.scrollIntoView({block:'nearest',behavior:reduceMotion()?'auto':'smooth'})}
+    else toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err);renderDrawerView(editing);renderPhotos()}
 }
 function renderDrawerView(t){
@@ -97,7 +101,8 @@ function renderDrawerView(t){
   let kk=0;const f=(k,v,cls,wide)=>`<div class="${wide?'wide':''}" style="--k:${++kk}"><dt>${k}</dt><dd class="${v?cls||'':'dash'}">${v?esc(v):'—'}</dd></div>`;
   const people=(t.staffIds||[]).map(id=>{const s=staffById(id)||{};const n=staffName(id);return `<span class="${confStaff.has(id)?'conf':''}"><span class="avatar" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${s.role?` <small>${esc(s.role)}</small>`:''}${cardBadge(cardOf(id,t.areaId))}</span>`})
     .concat((t.guests||[]).map(g=>`<span class="guest"><span class="avatar" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small></span>`));
-  $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span><span class="badge" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
+  const ln=LINE[lineOf(t)];
+  $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span>${ln?`<span class="badge" style="--c:${ln.color}"><i></i>${esc(ln.name)}</span>`:''}<span class="badge" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
     <div class="dv-by"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>ผู้จองแผน <b id="dvBy" class="dash">—</b></div>
     ${NEEDS_REASON.has(t.status)?`<div class="reason-box ${esc(t.status)}"><b>${statusFlag(t.status)} · เหตุผล / ปัญหาที่หน้างาน</b><span>${t.statusNote?esc(t.statusNote):'<i>ยังไม่ได้ใส่เหตุผล</i>'}</span></div>`:''}
     ${t.status==='notdone'||t.ncrId?ncrLinkHtml(t):''}
@@ -108,6 +113,8 @@ function renderDrawerView(t){
       ${f('Customer',t.customer)}${f('Location',t.location)}${t.areaId?f('พื้นที่ (Safety)',areaName(t.areaId)):''}${f('Detail',detailOf(t).trim(),'',true)}
       ${(t.photoIds||[]).length?'<div class="wide" style="--k:8"><dt>รูปประกอบ</dt><dd class="dv-ph" id="dvPhotos"></dd></div>':''}
       ${(t.files||[]).length?`<div class="wide" style="--k:9"><dt>ไฟล์แนบ (${t.files.length})</dt><dd class="dv-files" id="dvFiles"></dd></div>`:''}
+      ${reportViewHtml(t,9)}
+      ${calViewHtml(t,9)}${insViewHtml(t,9)}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
       <div style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
@@ -115,6 +122,7 @@ function renderDrawerView(t){
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${S.canWrite?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
+      ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}`;
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
@@ -122,12 +130,12 @@ function renderDrawerView(t){
 function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
-  return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
+  return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,line:curLine(),jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
     planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
-    prep:prepForSave(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
+    prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():''};
 }
 form.addEventListener('change',e=>{
@@ -222,7 +230,8 @@ form.addEventListener('submit',async e=>{
       if(v.status==='notdone'&&!ncrOfTask(editing)&&can('status'))ncrFor=Object.assign({id:editing.id},data);/* ไม่เสร็จ without an NCR yet */
     }else{
       const dates=datesFor(v);
-      for(const d of dates){await Store.set('tasks',newId('t'),Object.assign({},v,{date:d,sample:false,createdAt:now,createdBy:S.me||null},meta()))}
+      /* a multi-day job: the calibration rows go on its first day only, so the week's sheet counts each meter once */
+      for(const [di,d] of dates.entries()){await Store.set('tasks',newId('t'),Object.assign({},v,di?{calItems:[],insItems:[]}:{},{date:d,sample:false,createdAt:now,createdBy:S.me||null},meta()))}
       if(S.sel.size){S.sel.clear();syncRowPicks()}
       toast(dates.length>1?`สร้าง ${name} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:(inWeek(dates[0])?`สร้าง ${name} แล้ว`:`สร้าง ${name} แล้ว ในวัน${fmtDay(dates[0])}`));
     }
@@ -238,7 +247,7 @@ async function deleteTask(){
   if(!can('del'))return;const b=$('#btnDel');
   if(!delArmed){b.classList.add('armed');b.textContent='กดอีกครั้งเพื่อยืนยันการลบ';delArmed=setTimeout(resetDel,4000);return}
   resetDel();
-  const pids=(editing.photoIds||[]).slice();const fids=(editing.fileIds||[]).slice();
+  const pids=(editing.photoIds||[]).slice();const fids=(editing.fileIds||[]).concat(reportsOf(editing).map(f=>f.id));
   try{await Store.del('tasks',editing.id);known.delete(editing.id);dlg.close();toast('ลบแผนแล้ว');if(pids.length)cleanupPhotos(pids);if(fids.length)cleanupFiles(fids)}catch(err){formError(errText(err));noteWriteError(err)}
 }
 async function copyTo(dates,typeId){
@@ -247,7 +256,7 @@ async function copyTo(dates,typeId){
   const bad=validate(Object.assign({},v,extra,{jobTypeOther:typeId==='other'?(v.jobTypeOther||'อื่นๆ'):v.jobTypeOther}));if(bad){formError(bad[0]);return false}
   const now=new Date().toISOString();
   try{await persistNewPhotos();await persistNewFiles();
-    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',prep:v.prep.map(p=>({text:p.text,done:false})),sample:false,createdAt:now,createdBy:S.me||null},meta()));
+    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
     dlg.close();const nm=v.planNo||typeLabel(Object.assign({},v,extra));
     toast(dates.length>1?`ก๊อป ${nm} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:`ก๊อป ${nm} ไป${fmtDay(dates[0])}แล้ว`);return true}
   catch(err){formError(errText(err));noteWriteError(err);return false}

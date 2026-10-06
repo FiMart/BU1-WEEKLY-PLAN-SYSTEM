@@ -6,6 +6,7 @@ const PAGES={
   plan:['Weekly Plan',''],
   safety:['Safety Training','บัตรเข้าพื้นที่ของทีม คำขออบรม บันทึกอบรมย้อนหลัง และเอกสาร · ข้อมูลจากระบบ Safety ของบริษัท'],
   booking:['Booking Plan','ภาพรวมการจองงานทั้งหมดทุกสัปดาห์ · ดูอย่างเดียว การจองและแก้ไขทำที่หน้า Weekly Plan · กดแถวเพื่อเปิดแผน'],
+  mplan:['Master Plan','แผนรายเดือนตามสายงาน · Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน กรอกและแก้ที่นี่ · Instrument: Request No. LAB Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน · กรอกและแก้ที่นี่'],
   people:['สรุปรายคนรายวัน','ช่วงเวลาของงานแรกและงานสุดท้าย จำนวนงาน และใครว่างในแต่ละวัน ติ๊กชื่อเพื่อลงแผนให้หลายคนพร้อมกัน'],
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
   search:['ค้นหางานย้อนหลัง','ค้นด้วย Plan No. ชื่อลูกค้า หรือชื่อพนักงาน จากแผนทุกสัปดาห์'],
@@ -14,12 +15,12 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,mplan:renderMp,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   {const mb=document.querySelector('.bn-more');if(mb)mb.classList.toggle('on',!!document.querySelector(`#bnSheet [data-view="${S.view}"]`))}
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
-  renderSync();renderBanners();renderWeekbar();renderPlanbar();renderChips();renderActions();renderAccountCard();moveInd();
+  renderSync();renderBanners();renderLineBar();renderWeekbar();renderPlanbar();renderChips();renderActions();renderAccountCard();moveInd();
   updateSelbar();
   if($('#dlg').open)renderTrGrid();/* vehicle list may have changed (e.g. a car just added) */
   const main=$('#view');const ae=document.activeElement;
@@ -36,6 +37,7 @@ function render(){
   if(S.view==='settings')filterMd();
   if(S.view==='people')syncRowPicks();
   if(S.view==='ncr')fillNcrTable();
+  if(S.view==='mplan')fillMp();else if(S.mpKey)mpStop();/* the Master Plan month is read live only while it is open */
   {const b=$('#ncrBadge');if(b){const n=S.ncr.filter(x=>x.state!=='closed').length;b.hidden=!n;b.textContent=n}}
   {const on=main.querySelector('.pd-strip.scroll .pd-day.on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}
   if(ready){if(anim&&(S.view==='dash'||S.view==='plan'))countUp(main);S.anim=null;flashIds.clear()}
@@ -138,7 +140,7 @@ const jr=(k,v,cls)=>v?`<span class="jr"><span class="k">${k}</span><span class="
 function card(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
   return `<button type="button" class="jc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,40)}" data-edit="${esc(t.id)}">
-    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${prepChip(t)}${statusIcon(t.status)}</span>
+    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${reportsOf(t).length?`<span class="pcount sr" title="มี Service Report ${reportsOf(t).length} ไฟล์">${REP_ICON}${reportsOf(t).length}</span>`:''}${prepChip(t)}${statusIcon(t.status)}</span>
     <span class="jc-body">
       ${t.planNo?`<span class="pn">${esc(t.planNo)}</span>`:''}
       ${t.customer?`<span class="jc-cust">${esc(t.customer)}</span>`:''}
@@ -148,6 +150,38 @@ function card(t,conf,i){
       ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
     </span>
   </button>`;
+}
+/* ---------- สายงาน (Calibration Flow Meter / Instrument): tabs and card tags ---------- */
+/* what each tab would show (leave left out): {'':all, fm, ins} → {n plans, done, meters} — plans without a line count on both */
+function lineCounts(list){
+  const jobs=list.filter(t=>!isLeave(t));const of=l=>({n:l.length,done:l.filter(t=>t.status==='done').length,meters:l.reduce((a,t)=>a+calOf(t).length,0),ins:l.reduce((a,t)=>a+insOf(t).length,0)});
+  const out={'':of(jobs)};LINES.forEach(l=>{out[l.id]=of(jobs.filter(t=>!lineOf(t)||lineOf(t)===l.id))});return out;
+}
+const LINE_ALL={id:'',name:'ทั้งหมด',short:'ทั้งหมด',tag:'ALL',color:'#1d5be0',desc:'ทุกสายงาน',
+  icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>'};
+/* the สายงาน switch: one card per line (icon, name, what it covers; with counts: plans, done bar, meters) */
+function lineTabs(counts,note){
+  return `<div class="line-tabs${counts?'':' slim'}" role="tablist" aria-label="สายงาน">${[LINE_ALL].concat(LINES).map(l=>{const c=counts&&counts[l.id];const on=S.line===l.id;
+    return `<button type="button" role="tab" class="lt lt-${l.id||'all'}${on?' on':''}" data-line-tab="${l.id}" aria-selected="${on}" style="--lc:${l.color}">
+      <span class="lt-wm" aria-hidden="true">${l.icon}</span><span class="lt-ico">${l.icon}</span>
+      <span class="lt-body"><span class="lt-name"><span class="full">${esc(l.name)}</span><span class="short">${esc(l.short)}</span>${l.id?`<span class="lt-chip">${l.tag}</span>`:''}</span><span class="lt-desc">${esc(l.desc)}</span>
+        ${c?`<span class="lt-meta"><span><b>${c.n}</b> แผน</span><span>เสร็จ <b>${c.done}</b></span>${l.id!=='ins'&&c.meters?`<span>${CAL_ICON}<b>${c.meters}</b> เครื่อง</span>`:''}${l.id!=='fm'&&c.ins?`<span>${INS_ICON}<b>${c.ins}</b> รายการ</span>`:''}</span>
+        <span class="lt-bar" title="เสร็จ ${c.done} จาก ${c.n} แผน"><i style="width:${c.n?Math.round(c.done/c.n*100):0}%"></i></span>`:''}</span>
+      ${c?`<b class="lt-n">${c.n}</b>`:''}</button>`}).join('')}</div>${note?`<p class="lt-note">${note}</p>`:''}`;
+}
+/* the สายงาน switch sits above the filters on Weekly Plan (with the week's counts), Dashboard and Booking */
+let lineBarHtml='';
+function renderLineBar(){
+  const el=$('#lineBar');const show=['plan','dash','booking'].includes(S.view)&&S.mode!=='connecting';el.hidden=!show;
+  const html=!show?'':S.view==='plan'?(notReady()?lineTabs(null):lineTabs(lineCounts(S.tasks.filter(isWorking)))):
+    lineTabs(null,S.view==='dash'&&S.line?'คนที่ว่างและการจัดชนยังนับรวมทั้งสองสาย เพราะใช้ทีมเดียวกัน':'');
+  if(html!==lineBarHtml){el.innerHTML=html;lineBarHtml=html}
+}
+/* on a card: the line tag in "ทั้งหมด"; "ไม่ระบุสาย" on a line tab when the plan has none */
+function lineTag(t){
+  if(isLeave(t))return '';const l=LINE[lineOf(t)];
+  if(l)return S.line?'':`<span class="ln-tag" style="--lc:${l.color}" title="${esc(l.name)}">${l.tag}</span>`;
+  return S.line?'<span class="ln-tag none" title="แผนนี้ยังไม่ระบุสายงาน จึงแสดงทุกแท็บ">ไม่ระบุสาย</span>':'';
 }
 function legendStrip(){
   return `<div class="legend-strip"><div class="grp"><span class="lg-title">หัวข้องาน</span>${jobTypes().filter(t=>t.active!==false).map(t=>`<span class="tdot" style="--c:${safeColor(t.color)}"><i></i>${esc(t.name)}</span>`).join('')}</div>
@@ -202,4 +236,4 @@ function askConfirm(title,msg,okLabel){
 function initialOf(name){const m=String(name||'').match(/[ก-ฮA-Za-z0-9]/);return m?m[0].toUpperCase():'?'}
 function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;const hol=holidayOf(k);
   return `<th class="${isT?'is-today':''}${hol?' hol-day':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${hol?`<span class="hol-pill" title="${esc(hol)}">${esc(hol)}</span>`:''}${meta||''}</div></div></th>`}
-const searchText=t=>[t.planNo,typeLabel(t),t.customer,t.location,detailOf(t),t.request,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');
+const searchText=t=>[t.planNo,typeLabel(t),...calOf(t).map(x=>[x.reqNo,x.tag,x.type,x.size].join(' ')),...insOf(t).map(x=>[x.reqNo,x.tag,x.type,x.plant,x.remark,...x.certs.map(c=>c.certNo+' '+c.tagNo)].join(' ')),LINE[lineOf(t)]?LINE[lineOf(t)].name:'',t.customer,t.location,detailOf(t),t.request,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');

@@ -1,27 +1,43 @@
 'use strict';
 /* BU1 Weekly Plan · copy as text for LINE, screenshot, dark mode */
 /* ---------- copy as text (LINE), screenshot, theme ---------- */
-function cardText(t){
-  const tel=saleTel(t.sale);
-  return [`${typeLabel(t)}${t.planNo?' · '+t.planNo:''}`,`วันที่: ${fmtDayY(t.date)} (${pName(t)})${t.timeNote?' '+t.timeNote:''}`,
-    t.customer?`ลูกค้า: ${t.customer}`:'',t.location?`สถานที่: ${t.location}`:'',detailOf(t).trim()?`Detail: ${detailOf(t).trim()}`:'',
-    t.request?`Request: ${t.request}`:'',t.transport||t.needGA?`รถ: ${transportText(t)}`:'',(t.contact||t.contactTel)?`ติดต่อ: ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`:'',
-    prepText(t),`ทีม: ${teamNames(t).join(', ')||'-'}`,t.sale?`Sale: ${t.sale}${tel?' '+tel:''}`:'',NEEDS_REASON.has(t.status)?`สถานะ: ${statusText(t)}`:''].filter(Boolean).join('\n');
+/* LINE text in the team's own report style: one emoji per line (🏭 สถานที่ · 🕘 Work Date · ✍️ รายละเอียด · 👷 ทีมงาน …) */
+const LINE_PERIOD={am:'ช่วงเช้า',pm:'ช่วงบ่าย',full:'ทั้งวัน'};
+const LINE_STATUS={done:'✅',notdone:'❌',postponed:'🔁',cancelled:'⛔'};
+const workDate=k=>{const d=parseD(k);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`};
+/* "✍️ label : text" on one line, or the label then one line each when the text has several lines */
+const lineBlock=(icon,label,text)=>{const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  return !l.length?[]:l.length===1?[`${icon} ${label} : ${l[0]}`]:[`${icon} ${label} :`].concat(l)};
+function jobLines(t,withPeriod){
+  const tel=saleTel(t.sale);const team=teamNames(t);
+  const when=[workDate(t.date),withPeriod?`(${LINE_PERIOD[periodOf(t)]||pName(t)})`:'',t.timeNote?`· ${t.timeNote}`:''].filter(Boolean).join(' ');
+  return [
+    ...lineBlock('🏢','ลูกค้า',t.customer),...lineBlock('🏭','สถานที่',t.location),`🕘 Work Date : ${when}`,
+    ...lineBlock('✍️','รายละเอียด',detailOf(t)),...lineBlock('📝','Request',t.request),
+    ...(t.transport||t.needGA?[`🚗 รถ : ${transportText(t)}`]:[]),
+    ...((t.contact||t.contactTel)?[`☎️ ติดต่อ : ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`]:[]),
+    ...calLines(t),...insLines(t),
+    ...(prepText(t)?['🧰 '+prepText(t)]:[]),
+    ...(team.length>1?['👷 ทีมงาน :'].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ทีมงาน : ${team[0]||'-'}`]),
+    ...(t.sale?[`💼 Sale : ${t.sale}${tel?' '+tel:''}`]:[]),
+    ...(LINE_STATUS[t.status]?[`${LINE_STATUS[t.status]} สถานะ : ${statusText(t)}`]:[]),
+    ...(reportsOf(t).length?[`📎 Service Report : ${reportsOf(t).length} ไฟล์`]:[]),
+  ];
 }
+const lineLabel=t=>LINE[lineOf(t)]?LINE[lineOf(t)].name:'';
+function cardText(t){
+  return [`📌 ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}`].concat(lineLabel(t)?[`🔧 สายงาน : ${lineLabel(t)}`]:[],jobLines(t,true)).join('\n');
+}
+/* one day for LINE: the open สายงาน tab only (its plans, plans without a line, and leave) */
 function dayText(k){
-  const d=parseD(k);const list=S.tasks.filter(t=>t.date===k&&isWorking(t)).sort(byTime);
+  const d=parseD(k);const list=S.tasks.filter(t=>t.date===k&&isWorking(t)&&lineMatch(t)).sort(byTime);
   const jobs=list.filter(t=>!isLeave(t));const lv=list.filter(isLeave);
-  const out=[`แผนงาน BU1 Lab วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} (${jobs.length} งาน)`];
+  const out=[`📅 แผนงาน BU1 Lab${S.line?' · '+lineName():''}`,`วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} · ${jobs.length} งาน`];
   jobs.forEach((t,i)=>{
-    out.push('',`${i+1}) [${pName(t)}] ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}`);
-    if(t.customer||t.location)out.push('   '+[t.customer,t.location].filter(Boolean).join(' @ '));
-    if(t.timeNote)out.push('   เวลา: '+t.timeNote);
-    detailOf(t).split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>out.push('   '+x));
-    if(t.transport||t.needGA)out.push('   รถ: '+transportText(t));
-    out.push('   ทีม: '+(teamNames(t).join(', ')||'-'));
-    if(NEEDS_REASON.has(t.status))out.push('   สถานะ: '+statusText(t));
+    out.push('',`${i+1}) ${LINE_PERIOD[periodOf(t)]||pName(t)} · ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}${!S.line&&lineOf(t)?` [${LINE[lineOf(t)].short}]`:''}`);
+    out.push(...jobLines(t,false));
   });
-  if(lv.length)out.push('','ลา: '+lv.map(t=>`${teamNames(t).join(', ')} (${pName(t)})`).join(' · '));
+  if(lv.length)out.push('','🏖️ ลา :',...lv.map(t=>`- ${teamNames(t).join(', ')} (${LINE_PERIOD[periodOf(t)]||pName(t)})`));
   return out.join('\n');
 }
 function copyText(txt,msg){
@@ -31,7 +47,7 @@ function copyText(txt,msg){
 }
 $('#copyMenu').addEventListener('toggle',e=>{
   if(!e.target.open)return;const days=Array.from({length:7},(_,i)=>addDays(S.week,i));
-  $('#copyPop').innerHTML='<p>เลือกวัน แล้ววางข้อความใน LINE</p>'+days.map(d=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k&&isWorking(t)&&!isLeave(t)).length;
+  $('#copyPop').innerHTML=`<p>เลือกวัน แล้ววางข้อความใน LINE${S.line?` · เฉพาะ ${esc(lineName())}`:''}</p>`+days.map(d=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k&&isWorking(t)&&!isLeave(t)&&lineMatch(t)).length;
     return `<button type="button" data-action="copy-day" data-date="${k}">${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}<span>${n} งาน</span></button>`}).join('');
 });
 function loadLib(src,glob){

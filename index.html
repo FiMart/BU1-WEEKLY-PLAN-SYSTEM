@@ -17,6 +17,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/shell.css">
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/attachments.css">
+<link rel="stylesheet" href="css/lines.css">
 <link rel="stylesheet" href="css/sidebar.css">
 <link rel="stylesheet" href="css/dashboard.css">
 <link rel="stylesheet" href="css/master-data.css">
@@ -30,6 +31,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/type.css">
 <link rel="stylesheet" href="css/motion.css">
 <link rel="stylesheet" href="css/safety.css">
+<link rel="stylesheet" href="css/master-plan.css">
 
 <aside class="side" id="side" aria-label="เมนูหลัก">
   <button type="button" class="sb-logo" data-go="plan" aria-label="ไปที่ Weekly Plan"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></button>
@@ -39,6 +41,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <button type="button" role="tab" data-view="dash" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg><span>Dashboard</span></button>
     <button type="button" role="tab" data-view="plan" title="Weekly Plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Weekly Plan</span></button>
     <button type="button" role="tab" data-view="booking" title="Booking Plan · ภาพรวมการจองทุกสัปดาห์"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg><span>Booking Plan</span></button>
+    <button type="button" role="tab" data-view="mplan" title="Master Plan · แผนรายเดือน Flow Meter / Instrument"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M8 13h2M12 13h4M8 16.5h4M14 16.5h2"/></svg><span>Master Plan</span></button>
     <button type="button" role="tab" data-view="safety" title="Safety Training · บัตรเข้าพื้นที่และคำขออบรม"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span>Safety Training</span></button>
     <button type="button" role="tab" data-view="people" title="สรุปรายคน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg><span>สรุปรายคน</span></button>
     <button type="button" role="tab" data-view="projects" title="กำลังคนโปรเจกต์"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg><span>กำลังคนโปรเจกต์</span></button>
@@ -52,7 +55,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.0.1 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.3.0 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -70,6 +73,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 </nav>
 <!-- phone: the rest of the pages, opened from "เพิ่มเติม" in the bottom bar -->
 <div class="bn-sheet" id="bnSheet" role="menu" aria-label="หน้าอื่น ๆ" hidden>
+    <button type="button" data-view="mplan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M8 13h2M12 13h4M8 16.5h4M14 16.5h2"/></svg>Master Plan</button>
     <button type="button" data-view="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg>สรุป</button>
     <button type="button" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>ค้นหา</button>
     <button type="button" data-view="ncr"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4.5V3h6v1.5M12 9v4.5M12 16.6v.1"/></svg>NCR</button>
@@ -90,6 +94,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     </div>
   </div>
   <div id="banners" class="banners"></div>
+  <nav class="line-bar" id="lineBar" aria-label="สายงาน" hidden></nav>
 
   <section class="weekbar" id="weekbar" aria-label="เลือกสัปดาห์">
     <div class="wk-nav">
@@ -140,6 +145,9 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
         <label class="fl" for="f-type"><b>หัวข้องาน</b><small>ประเภทงาน</small></label>
         <div class="fv"><div class="row2"><select id="f-type"></select><input id="f-typeOther" maxlength="80" autocomplete="off" placeholder="พิมพ์หัวข้องาน เช่น ประชุมลูกค้า" aria-label="หัวข้องาน (อื่นๆ)"></div></div>
 
+        <span class="fl line-row" id="lblLine"><b>สายงาน</b><small>ไม่บังคับ</small></span>
+        <div class="fv line-row"><div class="seg line-seg" id="f-line" role="radiogroup" aria-labelledby="lblLine"></div></div>
+
         <label class="fl" for="f-planno"><b>Plan No.</b><small>รูปแบบ PN-YY-MMNNN</small></label>
         <div class="fv"><input id="f-planno" class="mono planno-in" maxlength="40" autocomplete="off" spellcheck="false" placeholder="เช่น PN-26-09004"><span class="hint" id="f-planhint" hidden></span></div>
 
@@ -171,6 +179,12 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
             <input type="file" id="phFile" class="sr-only" multiple>
           </div>
         </div>
+
+        <div class="fl fl-full cal-row" id="lblCal"><b>Weekly plan calibration</b><small>Flow Meter ที่สอบเทียบในแผนนี้ เครื่องละ 1 รายการ · Request No. ใช้เลขเดียวกับ Plan No. · <span id="calN"></span></small></div>
+        <div class="fv fv-full cal-row" role="group" aria-labelledby="lblCal"><div class="cal-list" id="calList"></div><button type="button" class="btn sm cal-add" id="calAdd">+ เพิ่มเครื่อง</button></div>
+
+        <div class="fl fl-full ins-row" id="lblIns"><b>Weekly plan instrument</b><small>เครื่องมือ Instrument ของแผนนี้ · Date, Customer, SALE และชื่อลูกค้า (Contact) ใช้จากแผน · Request No. ว่าง = Plan No. · <span id="insN"></span></small></div>
+        <div class="fv fv-full ins-row" role="group" aria-labelledby="lblIns"><div class="ins-list" id="insList"></div><button type="button" class="btn sm cal-add ins-add" id="insAdd">+ เพิ่มรายการ</button></div>
 
         <label class="fl" for="f-request"><b>Request</b><small>สิ่งที่ลูกค้า / หน้างานต้องการ</small></label>
         <div class="fv"><textarea id="f-request" rows="2" maxlength="1500" placeholder="เช่น Work Permit, PPE, ลูกค้าปิดวาล์วก่อนเข้างาน"></textarea></div>
@@ -272,6 +286,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <header class="dlg-head"><div class="dlg-titles"><h2 id="sfDlgTitle"></h2><p class="dlg-sub" id="sfDlgSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-sf-close aria-label="ปิด">✕</button></header>
     <div class="dlg-body" id="sfDlgBody"></div>
     <footer class="dlg-foot" id="sfDlgFoot"></footer>
+  </div>
+</dialog>
+<dialog id="mpxDlg" class="mpx-dlg" aria-labelledby="mpxTitle">
+  <div class="mpx-wrap">
+    <header class="dlg-head"><div class="dlg-titles"><h2 id="mpxTitle">นำเข้า Excel</h2><p class="dlg-sub" id="mpxSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-mpx-close aria-label="ปิด">✕</button></header>
+    <div class="dlg-body" id="mpxBody"></div>
+    <footer class="dlg-foot"><span class="hint">ยังไม่มีอะไรถูกบันทึกจนกว่าจะกดนำเข้า</span><span class="grow"></span><button type="button" class="btn ghost" data-mpx-close>ยกเลิก</button><button type="button" class="btn primary" id="mpxGo" disabled>นำเข้า</button></footer>
   </div>
 </dialog>
 <dialog id="acctDlg" class="acct-dlg" aria-labelledby="acctTitle">
@@ -412,6 +433,12 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/dialog/attachments.js"></script>
 <script src="js/dialog/prep.js"></script>
 <script src="js/dialog/task-form.js"></script>
+<script src="js/dialog/report.js"></script>
+<script src="js/features/calibration.js"></script>
+<script src="js/features/instrument.js"></script>
+<script src="js/views/master-plan.js"></script>
+<script src="js/views/master-plan-io.js"></script>
+<script src="js/views/dash-master.js"></script>
 <script src="js/features/master-actions.js"></script>
 <script src="js/features/backup.js"></script>
 <script src="js/features/account.js"></script>
@@ -424,5 +451,6 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/features/staff-link.js"></script>
 <script src="js/features/export.js"></script>
 <script src="js/app/events.js"></script>
+<script src="js/ui/pull-refresh.js"></script>
 <script src="js/app/boot.js"></script>
 </body></html>

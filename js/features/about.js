@@ -1,10 +1,49 @@
 'use strict';
 /* BU1 Weekly Plan · About: version, build date and what changed in each version (จัดการข้อมูล › เกี่ยวกับระบบ) */
-const APP_VERSION='4.0.1';
+const APP_VERSION='4.3.0';
 const APP_BUILD='2026-10-06';
 const CHANGELOG=[
+  {v:'4.3.0',d:'2026-10-06',items:[
+    'หน้าใหม่ Master Plan (เมนูซ้าย ถัดจาก Booking Plan) แผนรายเดือนตามสายงาน เลือกเดือนได้ มีสองแท็บ',
+    'Master Plan Flow Meter ตามแผ่นงานของทีม: Request No. · Customer · Tag · Size (Inch) · Type · SALE · Flow meter · Ins · Flowcom · Clamp-on · ช่องวันที่ 1–31 · Remark · กรอกและแก้ในตารางได้ทันที (บันทึกเมื่อออกจากช่อง) · ช่องวันที่ใส่รหัสงาน D, I, C, W, R, S, C-OS, SWITCH … หรือหลายรหัส เช่น D/C/I · ปุ่ม + ที่แถว = เพิ่มมิเตอร์ถัดไปของ Request No. เดียวกัน · Enter ลงแถวถัดไป',
+    'Master Plan Flow Meter: ยอดรวม Flow meter / Ins / Flowcom / Clamp-on · ยอด W และ Cal รายวันเหนือช่องวันที่ · ตารางสรุปรายวันตามรหัสงาน (D, I, C, W, Te, TP, K, L, T, P, F) · วันเสาร์-อาทิตย์สีเทา วันหยุดสีแดง · ช่อง C สีเขียวอ่อน W สีเขียว',
+    'Master Plan Instrument ตามแผ่นงานของทีม: Request No. / PN · LAB · Customer · Plant · Tag · Type · Range / Set Point / Nor.Temp (Unit) · Remove · Cal · install (final) · BU (R / I) · รับ/ส่ง · SALE (Contact) · ชื่อลูกค้า · Total Booking · Total cal · ช่องวันที่ 1–31 (จำนวนที่สอบเทียบในวันนั้น) · Remark · กรอกและแก้ในตารางได้ทันที · Total cal = ผลรวมของช่องวันที่ · ยอดรวมต่อวันเหนือช่องวันที่',
+    'Master Plan Instrument: ปุ่ม "ดึงจาก Weekly plan instrument" คัดลอกรายการที่ลงไว้ในแผนงานของเดือนเข้าตาราง (รายการละครั้งเดียว, จำนวนลงในวัน Cal) · ปุ่ม + ที่แถว = เพิ่มแถวถัดไปของ Request No. เดียวกัน',
+    'Dashboard หัวข้อใหม่ 2 "แผนเทียบผล · Master Plan": Flow Meter แผน (ช่อง C + W ใน Master Plan) เทียบกับที่ทำแล้ว (เครื่องที่มีผล PASS / FAIL ใน Weekly plan calibration) เป็น % และกราฟรายวัน / สัปดาห์ / เดือน · Instrument Total cal เทียบ Total Booking · จำนวนตามรหัสงาน และแยกตาม Type / Size / SALE / ลูกค้า (Flow Meter) และ LAB / Type / SALE / รับ-ส่ง / ลูกค้า (Instrument) · ตามแท็บสายงาน',
+    'Dashboard: KPI และประเด็นสำคัญของ Master Plan อยู่ในสรุปภาพรวม · พิมพ์รายงาน / PDF มีหัวข้อ Master Plan · Excel รายงานเพิ่มชีต MP แผนเทียบผล, MP FM รหัสงาน, MP Flow Meter, MP Instrument, MP INS ตาม LAB',
+    'แก้: ตัวเลขในกล่องสรุป Weekly plan calibration / instrument ของ Dashboard แสดงตัวเล็กเกินไป',
+    'Master Plan: ปุ่ม "นำเข้า Excel" อ่านแผ่นงาน Master Plan ของทีม (Flow Meter และ Instrument) จากไฟล์ .xlsx / .xls ได้ทันที — หาหัวตาราง คอลัมน์วันที่ และชีตที่ตรงให้เอง เติม Request No. ที่ merge ไว้ ข้ามแถวรวมและแถวรหัสงาน · แสดงตัวอย่างก่อนบันทึก เลือกเดือน และเลือก "เพิ่มต่อท้าย" หรือ "แทนที่ทั้งเดือน"',
+    'Master Plan: Export เป็น Excel (หัวตารางแบบเดียวกับแผ่นงานของทีม แก้แล้วนำเข้ากลับได้ · Flow Meter มีชีตสรุปรหัสงาน) และ PDF (A3 แนวนอน สีตามแผ่นงาน พร้อมช่องลงนาม)',
+    'Master Plan: ออกแบบหน้าใหม่ — แท็บเป็นการ์ด แถบเครื่องมือรวมเดือน ค้นหา นำเข้า / Export และเพิ่มแถว · ตัวเลขสรุปของเดือนเป็นกล่อง · ตารางและสรุปรหัสงานอยู่ในการ์ด · ช่อง C อ่านง่ายขึ้นในโหมดมืด',
+    'Master Plan: ปุ่ม "ลบข้อมูล" ทั้ง Flow Meter และ Instrument — ติ๊กช่องหน้าแถว (หรือช่องบนหัวตารางเพื่อเลือกทุกแถวที่แสดง) แล้วกด "ลบที่เลือก" · ไม่ได้ติ๊กแถวไหน = ลบข้อมูลทั้งเดือนของแท็บนั้น · ถามยืนยันก่อนลบทุกครั้ง',
+    'ผู้ปฏิบัติงานที่ว่าง (Available) แบบทั้งสัปดาห์: เป็นตารางที่คอลัมน์วันตรงกับตาราง Weekly Plan ด้านบน แถวละตำแหน่ง (จำนวนคนในตำแหน่ง) · หัววันบอกจำนวนคนว่างและครึ่งวัน · ป้ายว่างเช้า / ว่างบ่ายอยู่ใต้ชื่อ ชื่อไม่ถูกบีบ · แถวลาทั้งวันด้านล่าง',
+  ]},
+  {v:'4.2.0',d:'2026-10-06',items:[
+    'Weekly plan calibration ใช้ตัวเลือกของทีม: Lab (1, 3, 3.1, 3.2, 3.3, 4, Ins.7) · Status (ADD, เลื่อน, ยกเลิก, Problem) · Pass/Fail (PASS, FAIL) · สรุปและ Dashboard นับ PASS / FAIL / รอผล / เลื่อน / ยกเลิก / Problem · Weekly plan instrument ใช้ตัวเลือก LAB ชุดเดียวกัน (1, 3, 3.1, 3.2, 3.3, 4, Ins.7)',
+    'Weekly plan instrument (สายงาน Instrument) ตามแบบฟอร์มของทีม: แถบวันที่สีเหลือง "Date: 30 Aug 26 วันอาทิตย์" · Request No. · LAB · Customer · Plant · TAG / SN. · Type · Range / Set Point / Nor.Temp (Unit) · Remove · Cal · install · BU · SALE · ชื่อลูกค้า · Plan · Actual · Remark และรายการ Certificate ใต้แต่ละแถว (Item · Certificate_No · Request_No · Tag_No · Description · Client Name · Cal_Date · Activity · Note)',
+    'Instrument: กรอกในแผนงาน (Customer, SALE, ชื่อลูกค้า ใช้จากแผน · Request No. ว่าง = Plan No.) · แท็บ Instrument มีตาราง Weekly plan instrument ใต้ตารางแผน แก้ Remove / Cal / install, Actual, Remark ได้ทันที · Print / PDF, Excel (ชีต Weekly plan instrument และ Certificates), ข้อความ LINE และ Dashboard (Plan / Actual, Completed, Certificate, ตาม Type LAB Plant ลูกค้า)',
+    'Weekly plan calibration ใช้รายการตัวเลือกของทีม: Size (1/8" – 12") · Type (Coriolis, Magnetic, Rotameter, Turbine, Ultrasonics, Vortex, Thermal Mass, Positive Displacement) · Process Fluid ใหม่ (Liquid, Gas/Steam, High pressure) · Round (None, A (Excise), Q (Local Excise), W&M, Customer) · Lab (Site#1, Site#3, On-Site) เป็นช่องเลือก · ช่อง Sale ของแผนมีรายชื่อ Sale ของทีมให้เลือก · Dashboard เพิ่มกราฟตาม Process Fluid และ Round',
+    'Request No. ใน Weekly plan calibration ใช้เลขเดียวกับ Plan No. ของแผนอัตโนมัติ (ไม่ต้องพิมพ์ซ้ำ แก้ Plan No. แล้วเปลี่ยนตาม)',
+    'สายงานไม่บังคับ: หัวข้องานที่ "ใช้ได้ทั้งสองสาย" เลือก "ทั้งสองสาย" ได้ (แผนแสดงทั้งสองแท็บ) · หัวข้องานที่ผูกกับสายยังเลือกสายให้อัตโนมัติ',
+    'ออกแบบปุ่มสายงานใหม่: การ์ดสีประจำสาย ไอคอนลายน้ำ ป้าย FM / INS สายที่เลือกเป็นสีเต็มพร้อมตัวเลขใหญ่ · ช่องสายงานในฟอร์มเป็นปุ่มรูปภาพ 3 แบบ',
+    'Weekly plan calibration (Flow Meter): ในแผนงาน Flow Meter กรอกรายการเครื่องได้ตามแบบฟอร์มของทีม Request No. · Tag/SN · Size · Type · Range for Customer · Point cal · Round · Lab · Status · Pass/Fail · Detail (DATE, Customer, Sale ใช้จากแผน) · ปุ่ม "คัดลอก" เพิ่มเครื่องถัดไปโดยใช้ค่าเดิม',
+    'แท็บ Flow Meter มีตาราง "Weekly plan calibration" ของทั้งสัปดาห์ใต้ตารางแผน หัวตารางสีเดียวกับแบบฟอร์ม · แก้ Lab / Status / Pass/Fail ในตารางหรือในการ์ดแผนได้ทันที (เลือก Pass/Fail แล้ว Status เป็น "สอบเทียบเสร็จ") · มือถือแสดงเป็นการ์ดรายเครื่อง',
+    'ปุ่มสายงานแบบใหม่: การ์ดพร้อมไอคอน คำอธิบาย จำนวนแผน งานที่เสร็จ แถบความคืบหน้า และจำนวนเครื่องสอบเทียบ อยู่ด้านบนสุดของหน้า Weekly Plan, Dashboard และ Booking',
+    'Dashboard: ส่วน "แยกตามสายงาน" (แผน ปิดงาน คน-วัน ลูกค้า ของแต่ละสาย) และ "Calibration Flow Meter" (จำนวนเครื่อง เสร็จ กำลังทำ รอ Pass Fail และกราฟตาม Type Size Lab ลูกค้า) · KPI ประเด็นสำคัญ รายงาน PDF และ Excel รวมข้อมูลนี้ด้วย',
+    'Print / PDF และ Excel ของสัปดาห์มีหน้า / ชีต "Weekly plan calibration" คอลัมน์เดียวกับแบบฟอร์ม · ข้อความ LINE มีรายการเครื่องสอบเทียบ · ค้นหาด้วย Tag/SN หรือ Request No. ได้',
+  ]},
+  {v:'4.1.0',d:'2026-10-06',items:[
+    'Weekly Plan แยก 2 สายงาน: Calibration Flow Meter และ Instrument · แท็บด้านบน ทั้งหมด / Flow Meter / Instrument พร้อมจำนวนแผน (จำแท็บที่เลือกไว้ต่อบัญชี) · การ์ดมีป้าย FM / INS ในแท็บทั้งหมด',
+    'ลงแผนต้องเลือกสายงาน: เลือกให้อัตโนมัติจากแท็บที่เปิดอยู่ หรือจากหัวข้องานที่ผูกกับสายนั้น · รายการหัวข้องานจัดกลุ่มตามสาย · งานลาไม่ต้องเลือกสาย',
+    'ใช้ทีมเดียวกันทั้งสองสาย: คนว่าง การจัดชน และงานลาเห็นทุกแท็บ · แผนเก่าที่ยังไม่ระบุสายแสดงทุกแท็บพร้อมป้าย "ไม่ระบุสาย"',
+    'คัดลอกส่ง LINE, Print / PDF, Excel, Dashboard และ Booking Plan แยกตามแท็บที่เปิด (สรุปรายคนในไฟล์พิมพ์ยังรวมทั้งสองสาย)',
+    'ข้อมูลหลัก › หัวข้องาน: เพิ่มคอลัมน์สายงาน (Flow Meter / Instrument / ใช้ได้ทั้งสองสาย)',
+  ]},
   {v:'4.0.1',d:'2026-10-06',items:[
+    'คัดลอกแผนส่ง LINE ใส่อีโมจิแบบรายงานของทีม: 🏭 สถานที่ · 🕘 Work Date (วว/ดด/ปป) · ✍️ รายละเอียด · 👷 ทีมงานเป็นรายชื่อเรียงเลข · ✅ สถานะ · แยกช่วงเช้า / ช่วงบ่าย / ทั้งวัน',
+    'กดสถานะ "เสร็จแล้ว" แล้วแนบ Service Report หรือเอกสารยืนยันงานเสร็จได้ทันที (ไม่บังคับ): PDF รูป Word Excel ไม่เกิน 4 MB สูงสุด 5 ไฟล์ บันทึกทันทีไม่ต้องกดแก้ไข · การ์ดแผนมีไอคอนบอกจำนวนไฟล์ · ก๊อปแผนไม่ติดไฟล์ไปด้วย',
     'ข้อมูลอัปเดตเองโดยไม่ต้องรีเฟรช: ตรวจข้อมูลใหม่ทุก 20 วินาที ทันทีที่กลับมาที่แท็บหรือเน็ตกลับมา และเมื่อมีคนบันทึก · หน้าจอเปลี่ยนเฉพาะเมื่อข้อมูลเปลี่ยนจริง การ์ดที่เพิ่งเปลี่ยนจะกะพริบ · การเชื่อมต่อขาดแล้วต่อใหม่ได้เอง',
+    'มือถือ: ดึงหน้าจอลงจากด้านบนสุดเพื่อรีเฟรช (ดึงลง → ปล่อยเพื่อรีเฟรช) อัปเดตข้อมูลทันทีโดยไม่โหลดหน้าใหม่ อยู่สัปดาห์และตัวกรองเดิม · ใช้ได้ทั้งในเบราว์เซอร์ แอปที่เพิ่มไว้หน้าโฮม และเบราว์เซอร์ใน LINE',
     'Effect ตอนโหลดข้อมูล ทั้งคอมและมือถือ: แถบโหลดบางๆ ด้านบนสุดตอนดึงหรือบันทึกข้อมูล และโครงหน้าระหว่างรอ (ตารางสัปดาห์บนคอม แถบวันและการ์ดบนมือถือ)',
     'Print / PDF พิมพ์เป็นตาราง Weekly Plan ของทั้งสัปดาห์แบบเดียวกับหน้าจอ: แถวตามหัวข้องาน (หัวข้อลาอยู่ล่างสุด) × คอลัมน์วัน การ์ดแผนครบ ป้ายจัดชน และสถานะ บนกระดาษ A3 แนวนอน · หน้าถัดไปเป็นสรุปรายคนรายวันพร้อมช่องลงนาม',
     'กดออกจากระบบแล้วถามยืนยันก่อน "แน่ใจไหมว่าจะออกจากระบบ" (กดยกเลิกหรือ Esc เพื่ออยู่ต่อ)',
