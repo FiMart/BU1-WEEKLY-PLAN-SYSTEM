@@ -1,3 +1,5 @@
+-- ⛔ OBSOLETE (6 Oct 2026) — DO NOT RUN. The central project keeps BU1 data in public.* (shared with the old BU1 app);
+--    this app now maps those tables (js/data/backend.js). Database changes go through REQUEST-TO-BU2 only.
 -- BU1 Weekly Plan · tables on the central Supabase project
 -- ⚠ ส่งไฟล์นี้ให้เจ้าของระบบกลางตรวจก่อนรัน (DB นี้มีแอปอื่นใช้งานจริงอยู่) · รันซ้ำได้ (สร้างเฉพาะที่ยังไม่มี และแทนที่ policy)
 -- Follows "ต่อ DB เข้ากับ Supabase กลาง" (1 Oct 2026):

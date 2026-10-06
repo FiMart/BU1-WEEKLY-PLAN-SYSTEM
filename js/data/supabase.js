@@ -1,7 +1,7 @@
 'use strict';
 /* BU1 Weekly Plan · Supabase (central project shared with Weekly Plan BU2 and Safety Training Record)
    - db adapter with the same shape as the claude.ai db (collection/doc/where/get/set/update/delete/onSnapshot), built on
-     supabaseBackend (js/data/backend.js), so Store and every view keep working unchanged
+     supabaseBackend (js/data/backend.js, which maps the public.* Weekly Plan tables), so Store and every view keep working
    - sign-in: Supabase Auth e-mail + password. One account works for every app on the central project. "สมัครสมาชิก"
      creates that central account (supabase.auth.signUp) — there is no member table or approval inside this app; access
      to BU1 data still comes from public.user_roles (core.my_depts()), set by the system owner, and RLS enforces it
@@ -9,6 +9,8 @@
 const SUPA_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
 const hasSupabaseConfig=()=>typeof BU1_CONFIG!=='undefined'&&!!(BU1_CONFIG.supabaseUrl&&BU1_CONFIG.supabaseAnonKey);
 const DEPT=()=>String((typeof BU1_CONFIG!=='undefined'&&BU1_CONFIG.deptId)||'BU1');
+/* read-only stage: nothing is written to the central database (plans, master data, user_roles, account prefs) */
+const isReadOnly=()=>typeof BU1_CONFIG==='undefined'||BU1_CONFIG.readOnly!==false;
 let sb=null,backend=null;
 S.auth={user:null,email:'',depts:null};
 
@@ -22,6 +24,12 @@ function supaErr(e){
 }
 function supaDb(be){
   const guard=async p=>{try{return await p}catch(e){throw supaErr(e)}};
+  /* writes: a failure stays on screen (banner) until a later write succeeds — never cleared by realtime, which only
+     proves that someone else's write arrived (store-notes from BU2) */
+  const wguard=async p=>{
+    try{const r=await guard(p);if(S.writeFail){S.writeFail=null;render()}return r}
+    catch(e){if(e.code!=='read_only'){S.writeFail={msg:e.message||String(e.code||''),at:new Date()};render()}throw e}
+  };
   /* live queries by entity, so a write reloads them at once even when realtime is not switched on */
   const live=new Map();const poke=e=>(live.get(e)||new Set()).forEach(fn=>fn());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)live.forEach(set=>set.forEach(fn=>fn()))});
@@ -56,16 +64,16 @@ function supaDb(be){
     const one=async()=>(await guard(be.list(e,{id})))[0]||null;
     return {
       async get(){const r=await one();return {exists:!!r,id,data:()=>{if(!r)return undefined;const {id:_,...d}=r;return d}}},
-      async set(d){await guard(be.upsert(e,[Object.assign({},d,{id})]));poke(e)},
-      async update(d){const r=await one();if(!r)throw {code:'not_found',message:'document not found'};await guard(be.upsert(e,[Object.assign({},r,d,{id})]));poke(e)},
-      async delete(){await guard(be.remove(e,[id]));poke(e)},
+      async set(d){await wguard(be.upsert(e,[Object.assign({},d,{id})]));poke(e)},
+      async update(d){const r=await one();if(!r)throw {code:'not_found',message:'document not found'};await wguard(be.upsert(e,[Object.assign({},r,d,{id})]));poke(e)},
+      async delete(){await wguard(be.remove(e,[id]));poke(e)},
       onSnapshot:(cb,err)=>watch(e,[['id','==',id]],s=>{const r=s.docs[0];cb({exists:!!r,id,data:()=>r?r.data():undefined})},err),
     };
   }
   const collection=c=>Object.assign(query(c,[]),{doc:id=>docRef(c,id)});
   return {collection,doc:path=>{const [c,id]=String(path).split('/');return docRef(c,id)},
     /* bulk upsert for backup import: rows of one entity [{id, ...fields}] */
-    async bulk(entity,rows){await guard(be.upsert(entity,rows));poke(entity)}};
+    async bulk(entity,rows){await wguard(be.upsert(entity,rows));poke(entity)}};
 }
 
 /* ---------- people: same calls the views make on the claude.ai user capability (ids are e-mails) ---------- */
@@ -146,19 +154,22 @@ async function myDepts(){
 }
 async function afterLogin(user){
   S.auth.user=user;S.auth.email=String(user.email||'').trim().toLowerCase();S.me=S.auth.email;
-  usePrefsOf(S.auth.email,(user.user_metadata||{}).bu1wp_prefs,pushPrefs);render();
+  usePrefsOf(S.auth.email,(user.user_metadata||{}).bu1wp_prefs,isReadOnly()?null:pushPrefs);render();
   /* the stored session may predate a change made on another device: read the account once more from the server */
   sb.auth.getUser().then(({data})=>{const u=data&&data.user;if(!u||String(u.email||'').toLowerCase()!==S.auth.email)return;S.auth.user=u;
-    const r=cleanPrefs((u.user_metadata||{}).bu1wp_prefs);if(Object.keys(r).length&&JSON.stringify(r)!==JSON.stringify(prefs)){usePrefsOf(S.auth.email,r,pushPrefs);S.anim='view';render()}}).catch(()=>{});
+    const r=cleanPrefs((u.user_metadata||{}).bu1wp_prefs);if(Object.keys(r).length&&JSON.stringify(r)!==JSON.stringify(prefs)){usePrefsOf(S.auth.email,r,isReadOnly()?null:pushPrefs);S.anim='view';render()}}).catch(()=>{});
   S.auth.depts=await myDepts();
   if(S.auth.depts&&!S.auth.depts.includes(DEPT())){showAuth('noaccess');return}
   /* role = data.level of this person's public.user_roles row for BU1 (js/features/roles.js); no row = viewer */
   applyLevel(await loadMyLevel());
+  if(isReadOnly())S.canWrite=false;/* stage 2: compare with the old app before any write is switched on */
   hideAuth();
-  backend=supabaseBackend(sb,{schema:String(BU1_CONFIG.schema||'bu1wp'),dept:DEPT(),who:()=>S.auth.email});
+  backend=supabaseBackend(sb,{dept:DEPT()});
   db=supaDb(backend);users=supaUsers();downloads=browserDownloads;S.mode='live';
+  document.body.classList.add('central');/* photos, files and projects have no central storage yet (closed until BU2 adds it) */
+  if(S.view==='projects')S.view='plan';
   $('#btnLogout').hidden=false;
-  showMe();wireData();
+  showMe();wireData();loadSafety(true);/* Safety cards for the team picker (read only, never blocks planning) */
 }
 
 /* the account's display prefs go to its user_metadata.bu1wp_prefs (merged with the other metadata keys), a moment after the last change */

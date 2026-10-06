@@ -4,6 +4,8 @@
 let pendingRender=false;
 const PAGES={
   plan:['Weekly Plan',''],
+  safety:['Safety Training','บัตรเข้าพื้นที่ของทีม คำขออบรม บันทึกอบรมย้อนหลัง และเอกสาร · ข้อมูลจากระบบ Safety ของบริษัท'],
+  booking:['Booking Plan','ภาพรวมการจองงานทั้งหมดทุกสัปดาห์ · ดูอย่างเดียว การจองและแก้ไขทำที่หน้า Weekly Plan · กดแถวเพื่อเปิดแผน'],
   people:['สรุปรายคนรายวัน','ช่วงเวลาของงานแรกและงานสุดท้าย จำนวนงาน และใครว่างในแต่ละวัน ติ๊กชื่อเพื่อลงแผนให้หลายคนพร้อมกัน'],
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
   search:['ค้นหางานย้อนหลัง','ค้นด้วย Plan No. ชื่อลูกค้า หรือชื่อพนักงาน จากแผนทุกสัปดาห์'],
@@ -12,7 +14,7 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
@@ -28,6 +30,8 @@ function render(){
   main.innerHTML=VIEW_FN()[S.view]();
   const sc2=main.querySelector('.scroll-x');if(sc2&&!anim){sc2.scrollLeft=sl;sc2.scrollTop=st}
   if(S.view==='search')fillSearch();
+  if(S.view==='booking')fillBooking();
+  if(S.view==='safety')fillSafety();
   if(S.view==='settings')filterMd();
   if(S.view==='people')syncRowPicks();
   if(S.view==='ncr')fillNcrTable();
@@ -89,7 +93,9 @@ function renderBanners(){
   const b=[];
   if(S.mode==='local')b.push(`<div class="banner warn"><b>โหมดตัวอย่างในเครื่อง</b> ข้อมูลที่แก้ในหน้านี้จะหายเมื่อปิดหน้า และไม่แชร์ให้ทีม เปิดหน้านี้ผ่านลิงก์ claude.ai เพื่อใช้ฐานข้อมูลร่วมกัน</div>`);
   if(S.mode==='error')b.push(`<div class="banner err"><b>การเชื่อมต่อฐานข้อมูลขาด</b> โหลดหน้าใหม่เพื่อเชื่อมต่ออีกครั้ง ข้อมูลที่แสดงอยู่อาจไม่เป็นปัจจุบัน</div>`);
-  if(!S.canWrite){
+  if(S.writeFail)b.push(`<div class="banner err"><b>บันทึกล่าสุดไม่สำเร็จ</b> ข้อมูลที่เพิ่งแก้ยังไม่ถึงฐานข้อมูลกลาง (${esc(String(S.writeFail.msg||'').slice(0,160))}) · ตรวจการเชื่อมต่อแล้วบันทึกอีกครั้ง แถบนี้จะหายเมื่อบันทึกสำเร็จ</div>`);
+  if(S.backend==='supabase'&&S.mode==='live'&&isReadOnly())b.push(`<div class="banner warn"><b>โหมดอ่านอย่างเดียว · ทดสอบเทียบข้อมูล</b> แสดงข้อมูล BU1 จริงจากฐานข้อมูลกลาง (ชุดเดียวกับแอป BU1 ตัวเก่า) แต่ยังไม่บันทึกอะไรลงไป เปิดสัปดาห์เดียวกันในแอปเก่าแล้วเทียบจำนวนงาน คน และรถ</div>`);
+  else if(!S.canWrite){
     if(S.backend==='supabase'){const L=levelOf(S.level)||levelOf('viewer');
       b.push(`<div class="banner"><b>${esc(L.th)} (${L.en})</b> ${esc(L.desc)}${L.perm.edit?' · ตอนนี้ฐานข้อมูลปฏิเสธการบันทึก ติดต่อผู้ดูแลระบบ':' · ต้องการสิทธิ์เพิ่ม ติดต่อผู้ดูแลระบบของแผนก'}</div>`)}
     else b.push(`<div class="banner"><b>ดูได้อย่างเดียว</b> บัญชีนี้ยังไม่มีสิทธิ์แก้ไข ขอสิทธิ์ Contributor หรือ Editor จากเจ้าของหน้านี้</div>`);
@@ -101,7 +107,7 @@ function renderBanners(){
 let wkExportHtml=null;
 function renderWeekbar(){
   const show=S.view==='people'||(S.view==='dash'&&S.dash.mode==='week');
-  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite;
+  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety';/* Safety has its own "+ ขออบรม" */
   if(!show)return;
   const last=addDays(S.week,6);
   $('#wkTitle').textContent=weekName(S.week);

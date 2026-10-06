@@ -59,6 +59,25 @@ h1,h2,h3,h4{line-height:1.35}
 .dv-f dd{font-weight:500}
 .reason-box span{font-weight:500}
 
+/* readability pass (Oct 2026): together with the new page zoom (never under 0.95×) these keep Thai text at a comfortable size
+   - nothing below 12px; table heads 12.5px in normal case (uppercase tracking does nothing for Thai)
+   - names in lists 600, not 700: bold Thai at 13–14px closes up its loops and tone marks */
+.wc-per,.today-pill,.chip-flag,.hol-pill,.cap,.sys-tag,.per,.pick .code,.tp-tag small,.avp-row small,.avp-head em,.pd-n,.jr .k,.mp thead th,
+.mc em,.proj-name small,.tile .lbl em,.dc-x,.tr-gh span,.about-v em,.dc-free span,.pcount,.ph .new,.ph.loading,.pn,.tcode,.sb-ver{font-size:12px}
+.list thead th{font-size:12.5px;letter-spacing:.01em;text-transform:none}
+.list td{font-size:13.5px;line-height:1.5}
+.list td b,.list td strong{font-weight:600}
+.list .sub{font-size:12px;margin-top:1px}
+.hint{font-size:13px;line-height:1.55}
+.page-head p{font-size:14px;line-height:1.55}
+.btn{font-size:13.5px}
+.btn.sm{font-size:12.5px}
+.seg span{font-size:13px}
+.field label,.field .lbl{font-size:13px}
+.wc-title{font-size:13px}
+.wc-sub,.wc-loc,.wc-cust,.wc-det,.wc-pp .pp{font-size:12.5px}
+.sb-nav button span{font-size:14px}
+
 /* phone bottom bar: 8 items, keep labels legible */
 @media (max-width:760px){
   .bottom-nav button{font-size:10.5px;letter-spacing:0}

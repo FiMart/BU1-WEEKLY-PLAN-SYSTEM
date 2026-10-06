@@ -9,9 +9,12 @@ function planGroups(list){
     return [...m].sort((a,b)=>(a[0]===NO_CUST)-(b[0]===NO_CUST)||b[1].length-a[1].length||a[0].localeCompare(b[0],'th'))
       .map(([k,l])=>({key:'c:'+k,label:k,color:'#1462d0',tasks:l,preset:{customer:k===NO_CUST?'':k}}));
   }
-  const out=[];const seen=new Set();
-  for(const ty of jobTypes()){seen.add(ty.id);const l=list.filter(t=>typeIdOf(t)===ty.id);if(l.length)out.push({key:'t:'+ty.id,label:ty.name,color:ty.color,tasks:l,preset:{type:ty.id}})}
+  /* job types in their set order, but ลา (leave) always as the last row */
+  const out=[];const seen=new Set();let leave=null;
+  for(const ty of jobTypes()){seen.add(ty.id);const l=list.filter(t=>typeIdOf(t)===ty.id);if(!l.length)continue;
+    const g={key:'t:'+ty.id,label:ty.name,color:ty.color,tasks:l,preset:{type:ty.id}};if(ty.id==='leave')leave=g;else out.push(g)}
   const rest=list.filter(t=>!seen.has(typeIdOf(t)));if(rest.length)out.push({key:'t:__x',label:'ประเภทที่ถูกลบแล้ว',color:'#8a979c',tasks:rest,preset:{}});
+  if(leave)out.push(leave);
   return out;
 }
 const planMatch=t=>{const q=norm(S.pf.q);return (!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};

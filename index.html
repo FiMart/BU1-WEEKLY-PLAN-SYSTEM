@@ -6,8 +6,8 @@ add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg'});
 add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png'});
 add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
-<!-- fluid UI scale: set before first paint; css/scale.css applies it (base width 1680px, 0.8–1.12×; phones stay 1, tablets ease from 1 at 760px to 0.8 at 1344px so touch targets stay full size) -->
-<script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=760?1:w<1344?1-.2*(w-760)/584:Math.min(1.12,Math.max(.8,w/1680));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
+<!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
+<script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
 <noscript><link rel="icon" type="image/png" href="assets/favicon-32.png"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +29,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/scale.css">
 <link rel="stylesheet" href="css/type.css">
 <link rel="stylesheet" href="css/motion.css">
+<link rel="stylesheet" href="css/safety.css">
 
 <aside class="side" id="side" aria-label="เมนูหลัก">
   <button type="button" class="sb-logo" data-go="plan" aria-label="ไปที่ Weekly Plan"><span class="sb-mark">BU1</span><span class="sb-txt"><b>Weekly Plan</b><small>Lab Work System</small></span></button>
@@ -37,6 +38,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
   <nav class="sb-nav" role="tablist" aria-label="เมนูหลัก"><span class="sb-ind" id="sbInd" aria-hidden="true"></span>
     <button type="button" role="tab" data-view="dash" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg><span>Dashboard</span></button>
     <button type="button" role="tab" data-view="plan" title="Weekly Plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Weekly Plan</span></button>
+    <button type="button" role="tab" data-view="booking" title="Booking Plan · ภาพรวมการจองทุกสัปดาห์"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg><span>Booking Plan</span></button>
+    <button type="button" role="tab" data-view="safety" title="Safety Training · บัตรเข้าพื้นที่และคำขออบรม"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span>Safety Training</span></button>
     <button type="button" role="tab" data-view="people" title="สรุปรายคน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg><span>สรุปรายคน</span></button>
     <button type="button" role="tab" data-view="projects" title="กำลังคนโปรเจกต์"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg><span>กำลังคนโปรเจกต์</span></button>
     <button type="button" role="tab" data-view="search" title="ค้นหาย้อนหลัง"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>ค้นหาย้อนหลัง</span></button>
@@ -60,6 +63,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 </header>
 <nav class="bottom-nav" role="tablist" aria-label="เมนูหลัก">
   <button type="button" role="tab" data-view="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h3M13.5 14h3M7.5 17.5h3"/></svg>แผนงาน</button>
+  <button type="button" role="tab" data-view="booking"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg>Booking</button>
+  <button type="button" role="tab" data-view="safety"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>Safety</button>
   <button type="button" role="tab" data-view="people"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg>รายคน</button>
   <button type="button" role="tab" data-view="projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg>กำลังคน</button>
   <button type="button" role="tab" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>ค้นหา</button>
@@ -143,6 +148,9 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
         <label class="fl" for="f-location"><b>Location</b><small>สถานที่</small></label>
         <div class="fv"><input id="f-location" list="dl-locations" maxlength="120" autocomplete="off" placeholder="เช่น ชื่อโรงงาน / นิคม / จังหวัด"></div>
 
+        <label class="fl" for="f-area" id="lblArea" hidden><b>พื้นที่ (Safety)</b><small>ใช้เช็คบัตรเข้าพื้นที่ของทีม</small></label>
+        <div class="fv" id="areaWrap" hidden><select id="f-area"></select><span class="hint" id="f-areaHint" hidden></span></div>
+
         <label class="fl" for="f-date"><b>Time</b><small>วันที่ ช่วงเวลา และเวลา</small></label>
         <div class="fv">
           <div class="timeline"><input type="date" id="f-date" aria-label="วันที่"><select id="f-period" aria-label="ช่วงเวลา"></select></div>
@@ -193,6 +201,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
               <label for="tpGuest">คนจากแผนกอื่น <span class="th">พิมพ์ชื่อเอง แล้วกด Enter หรือปุ่มเพิ่ม</span></label>
               <div class="guest-row"><input id="tpGuest" list="dl-guests" maxlength="80" autocomplete="off" placeholder="เช่น สมศักดิ์ (ฝ่ายผลิต)"><button type="button" class="btn sm" id="tpGuestAdd">+ เพิ่มชื่อ</button></div>
             </div>
+            <div id="tpCard"></div>
             <div class="tp-foot"><span id="tpCount"></span><button type="button" class="lnk" id="tpClear">ล้างที่เลือก</button></div>
             <div id="f-conf" class="conf-box" hidden></div>
             <div id="f-ok" class="ok-box" role="status" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>ไม่มีการชนกัน — พร้อมบันทึก</div>
@@ -244,6 +253,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="ncr-body" id="ncrBody"></div>
     <footer class="ncr-foot"><button type="button" class="btn danger" id="ncrDel" hidden>ลบ NCR</button><button type="button" class="btn" id="ncrPrint" hidden>พิมพ์ใบ NCR</button><span class="grow"></span><button type="button" class="btn ghost" data-ncr-close>ปิด</button><button type="submit" class="btn primary" id="ncrSave">บันทึก NCR</button></footer>
   </form>
+</dialog>
+<dialog id="sfDlg" class="sf-dlg" aria-labelledby="sfDlgTitle">
+  <div class="sf-wrap">
+    <header class="dlg-head"><div class="dlg-titles"><h2 id="sfDlgTitle"></h2><p class="dlg-sub" id="sfDlgSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-sf-close aria-label="ปิด">✕</button></header>
+    <div class="dlg-body" id="sfDlgBody"></div>
+    <footer class="dlg-foot" id="sfDlgFoot"></footer>
+  </div>
 </dialog>
 <dialog id="acctDlg" class="acct-dlg" aria-labelledby="acctTitle">
   <div class="acct-wrap">
@@ -374,6 +390,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/views/people.js"></script>
 <script src="js/views/projects.js"></script>
 <script src="js/views/search.js"></script>
+<script src="js/views/booking.js"></script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/settings.js"></script>
 <script src="js/views/help.js"></script>
@@ -387,6 +404,10 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/features/account.js"></script>
 <script src="js/features/about.js"></script>
 <script src="js/features/ncr.js"></script>
+<script src="js/features/cert-status.js"></script>
+<script src="js/features/safety.js"></script>
+<script src="js/views/safety-pages.js"></script>
+<script src="js/features/safety-forms.js"></script>
 <script src="js/features/export.js"></script>
 <script src="js/app/events.js"></script>
 <script src="js/app/boot.js"></script>

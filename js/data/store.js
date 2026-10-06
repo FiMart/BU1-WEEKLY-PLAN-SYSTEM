@@ -38,6 +38,8 @@ const Store={
 };
 function errText(e){
   const c=e&&e.code;
+  if(c==='unsupported')return 'ส่วนนี้ยังไม่มีที่เก็บในฐานข้อมูลกลาง (รูป ไฟล์แนบ และโปรเจกต์ ปิดไว้จนกว่า BU2 จะเพิ่มที่เก็บให้)';
+  if(c==='read_only')return 'ตอนนี้เป็นโหมดอ่านอย่างเดียว (กำลังทดสอบเทียบกับแอป BU1 ตัวเก่า) ยังบันทึกลงฐานข้อมูลกลางไม่ได้';
   if(c==='invalid_argument')return 'บันทึกไม่ได้: บัญชีนี้ไม่มีสิทธิ์แก้ไข ขอสิทธิ์ Contributor จากเจ้าของหน้านี้';
   if(c==='quota_exceeded')return 'ฐานข้อมูลเต็ม ลบแผนเก่าที่ไม่ใช้แล้วออกก่อน แล้วบันทึกอีกครั้ง';
   if(c==='resource_exhausted')return 'ส่งคำขอถี่เกินไป รอสักครู่แล้วลองอีกครั้ง';
@@ -48,11 +50,12 @@ function noteWriteError(e){if(e&&e.code==='invalid_argument'){S.canWrite=false;r
 
 /* ---------- cached reads outside the open week (month views, search) ---------- */
 const RC=new Map();const ALL={data:null,stale:true,loading:false};
-function invalidate(){RC.forEach(e=>{e.stale=true});ALL.stale=true}
+/* gen counts invalidations, so one that arrives while a load is running is not lost (that load's result is already old) */
+function invalidate(){RC.forEach(e=>{e.stale=true;e.gen=(e.gen||0)+1});ALL.stale=true;ALL.gen=(ALL.gen||0)+1}
 function loadInto(e,fn,after){
-  if(!e.stale||e.loading)return;e.loading=true;
+  if(!e.stale||e.loading)return;e.loading=true;const g=e.gen||0;
   fn().then(d=>{e.data=d;d.forEach(t=>known.set(t.id,t))}).catch(()=>{if(!e.data)e.data=[]})
-    .finally(()=>{e.stale=false;e.loading=false;if(after)after();render()});
+    .finally(()=>{e.stale=(e.gen||0)!==g;e.loading=false;if(after)after();render()});
 }
 function rangeTasks(from,to){const k=from+'|'+to;let e=RC.get(k);if(!e){e={data:null,stale:true,loading:false};RC.set(k,e)}loadInto(e,()=>Store.range('tasks',from,to));return e.data}
 function allTasks(){loadInto(ALL,()=>Store.all('tasks'),()=>{if(S.view==='search')fillSearch()});return ALL.data}

@@ -8,7 +8,7 @@ const BU1_CONFIG={
   supabaseUrl:'https://myvwibwbwktskmfqjoez.supabase.co',        // Project URL of the central project, filled in by the system owner
   supabaseAnonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15dndpYndid2t0c2ttZnFqb2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2MjAyMzAsImV4cCI6MjEwMzE5NjIzMH0.QbczXa4gsO21MRSKm6JgQVF9T6Rt231FP5nXLtwsiH4',    // anon public key, filled in by the system owner (protected by row level security)
   deptId:'BU1',          // dept_id written on every row and used in every select / delete
-  schema:'bu1wp',        // this app's own schema (must be listed in Supabase → API → Exposed schemas)
-  allowSignup:true,     // the central project has sign-ups disabled (checked 2026-10-05); true shows "สมัครสมาชิก" (creates a central Supabase Auth account; BU1 access is still granted by the owner)
+  readOnly:false,        // writes switched on 6 Oct 2026 (user approved; the old BU1 app has not been used). true = read the real data and write nothing
+  allowSignup:false,     // the central project has sign-ups disabled (checked 2026-10-05); true shows "สมัครสมาชิก" (creates a central Supabase Auth account; BU1 access is still granted by the owner)
   allowedEmailDomain:'', // e.g. 'flowlabservice.co.th' to accept only company e-mails at sign-up; '' accepts any e-mail
 };

@@ -11,7 +11,7 @@ function openTask(id,preset){
   $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;
   const sl=sales().map(s=>s.name);if(v.sale&&!sl.some(n=>norm(n)===norm(v.sale)))sl.push(v.sale);
   $('#f-sale').innerHTML=`<option value="">— เลือก Sale —</option>`+sl.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');$('#f-sale').value=v.sale||'';syncSaleTel();
-  $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';
+  $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
   fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;syncNeedGA();syncTrAdd();renderTrGrid();
@@ -95,7 +95,7 @@ function renderDrawerView(t){
   const pool=S.tasks.some(x=>x.id===t.id)?S.tasks:[t];const conf=conflictsFor(t,pool);
   const confStaff=new Set(conf.flatMap(x=>x.staff));const tel=saleTel(t.sale);
   let kk=0;const f=(k,v,cls,wide)=>`<div class="${wide?'wide':''}" style="--k:${++kk}"><dt>${k}</dt><dd class="${v?cls||'':'dash'}">${v?esc(v):'—'}</dd></div>`;
-  const people=(t.staffIds||[]).map(id=>{const s=staffById(id)||{};const n=staffName(id);return `<span class="${confStaff.has(id)?'conf':''}"><span class="avatar" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${s.role?` <small>${esc(s.role)}</small>`:''}</span>`})
+  const people=(t.staffIds||[]).map(id=>{const s=staffById(id)||{};const n=staffName(id);return `<span class="${confStaff.has(id)?'conf':''}"><span class="avatar" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${s.role?` <small>${esc(s.role)}</small>`:''}${cardBadge(cardOf(id,t.areaId))}</span>`})
     .concat((t.guests||[]).map(g=>`<span class="guest"><span class="avatar" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small></span>`));
   $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span><span class="badge" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
     <div class="dv-by"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>ผู้จองแผน <b id="dvBy" class="dash">—</b></div>
@@ -105,14 +105,14 @@ function renderDrawerView(t){
     ${conf.length?`<div class="conf-box"><b>⚠ ${esc(confLabel(conf))}</b>${conf.slice(0,4).map(c=>`<span>ชนกับ ${esc(pName(c.other))} · ${esc(typeLabel(c.other))}${c.other.planNo?' '+esc(c.other.planNo):''}${c.other.customer?' · '+esc(c.other.customer):''}</span>`).join('')}</div>`:''}
     <dl class="dv-f">
       ${f('Plan No.',t.planNo,'mono')}${f('หัวข้องาน / Job',typeLabel(t))}${f('วันที่ทำงาน',`${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)} ${be(d)} · ${pName(t)}`)}${f('Time',t.timeNote)}
-      ${f('Customer',t.customer)}${f('Location',t.location)}${f('Detail',detailOf(t).trim(),'',true)}
+      ${f('Customer',t.customer)}${f('Location',t.location)}${t.areaId?f('พื้นที่ (Safety)',areaName(t.areaId)):''}${f('Detail',detailOf(t).trim(),'',true)}
       ${(t.photoIds||[]).length?'<div class="wide" style="--k:8"><dt>รูปประกอบ</dt><dd class="dv-ph" id="dvPhotos"></dd></div>':''}
       ${(t.files||[]).length?`<div class="wide" style="--k:9"><dt>ไฟล์แนบ (${t.files.length})</dt><dd class="dv-files" id="dvFiles"></dd></div>`:''}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
       <div style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
-      <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}</dd></div>
+      <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${S.canWrite?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
@@ -123,7 +123,7 @@ function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
   return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
-    planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),
+    planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),

@@ -19,11 +19,12 @@ function pickPeople(){return S.staff.filter(s=>s.active!==false||pickSel.has(s.i
 let pickGuests=[];
 function renderPickSel(){
   const el=$('#tpSel');const ids=[...pickSel];
-  const tags=ids.map(id=>{const n=staffName(id);return `<span class="tp-tag"><span class="avatar xs" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}<button type="button" data-tp-remove="${esc(id)}" aria-label="เอา ${esc(n)} ออก">×</button></span>`})
+  const tags=ids.map(id=>{const n=staffName(id);const c=formCard(id);return `<span class="tp-tag"><span class="avatar xs" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${cardBadge(c)}<button type="button" data-tp-remove="${esc(id)}" aria-label="เอา ${esc(n)} ออก">×</button></span>`})
     .concat(pickGuests.map((g,i)=>`<span class="tp-tag guest"><span class="avatar xs" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small><button type="button" data-tp-guest-remove="${i}" aria-label="เอา ${esc(g)} ออก">×</button></span>`));
   el.innerHTML=tags.length?tags.join(''):'<span class="hint">ยังไม่ได้เลือก ติ๊กชื่อจากรายการด้านล่าง หรือพิมพ์ชื่อคนจากแผนกอื่น</span>';
   $('#tpCount').textContent=tags.length?`เลือกแล้ว ${tags.length} คน${pickGuests.length?` (ในแผนก ${ids.length} · แผนกอื่น ${pickGuests.length})`:''}`:'';
   $('#tpClear').hidden=!tags.length;$('#tpN').textContent=tags.length;
+  $('#tpCard').innerHTML=cardSummary(ids,($('#f-area')||{}).value);
 }
 function addGuest(){
   const inp=$('#tpGuest');const name=inp.value.trim().replace(/\s+/g,' ').slice(0,80);if(!name)return false;
@@ -56,7 +57,7 @@ function renderPickerList(){
     html+=`<label class="tp-group sel" style="--pc:${color}"><input type="checkbox" data-tp-all="${esc(pickable.map(r=>r.s.id).join(','))}"${allOn?' checked':''}${pickable.length?'':' disabled'} data-some="${nSel&&!allOn?1:0}" aria-label="เลือกทุกคนที่ว่าง ตำแหน่ง ${esc(team)}"><b>${esc(team)}</b> ว่าง ${rows.length-nUn}/${rows.length} คน<small>${allOn?'เลือกครบแล้ว':nSel?`เลือก ${nSel}/${pickable.length}`:pickable.length?'ติ๊กเพื่อเลือกทุกคนที่ว่าง':'ไม่มีคนว่าง'}</small></label>`;
     html+=rows.map(({s,a,un,lock})=>{const on=pickSel.has(s.id);
       const tip=[s.name,s.role].filter(Boolean).join(' · ')+(un?` · ไม่ว่าง: ${a.txt}`:'');
-      return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b>${un?`<small class="why">${esc(a.txt)}</small>`:a&&a.cls==='part'?`<small>${esc(a.txt)}</small>`:''}</span></label>`}).join('');
+      return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b>${un?`<small class="why">${esc(a.txt)}</small>`:a&&a.cls==='part'?`<small>${esc(a.txt)}</small>`:''}${cardBadge(formCard(s.id))}</span></label>`}).join('');
   }
   const top=list.scrollTop;
   list.innerHTML=html||`<div class="tp-empty">${people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'}</div>`;

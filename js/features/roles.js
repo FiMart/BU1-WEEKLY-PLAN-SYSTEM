@@ -1,13 +1,14 @@
 'use strict';
 /* BU1 Weekly Plan · account roles from the central database
    public.user_roles: one row per person per department — id = e-mail (lower case), dept_id, data = {id, email, name?, level}.
-   level values in use on the central project: admin · engineer · sale · ga · viewer (same names as Weekly Plan BU2).
+   level values on the central project: admin · planer · engineer · sale · ga · viewer (same names as Weekly Plan BU2, roles.ts).
    core.org_roles (email, role) holds organisation roles such as HR; core.is_hr() tells whether the signed-in e-mail has one.
-   The same rules are enforced by row level security in supabase/schema.sql (bu1wp.my_level). */
+   ⚠ RLS only checks "is this person in BU1", not the level: what each level may do is enforced here, in the app. */
 const LEVELS=[
   {id:'admin',th:'ผู้ดูแลระบบ',en:'Admin',desc:'ทำได้ทุกอย่าง: แผนงาน ข้อมูลหลัก ลบแผน นำเข้าข้อมูล และจัดการผู้ใช้ของแผนก',perm:{edit:1,status:1,del:1,master:1,users:1,import:1,ga:1}},
-  {id:'engineer',th:'วิศวกร / ผู้วางแผน',en:'Engineer',desc:'เพิ่มและแก้แผนงาน เปลี่ยนสถานะ แนบรูปและไฟล์ แผนกำลังคนโปรเจกต์ · แก้ข้อมูลหลักและลบแผนไม่ได้',perm:{edit:1,status:1,ga:1}},
-  {id:'sale',th:'ฝ่ายขาย',en:'Sale',desc:'ดูแผนงานทั้งหมด ค้นหา และดาวน์โหลดรายงาน · แก้ไขไม่ได้',perm:{}},
+  {id:'planer',th:'ผู้วางแผน',en:'Planer',desc:'เพิ่ม แก้ และลบแผนงานของทุกคน แก้ข้อมูลหลัก และนำเข้าข้อมูล · จัดการผู้ใช้ไม่ได้',perm:{edit:1,status:1,del:1,master:1,import:1,ga:1}},
+  {id:'engineer',th:'วิศวกร',en:'Engineer',desc:'เพิ่มและแก้แผนงาน เปลี่ยนสถานะ แนบรูปและไฟล์ แผนกำลังคนโปรเจกต์ · แก้ข้อมูลหลักและลบแผนไม่ได้',perm:{edit:1,status:1,ga:1}},
+  {id:'sale',th:'ฝ่ายขาย',en:'Sale',desc:'เพิ่มและแก้แผนงาน เปลี่ยนสถานะ ค้นหา และดาวน์โหลดรายงาน · แก้ข้อมูลหลักและลบแผนไม่ได้',perm:{edit:1,status:1,ga:1}},
   {id:'ga',th:'GA',en:'GA',desc:'ดูแผนงาน และระบุรถ / ทะเบียนให้แผนงานที่ขอรถส่วนกลาง',perm:{ga:1}},
   {id:'viewer',th:'ดูอย่างเดียว',en:'Viewer',desc:'เปิดดูแผนงานได้ แก้ไขไม่ได้',perm:{}},
 ];
@@ -20,7 +21,7 @@ function applyLevel(level){
   S.perm=Object.fromEntries(PERM_KEYS.map(k=>[k,!!(L&&L.perm[k])]));S.canWrite=!!S.perm.edit;
 }
 /* can('master') etc.: edit-type permissions also need S.canWrite, which turns off when the database refuses a write */
-const can=k=>k==='ga'?!!S.perm.ga&&(S.canWrite||S.backend==='supabase'):S.canWrite&&!!S.perm[k];
+const can=k=>S.backend==='supabase'&&isReadOnly()?false:k==='ga'?!!S.perm.ga&&(S.canWrite||S.backend==='supabase'):S.canWrite&&!!S.perm[k];
 const levelLabel=id=>{const L=levelOf(id);return L?`${L.th} (${L.en})`:String(id||'—')};
 
 /* signed-in person's level for this department (RLS returns only their own rows) and HR flag */
@@ -45,13 +46,14 @@ async function loadUsers(){
   render();
 }
 async function saveUser(email,name,level){
+  if(isReadOnly())throw new Error('โหมดอ่านอย่างเดียว ยังเปลี่ยนสิทธิ์ไม่ได้');
   const id=String(email||'').trim().toLowerCase();
   const row={id,dept_id:DEPT(),data:{id,email:id,level}};if(name)row.data.name=name;
   const old=(S.userRows||[]).find(r=>r.id===id);if(old&&old.data&&old.data.name&&!name)row.data.name=old.data.name;
   const {error}=await sb.from('user_roles').upsert(row,{onConflict:'id,dept_id'});if(error)throw error;
 }
 function usersSection(){
-  if(S.backend!=='supabase'||!can('users'))return null;
+  if(S.backend!=='supabase'||!(can('users')||isReadOnly()&&S.perm.users))return null;
   if(S.userRows==null){loadUsers();return {id:'users',title:'ผู้ใช้งานระบบ',sub:'กำลังโหลด…',count:'…',desc:'',body:loading()}}
   const rows=S.userRows.slice().sort((a,b)=>LEVELS.findIndex(l=>l.id===(a.data||{}).level)-LEVELS.findIndex(l=>l.id===(b.data||{}).level)||a.id.localeCompare(b.id));
   const opts=cur=>LEVELS.map(l=>`<option value="${l.id}"${l.id===cur?' selected':''}>${esc(l.th)} (${l.en})</option>`).join('')+(cur&&!levelOf(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'');
@@ -85,6 +87,7 @@ document.addEventListener('click',async e=>{
   const a=e.target.closest('[data-action]');if(!a)return;
   if(a.dataset.action==='users-reload'){S.userRows=null;render();return}
   if(a.dataset.action==='user-remove'){
+    if(isReadOnly()){toast('โหมดอ่านอย่างเดียว ยังเปลี่ยนสิทธิ์ไม่ได้');return}
     if(!arm(a,'user:'+a.dataset.id,'เอาสิทธิ์ออก','กดอีกครั้งเพื่อยืนยัน'))return;
     try{const {error}=await sb.from('user_roles').delete().eq('dept_id',DEPT()).eq('id',a.dataset.id);if(error)throw error;toast(`เอาสิทธิ์แผนก ${DEPT()} ของ ${a.dataset.id} ออกแล้ว`);loadUsers()}
     catch(err){toast('เอาสิทธิ์ออกไม่สำเร็จ: '+(err.message||err))}

@@ -40,7 +40,7 @@ const NEEDS_REASON=new Set(['notdone','postponed','cancelled']);
 const reasonLabel=s=>s==='cancelled'?'เหตุผลที่ยกเลิก / ปัญหาที่หน้างาน':s==='notdone'?'สาเหตุที่งานไม่เสร็จ / ปัญหาที่หน้างาน':'เหตุผลที่เลื่อน / ปัญหาที่หน้างาน';
 const statusFlag=s=>s==='postponed'?'↻ เลื่อน':s==='notdone'?'⚠ ไม่เสร็จ':'✕ ยกเลิก';
 const statusText=t=>(STATUS[t.status]||STATUS.planned).th+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
-const VIEWS=['plan','people','projects','search','dash','ncr','settings','help'];
+const VIEWS=['plan','booking','safety','people','projects','search','dash','ncr','settings','help'];
 const TH_MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const TH_MON_FULL=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const EN_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
