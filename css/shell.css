@@ -90,6 +90,8 @@ body.mini .side .me{padding:3px}
 @media (max-width:1180px){.wp-head{grid-template-columns:1fr}.wp-nav{justify-content:center}.wp-legend{justify-self:center}.wp-brand{text-align:center}}
 /* the week table fits the page width and grows with the page: no scroll box of its own (the day header stays on top while the page scrolls) */
 .scroll-x.wp-scroll{border:0;border-radius:0;box-shadow:none;overflow:visible}
+/* tablets that switch to the week view: 7 day columns cannot fit, so keep readable columns and swipe sideways */
+@media (max-width:1180px){.scroll-x.wp-scroll{overflow-x:auto}table.wp{min-width:960px}}
 table.wp{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed}
 .wp col.c-g{width:124px}
 .wp th,.wp td{border-left:1px solid var(--line-2);border-bottom:1px solid var(--line-2);vertical-align:top;text-align:left}
@@ -193,7 +195,8 @@ table.wp{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed
 .sheet>.fl-full small{font-size:12.5px}
 .sheet>.fl-full small b{font-size:12.5px;font-variant-numeric:tabular-nums}
 .sheet>.fv-full{grid-column:1/-1;border-left:0;padding:10px 12px 12px}
-.tp-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-height:470px;padding:0 10px 10px}
+/* Team Service list shows everyone: no scroll box of its own, the drawer scrolls instead */
+.tp-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-height:none;overflow:visible;padding:0 10px 10px}
 .tp-list .tp-group{margin:0 -10px;padding:12px 12px 6px;background:var(--surface-2);border-bottom:0}
 .tp-group.sel b{color:var(--ink-2);letter-spacing:.08em;display:inline-flex;align-items:center;gap:6px}
 .tp-group.sel b::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--pc,var(--muted))}
@@ -220,4 +223,5 @@ table.wp{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed
 .reason-box.cancelled b{color:var(--crit-ink)}
 .ok-box{display:flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--surface));color:var(--good-ink);border-radius:10px;padding:11px 14px;font-weight:600;font-size:13.5px}
 .ok-box svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-@media (max-width:560px){#dlg .sheet{grid-template-columns:1fr}}
+/* phones: label above its field (the wide drawer rule above is more specific, so it is listed here too) */
+@media (max-width:620px){#dlg .sheet,#dlg.wide .sheet{grid-template-columns:1fr}}

@@ -7,9 +7,10 @@ $('#f-period').innerHTML=PERIODS.map(p=>`<option value="${p.id}">${p.name}</opti
 /* Team Service picker: search + team filter + availability for the chosen date/period */
 let pickSel=new Set(),pickPool=null,lastPicked=null;
 function availOf(id){
-  const v={date:$('#f-date').value,period:$('#f-period').value};if(!v.date)return null;
+  const v={date:$('#f-date').value,period:$('#f-period').value,sharedTeam:$('#f-sharedTeam').checked,location:$('#f-location').value,areaId:($('#f-area')||{}).value||''};if(!v.date)return null;
   const mine=(pickPool||S.tasks).filter(o=>o.date===v.date&&isWorking(o)&&(!editing||o.id!==editing.id)&&(o.staffIds||[]).includes(id));
-  const hit=mine.find(o=>overlaps(v,o));
+  const over=mine.filter(o=>overlaps(v,o));const hit=over.find(o=>!teamShared(v,o));
+  if(!hit&&over.length)return {cls:'part',txt:`ทีมร่วม · ${pName(over[0])} ${typeLabel(over[0])}${over[0].planNo?' '+over[0].planNo:''}`};
   if(hit&&isLeave(hit))return {cls:'leave',txt:`ลา${pName(hit)}`};
   if(hit)return {cls:'busy',txt:`ติดงาน${pName(hit)} · ${typeLabel(hit)}${hit.planNo?' '+hit.planNo:''}`};
   if(mine.length)return {cls:'part',txt:`ว่างช่วงนี้ · วันนี้มี ${mine.length} งาน`};
@@ -21,10 +22,11 @@ function renderPickSel(){
   const el=$('#tpSel');const ids=[...pickSel];
   const tags=ids.map(id=>{const n=staffName(id);const c=formCard(id);return `<span class="tp-tag"><span class="avatar xs" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${cardBadge(c)}<button type="button" data-tp-remove="${esc(id)}" aria-label="เอา ${esc(n)} ออก">×</button></span>`})
     .concat(pickGuests.map((g,i)=>`<span class="tp-tag guest"><span class="avatar xs" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small><button type="button" data-tp-guest-remove="${i}" aria-label="เอา ${esc(g)} ออก">×</button></span>`));
-  el.innerHTML=tags.length?tags.join(''):'<span class="hint">ยังไม่ได้เลือก ติ๊กชื่อจากรายการด้านล่าง หรือพิมพ์ชื่อคนจากแผนกอื่น</span>';
+  el.innerHTML=tags.length?tags.join(''):'<span class="hint">ยังไม่ได้เลือก (ไม่บังคับ บันทึกแผนก่อนแล้วเพิ่มทีมทีหลังได้) · ติ๊กชื่อจากรายการด้านล่าง หรือพิมพ์ชื่อคนจากแผนกอื่น</span>';
   $('#tpCount').textContent=tags.length?`เลือกแล้ว ${tags.length} คน${pickGuests.length?` (ในแผนก ${ids.length} · แผนกอื่น ${pickGuests.length})`:''}`:'';
   $('#tpClear').hidden=!tags.length;$('#tpN').textContent=tags.length;
-  $('#tpCard').innerHTML=cardSummary(ids,($('#f-area')||{}).value);
+  const area=($('#f-area')||{}).value;$('#tpCard').innerHTML=cardSummary(ids,area);
+  $('#tpCardWrap').hidden=!(typeof hasSafety==='function'&&hasSafety()&&area&&areaRule(SAFE,area));
 }
 function addGuest(){
   const inp=$('#tpGuest');const name=inp.value.trim().replace(/\s+/g,' ').slice(0,80);if(!name)return false;
@@ -45,7 +47,10 @@ function posGroups(list){
 function renderPickerList(){
   const list=$('#tpList');if(!list)return;
   const q=norm($('#tpQ').value);const freeOnly=$('#tpFree').checked;const allowBusy=$('#tpAllowBusy').checked;
-  const people=pickPeople();
+  /* Safety: only people whose card for the chosen area is valid today (ผ่าน or ใกล้หมดอายุ); people already picked stay */
+  const area=($('#f-area')||{}).value;const cardOnly=$('#tpCardOnly').checked&&typeof hasSafety==='function'&&hasSafety()&&!!area&&!!areaRule(SAFE,area);
+  const cardOk=id=>{const s=personCardStatus(SAFE,id,area);return !!s&&(s.k==='ok'||s.k==='warn')};
+  const people=pickPeople().filter(s=>!cardOnly||pickSel.has(s.id)||cardOk(s.id));
   let html='';
   for(const {key:team,list:members,color} of posGroups(people)){
     const rows=members.map(s=>{const a=availOf(s.id);const un=!!a&&(a.cls==='busy'||a.cls==='leave');return {s,a,un,lock:un&&!allowBusy&&!pickSel.has(s.id)}})
@@ -60,14 +65,15 @@ function renderPickerList(){
       return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b>${un?`<small class="why">${esc(a.txt)}</small>`:a&&a.cls==='part'?`<small>${esc(a.txt)}</small>`:''}${cardBadge(formCard(s.id))}</span></label>`}).join('');
   }
   const top=list.scrollTop;
-  list.innerHTML=html||`<div class="tp-empty">${people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'}</div>`;
+  list.innerHTML=html||`<div class="tp-empty">${cardOnly&&!people.length?'ยังไม่มีใครมีบัตรพื้นที่นี้ (หรือยังไม่ได้จับคู่พนักงานกับ HR)':people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'}</div>`;
   list.scrollTop=top;lastPicked=null;
   list.querySelectorAll('[data-some="1"]').forEach(x=>{x.indeterminate=true});
 }
 form.addEventListener('change',e=>{const t=e.target;
   if(t.matches('[data-tp-all]')){const ids=t.dataset.tpAll.split(',').filter(Boolean);ids.forEach(i=>t.checked?pickSel.add(i):pickSel.delete(i));renderPickSel();renderPickerList();return}
   if(t.matches('[data-tp]')){if(t.checked){pickSel.add(t.value);lastPicked=t.value}else pickSel.delete(t.value);t.closest('.tp-row').classList.toggle('on',t.checked);renderPickSel();renderPickerList();return}
-  if(t.id==='tpFree'||t.id==='tpAllowBusy')renderPickerList();
+  if(t.id==='tpFree'||t.id==='tpAllowBusy'||t.id==='tpCardOnly')renderPickerList();
+  if(t.id==='f-sharedTeam'||t.id==='f-location'||t.id==='f-area'){syncSharedArea();renderPickerList()}
   if(t.name==='tr-per'){$('#f-period').value=t.value;renderPickerList();renderTrGrid();return}
   if(t.id==='f-date'||t.id==='f-period'){renderPickerList();renderTrGrid()}
   if(t.id==='f-type'){syncTypeOther();syncDrawerColor()}

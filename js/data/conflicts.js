@@ -13,6 +13,13 @@ const roleOf=s=>String((s&&s.role)||'').trim()||'ไม่ระบุตำแ�
 const roleRank=s=>(positions().indexOf(roleOf(s))+1)||999;
 function roleGroups(list){const m=new Map();[...list].sort((a,b)=>roleRank(a)-roleRank(b)||sortPeople(a,b)).forEach(s=>{const k=roleOf(s);if(!m.has(k))m.set(k,[]);m.get(k).push(s)});return m}
 
+/* "ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน" (BU2 Booking.allowSharedTeam): the same people may work two plans on the same day and
+   period without a clash when BOTH plans have it on and are in the same area — the Safety area when both have one, otherwise
+   the same Location. Leave never shares; a shared vehicle still clashes. */
+const locKey=s=>norm(s).replace(/\s+/g,' ');
+const sameArea=(a,b)=>a.areaId&&b.areaId?a.areaId===b.areaId:!!locKey(a.location)&&locKey(a.location)===locKey(b.location);
+const teamShared=(a,b)=>!!a.sharedTeam&&!!b.sharedTeam&&!isLeave(a)&&!isLeave(b)&&sameArea(a,b);
+
 /* ---------- conflicts: same person in overlapping periods, person on leave, same vehicle ---------- */
 function vehKey(t){const k=norm(t.transport);if(!k)return null;return S.resources.some(r=>r.kind==='vehicle'&&norm(r.name)===k)?k:null}
 function conflictsFor(task,pool){
@@ -20,7 +27,7 @@ function conflictsFor(task,pool){
   for(const o of pool){
     if(o.id===task.id||o.date!==task.date||!isWorking(o)||!overlaps(task,o))continue;
     const ol=isLeave(o);if(tl&&ol)continue;
-    const st=(task.staffIds||[]).filter(x=>(o.staffIds||[]).includes(x));
+    const st=teamShared(task,o)?[]:(task.staffIds||[]).filter(x=>(o.staffIds||[]).includes(x));
     const veh=!tl&&!ol&&mv&&vehKey(o)===mv;
     if(st.length||veh)out.push({other:o,staff:st,veh:veh?task.transport:'',leave:tl||ol});
   }

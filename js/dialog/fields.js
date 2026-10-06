@@ -46,6 +46,12 @@ function pickTransport(name){
 /* "ต้องการรถส่วนกลาง": GA assigns the car and plate later; the plan shows "รอระบุทะเบียน" until someone fills in a plate */
 const gaWaiting=t=>!!(t&&t.needGA)&&(!t.transport||t.transport==='GA'||t.transport==='ไม่ใช้รถ');
 const transportText=t=>gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':'');
+/* ใช้ทีมร่วมฯ: the box turns solid when on, and names the area it applies to */
+function syncSharedArea(){
+  const box=$('#shareBox');if(!box)return;box.classList.toggle('on',$('#f-sharedTeam').checked);
+  const a=($('#f-area')||{}).value;const name=a&&typeof areaName==='function'?areaName(a):$('#f-location').value.trim();
+  $('#f-sharedArea').textContent=name?`พื้นที่ ${name} `:'พื้นที่เดียวกัน';
+}
 function syncNeedGA(){
   const on=$('#f-needGA').checked;$('#gaBox').classList.toggle('on',on);
   $('#f-transport').placeholder=on?'รอ GA ระบุรถ · กรอกทะเบียนภายหลังได้':'ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ';

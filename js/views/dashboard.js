@@ -155,7 +155,7 @@ function renderDash(){
   const tile=(i,lbl,en,val,unit,foot,cls,bar)=>`<div class="tile${cls?' '+cls:''}" style="--d:${i}"><span class="lbl">${lbl}<em>${en}</em></span><span class="val">${val}<small>${unit}</small></span>${bar!=null?`<span class="tbar"><i style="width:${Math.min(100,bar)}%"></i></span>`:''}<span class="foot">${foot}</span></div>`;
   const delta=(cur,prv,unit)=>prv==null?'<span class="dl">กำลังโหลดข้อมูลช่วงก่อน…</span>':cur===prv?`<span class="dl">เท่ากับ${P.pLabel}</span>`:`<span class="dl ${cur>prv?'up':'down'}">${cur>prv?'▲':'▼'} ${Math.abs(cur-prv)}${unit||''} จาก${P.pLabel}</span>`;
   const iss=D.confN+D.lateN+D.gaN;
-  h+=sec(1,'สรุปสำหรับผู้บริหาร','Executive Summary');
+  h+=sec(1,'สรุปภาพรวม','Summary');
   h+=`<div class="tiles">
     ${tile(0,'งานทั้งหมด','Total Jobs',num(D.totalJ),'แผน',delta(D.totalJ,D.prevJobs?D.prevJobs.length:null,' แผน'))}
     ${tile(1,'อัตราปิดงาน','Completion Rate',D.doneRate==null?'–':num(D.doneRate),D.doneRate==null?'':'%',esc(D.kpis[1].note),'',D.doneRate)}
@@ -165,7 +165,7 @@ function renderDash(){
     ${tile(5,'งานไม่เสร็จ / NCR','Not done · NCR',num(D.stc.notdone||0),'แผน',`${esc(D.kpis[7].note)}${D.ncrIn.length?' · <button type="button" class="lnk" data-view="ncr">เปิดหน้า NCR</button>':''}`,D.ncrOpen?'alert':'')}
     ${tile(6,'ประเด็นต้องติดตาม','Open Issues',(iss?'⚠ ':'')+num(iss),'รายการ',iss?`${esc(D.kpis[6].note)} · <button type="button" class="lnk" data-action="jump-conf" data-target="#dashIssues">ดูรายละเอียด ↓</button>`:'ไม่มีประเด็นค้าง',iss?'alert':'')}
   </div>`;
-  h+=`<section class="panel span-12" style="--d:1"><header><h2>ประเด็นสำคัญ</h2><p>สรุปอัตโนมัติจากแผนงานในช่วงนี้ ใช้ประกอบการรายงานหัวหน้างานและผู้บริหาร</p></header><ul class="findings">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul></section>`;
+  h+=`<section class="panel span-12" style="--d:1"><header><h2>ประเด็นสำคัญ</h2><p>สรุปอัตโนมัติจากแผนงานในช่วงนี้ ใช้ประกอบการรายงานผลการปฏิบัติงาน</p></header><ul class="findings">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul></section>`;
 
   /* ---- 2. performance: trend chart + status ---- */
   h+=sec(2,'ผลการดำเนินงาน','Performance');
@@ -288,7 +288,7 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน · ${esc(P.label)}</h1></div></div>
 <p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>
-${sec(1,'สรุปสำหรับผู้บริหาร','Executive Summary')}
+${sec(1,'สรุปภาพรวม','Summary')}
 <div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>
 <ul class="f">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul>
 ${sec(2,'ผลการดำเนินงาน','Performance')}<div class="two"><div>${tbl(T.trend)}</div><div>${tbl(T.status)}</div></div>

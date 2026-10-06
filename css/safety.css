@@ -1,5 +1,6 @@
 /* BU1 Weekly Plan · Safety Training pages and forms (js/views/safety-pages.js, js/features/safety-forms.js) */
 body:not(.central) [data-view="safety"]{display:none!important}
+#sfBody,.sf-top{min-width:0;max-width:100%}/* grid children: never let a no-wrap row widen the page */
 .sf-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .sf-top .grow{flex:1}
 .sf-tabs label span{padding:7px 16px;font-size:14px}
@@ -60,6 +61,21 @@ table.list.sf-table{min-width:560px}/* .list is 1040px for the full-width lists;
 .sf-track i{width:16px;height:4px;border-radius:2px;background:var(--line)}
 .sf-track i.done{background:var(--good-ink)}
 .sf-track i.on{background:var(--accent)}
+/* จับคู่พนักงาน */
+.sf-link select{width:100%;max-width:420px}
+.sf-link td:first-child{min-width:180px}
+.sf-use{display:block;margin-top:6px;font-size:12.5px}
+.sf-link-hero{margin-bottom:14px}
+@media (max-width:760px){
+  .sf-top{flex-wrap:nowrap;min-width:0}
+  .sf-top .grow{display:none}
+  .sf-tabs{flex:1 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .sf-top>.btn{flex:none}
+  .sf-tabs label span{white-space:nowrap;padding:7px 12px}
+  .sf-stages{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .sf-stage{flex:none}
+  .sf-dl{grid-template-columns:1fr}
+}
 @media (max-width:1000px){
   .sf-dash{grid-template-columns:1fr}
   .sf-areas{position:static;max-height:none}

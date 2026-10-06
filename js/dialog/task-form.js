@@ -11,7 +11,7 @@ function openTask(id,preset){
   $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;
   const sl=sales().map(s=>s.name);if(v.sale&&!sl.some(n=>norm(n)===norm(v.sale)))sl.push(v.sale);
   $('#f-sale').innerHTML=`<option value="">— เลือก Sale —</option>`+sl.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');$('#f-sale').value=v.sale||'';syncSaleTel();
-  $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');
+  $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');$('#f-sharedTeam').checked=!!v.sharedTeam;syncSharedArea();
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
   fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;syncNeedGA();syncTrAdd();renderTrGrid();
@@ -76,7 +76,7 @@ function setMode(m){
   $('#f-err').hidden=true;
   if(view&&t){$('#dlgTitle').textContent=t.planNo?`${t.planNo} · ${typeLabel(t)}`:typeLabel(t);$('#dlgSub').textContent=[t.customer,t.location].filter(Boolean).join(' · ')}
   else if(ga){$('#dlgTitle').textContent='ระบุรถ (GA)';$('#dlgSub').textContent=[t.planNo,typeLabel(t),fmtDayY(t.date)].filter(Boolean).join(' · ')+' · แก้ได้เฉพาะช่องรถ'}
-  else{$('#dlgTitle').textContent=t?'แก้ไขแผนงาน':'เพิ่มแผนงาน';$('#dlgSub').textContent=t?[t.planNo,typeLabel(t),fmtDayY(t.date)].filter(Boolean).join(' · '):'กรอกตามลำดับ แล้วติ๊กเลือก Team Service ที่ว่าง'}
+  else{$('#dlgTitle').textContent=t?'แก้ไขแผนงาน':'เพิ่มแผนงาน';$('#dlgSub').textContent=t?[t.planNo,typeLabel(t),fmtDayY(t.date)].filter(Boolean).join(' · '):'กรอกตามลำดับ · เลือก Team Service ตอนนี้ หรือเพิ่มทีหลังก็ได้'}
   const body=dlg.querySelector('.dlg-body');if(body)body.scrollTop=0;
   checkConflicts();
 }
@@ -112,7 +112,7 @@ function renderDrawerView(t){
       ${prepViewHtml(t,10)}
       <div style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
-      <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
+      <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${S.canWrite?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
@@ -123,7 +123,7 @@ function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
   return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
-    planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,
+    planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
@@ -192,7 +192,8 @@ function validate(v){
   if(!v.jobType)return ['เลือกหัวข้องานก่อนบันทึก','#f-type'];
   if(v.jobType==='other'&&!v.jobTypeOther)return ['พิมพ์หัวข้องานเมื่อเลือก "อื่นๆ"','#f-typeOther'];
   if(!v.date)return ['เลือกวันที่ของงาน','#f-date'];
-  if(!v.staffIds.length&&!v.guests.length)return ['เลือก Team Service อย่างน้อย 1 คน (ติ๊กชื่อ หรือพิมพ์ชื่อคนจากแผนกอื่น)','#tpQ'];
+  /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
+  if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];
   return null;
 }
 const meta=()=>({updatedAt:new Date().toISOString(),updatedBy:S.me||null});

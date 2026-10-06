@@ -55,7 +55,7 @@ function wcard(t,conf,i){
     ${t.customer&&S.pf.by!=='cust'?`<span class="wc-cust">${esc(t.customer)}</span>`:''}
     ${det?`<span class="wc-det">${esc(det)}</span>`:''}
     ${ch?`<span class="wc-chips">${ch}</span>`:''}
-    <span class="wc-pp">${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest">${esc(g)}</span>`).join('')}</span>
+    <span class="wc-pp">${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest">${esc(g)}</span>`).join('')}${!(t.staffIds||[]).length&&!(t.guests||[]).length&&!isLeave(t)?'<span class="pp noteam">ยังไม่ระบุทีม</span>':''}</span>
     ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
     ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
     ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
@@ -96,7 +96,7 @@ function availPanel(days,avail,today){
     <div class="avp-scroll"><div class="avp-grid" style="--n:${days.length}">${days.map((d,i)=>availDay(d,avail[i],today)).join('')}</div></div></section>`;
 }
 function renderPlan(){
-  if(notReady())return loading();
+  if(notReady())return loading('plan');
   const avail=Array.from({length:7},(_,i)=>availOn(ymd(addDays(S.week,i))));const showAv=S.showAvail&&S.staff.some(s=>s.active!==false);
   const days=Array.from({length:7},(_,i)=>addDays(S.week,i));const today=ymd(new Date());const conf=allConflicts();
   const base=S.tasks.filter(planMatch);const groups=planGroups(base);

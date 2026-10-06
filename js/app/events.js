@@ -3,9 +3,14 @@
 /* ---------- events ---------- */
 function goView(v){if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
 function setMonth(d){S.month=firstOfMonth(d);S.anim='view';render()}
+/* phone bottom bar: "เพิ่มเติม" opens the other pages */
+function bnMore(open){const s=$('#bnSheet'),b=document.querySelector('.bn-more');if(!s||!b)return;s.hidden=!open;b.setAttribute('aria-expanded',String(open))}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')bnMore(false)});
 document.addEventListener('click',e=>{
   const t=e.target;
-  const tab=t.closest('[data-view]');if(tab){goView(tab.dataset.view);return}
+  if(t.closest('[data-action="bn-more"]')){bnMore($('#bnSheet').hidden);return}
+  if(!t.closest('#bnSheet'))bnMore(false);
+  const tab=t.closest('[data-view]');if(tab){bnMore(false);goView(tab.dataset.view);window.scrollTo(0,0);return}
   const go=t.closest('[data-go]');if(go){goView(go.dataset.go);window.scrollTo(0,0);return}
   if(!t.closest('#copyMenu'))$('#copyMenu').open=false;
   const md=t.closest('[data-md]');if(md){if(S.md!==md.dataset.md){S.md=md.dataset.md;S.mdq='';remember('bu1wp.md',S.md);S.anim='view';render();const b=$('#view .md-body');if(b&&window.innerWidth<=900)b.scrollIntoView({block:'start'})}return}

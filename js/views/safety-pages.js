@@ -55,7 +55,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.view===
 setInterval(()=>{if(!document.hidden&&S.view==='safety')fillSafety()},60000);
 
 /* ---------- page shell ---------- */
-const SF_TABS=[['dash','Dashboard พื้นที่'],['req','คำขอของฉัน'],['back','บันทึกย้อนหลัง'],['docs','เอกสาร / ใบรับรอง']];
+const SF_TABS=[['dash','Dashboard พื้นที่'],['link','จับคู่พนักงาน'],['req','คำขอของฉัน'],['back','บันทึกย้อนหลัง'],['docs','เอกสาร / ใบรับรอง']];
 function renderSafety(){
   if(S.backend!=='supabase')return emptyState('Safety Training ใช้ได้เมื่อเชื่อมฐานข้อมูลกลาง','ข้อมูลบัตรและคำขออบรมอยู่ในระบบ Safety ของบริษัท เปิดผ่านเว็บที่ต่อ Supabase กลางแล้วล็อกอินด้วยบัญชี BU1','','!');
   return `<div class="sf-top"><div class="seg sf-tabs" role="tablist" aria-label="หน้า Safety">${SF_TABS.map(([id,l])=>`<label><input type="radio" name="sf-tab" value="${id}"${S.sf.tab===id?' checked':''}><span>${l}</span></label>`).join('')}</div>
@@ -64,7 +64,7 @@ function renderSafety(){
 }
 function fillSafety(){
   if(!$('#sfBody'))return;
-  ({dash:drawDash,req:drawReqs,back:drawBacklog,docs:drawDocs}[S.sf.tab]||drawDash)();
+  ({dash:drawDash,link:drawLink,req:drawReqs,back:drawBacklog,docs:drawDocs}[S.sf.tab]||drawDash)();
 }
 const sfError=msg=>`<div class="banner err"><b>โหลดข้อมูล Safety ไม่สำเร็จ</b> ${esc(msg)} · การจัดแผนงานยังใช้ได้ตามปกติ</div>`;
 

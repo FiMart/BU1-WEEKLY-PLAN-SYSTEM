@@ -23,7 +23,7 @@ function supaErr(e){
   return {code:c||'unknown',message:m};
 }
 function supaDb(be){
-  const guard=async p=>{try{return await p}catch(e){throw supaErr(e)}};
+  const guard=async p=>{try{return await netTrack(p)}catch(e){throw supaErr(e)}};
   /* writes: a failure stays on screen (banner) until a later write succeeds — never cleared by realtime, which only
      proves that someone else's write arrived (store-notes from BU2) */
   const wguard=async p=>{
@@ -32,7 +32,19 @@ function supaDb(be){
   };
   /* live queries by entity, so a write reloads them at once even when realtime is not switched on */
   const live=new Map();const poke=e=>(live.get(e)||new Set()).forEach(fn=>fn());
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)live.forEach(set=>set.forEach(fn=>fn()))});
+  /* auto refresh: realtime may not be switched on for the central tables, so every live query (and the cached
+     month / Booking / search reads) is read again quietly — when the tab comes back, when the network returns, and
+     every AUTO_MS while the page is open. Nothing is redrawn unless a row really changed */
+  const AUTO_MS=20000,CACHE_EVERY=3;/* cached reads (all plans for Booking / search) are bigger: every 3rd round */
+  let round=0;
+  const refreshAll=all=>{
+    if(document.hidden||(S.mode!=='live'&&S.mode!=='error'))return;/* after a dropped connection it keeps trying */
+    live.forEach(set=>set.forEach(fn=>fn()));
+    if(all||++round%CACHE_EVERY===0){invalidate();if(['booking','search','dash','projects'].includes(S.view))quietly(render)}
+  };
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll(true)});
+  window.addEventListener('online',()=>refreshAll(true));
+  setInterval(()=>refreshAll(false),AUTO_MS);
   /* where-clauses go to the server (date range, id, ==, array-contains) and are checked again here */
   const narrow=wh=>{const f={eq:[],contains:[]};wh.forEach(([k,op,v])=>{
     if(k==='date'&&op==='>=')f.from=v;else if(k==='date'&&op==='<=')f.to=v;else if(k==='id'&&op==='==')f.id=v;
@@ -43,14 +55,20 @@ function supaDb(be){
   const fetchRows=async(e,wh)=>(await guard(be.list(e,narrow(wh)))).filter(d=>match(d,wh));
   const snapOf=rows=>({docs:rows.map(r=>({id:r.id,data:()=>{const {id,...d}=r;return d}})),metadata:{fromCache:false},docChanges:()=>[]});
   function watch(e,wh,cb,err){
-    let alive=true,timer=null,prev=null;
+    let alive=true,timer=null,prev=null,busy=false,again=false;
+    /* the first read shows the loading bar; later ones (realtime, auto refresh, after a write) are quiet and call back
+       only when a row was added, changed or removed, so an idle page is not redrawn */
     const load=async()=>{
-      try{const rows=await fetchRows(e,wh);if(!alive)return;
+      if(busy){again=true;return}busy=true;
+      try{const rows=await (prev?quietly(()=>fetchRows(e,wh)):fetchRows(e,wh));if(!alive)return;
         const now=new Map(rows.map(r=>[r.id,JSON.stringify(r)]));const changes=[];
         if(prev){now.forEach((v,id)=>{if(!prev.has(id))changes.push({type:'added',doc:{id}});else if(prev.get(id)!==v)changes.push({type:'modified',doc:{id}})});
           prev.forEach((v,id)=>{if(!now.has(id))changes.push({type:'removed',doc:{id}})})}
-        prev=now;const s=snapOf(rows);s.docChanges=()=>changes;cb(s);
+        const first=!prev;prev=now;S.syncAt=new Date();
+        if(first||changes.length){const s=snapOf(rows);s.docChanges=()=>changes;cb(s)}
+        if(S.mode==='error'){S.mode='live';render()}/* the connection is back */
       }catch(x){if(alive&&err)err(x)}
+      finally{busy=false;if(again&&alive){again=false;soon()}}
     };
     const soon=()=>{clearTimeout(timer);timer=setTimeout(load,250)};
     if(!live.has(e))live.set(e,new Set());live.get(e).add(soon);
@@ -183,7 +201,12 @@ document.addEventListener('click',e=>{
   const eye=e.target.closest('[data-pw-toggle]');if(eye){const inp=eye.parentElement.querySelector('input');const show=inp.type==='password';inp.type=show?'text':'password';eye.textContent=show?'ซ่อน':'แสดง';eye.setAttribute('aria-label',show?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน');return}
   if(e.target.closest('[data-auth-close]')){hideAuth();return}
   const go=e.target.closest('[data-auth-go]');if(go){showAuth(go.dataset.authGo);return}
-  if(e.target.closest('[data-action="logout"]')){if(sb)sb.auth.signOut().then(()=>location.reload());return}
+  if(e.target.closest('[data-action="logout"]')){
+    if(!sb)return;
+    askConfirm('ออกจากระบบ?',`แน่ใจไหมว่าจะออกจากระบบ${S.auth.email?`\n${S.auth.email}`:''}\nครั้งหน้าต้องเข้าสู่ระบบด้วยอีเมลและรหัสผ่านอีกครั้ง`,'ออกจากระบบ')
+      .then(ok=>{if(ok)sb.auth.signOut().then(()=>location.reload())});
+    return;
+  }
   if(e.target.closest('#authRecheck')){if(!S.auth.user)return;authMsg('');myDepts().then(d=>{S.auth.depts=d;if(d&&!d.includes(DEPT()))authMsg(`ยังไม่มีสิทธิ์แผนก ${DEPT()} ติดต่อผู้ดูแลระบบกลาง`,'warn');else afterLogin(S.auth.user)})}
 });
 document.addEventListener('submit',async e=>{

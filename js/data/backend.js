@@ -17,7 +17,10 @@
      staff      → public.people {id, name, position}       resources → public.cranes {id, name, plate, type, vendor}
      config     → public.app_settings id "bu1wp_config"     (job types, positions, Sale list)
      ncr        → public.app_settings id "bu1wp_ncr:<id>"   (one row per NCR; no own table yet — see REQUEST-TO-BU2)
-     projects, photos, filechunks → no central storage yet: refused (their UI is hidden on the central database)
+     photos     → public.app_settings id "bu1wp_photo:<id>" (resized JPEG as a data URL, ~0.2–0.4 MB a row)
+     filechunks → public.app_settings id "bu1wp_file:<fileId>_<n>" (a file in base64 pieces of 180 kB; ≤ 4 MB a file)
+       user decision 6 Oct 2026: keep attachments here until BU2 creates a Storage bucket for BU1 plan files (stopgap)
+     projects   → no central storage yet: refused (its UI is hidden on the central database)
    The old app reads only the "targets" row of app_settings, so the bu1wp_* rows do not touch it. */
 const DB_PAGE=1000,DB_IDS=200;
 const DAY_IDS=['mon','tue','wed','thu','fri','sat','sun'];
@@ -33,6 +36,8 @@ const CENTRAL_TYPES=[
 /* entity -> public tables it is read from (for realtime) */
 const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
+/* entities kept as rows of app_settings, one row per record, id = prefix + record id */
+const KV_PREFIX={ncr:NCR_PREFIX,photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
 
@@ -91,6 +96,7 @@ function supabaseBackend(client,{dept}){
       needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaCar:d.gaCar||null,
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
+      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
   }
@@ -113,6 +119,9 @@ function supabaseBackend(client,{dept}){
     /* Plan No. check while typing: ask the server for that job number only */
     const pn=(f.eq||[]).find(([k])=>k==='planNo');
     if(pn)return (await selectAll('bookings',q=>byWeek(q).eq('data->>jobNo',String(pn[1])))).map(r=>taskOf(r,lk)).filter(t=>t.date);
+    /* "is this photo / file still used by a plan?" (cleanup after removing an attachment) */
+    const has=(f.contains||[]).find(([k])=>k==='photoIds'||k==='fileIds');
+    if(has)return (await selectAll('bookings',q=>q.filter(`data->bu1wp->${has[0]}`,'cs',JSON.stringify([has[1]])))).map(r=>taskOf(r,lk));
     const [b,l]=await Promise.all([selectAll('bookings',byWeek),selectAll('leaves',byWeek)]);
     return b.map(r=>taskOf(r,lk)).concat(l.map(leaveOf)).filter(t=>t.date);
   }
@@ -128,7 +137,12 @@ function supabaseBackend(client,{dept}){
       positions:[...new Set((Array.isArray(s.positions)&&s.positions.length?s.positions:DEFAULT_POSITIONS).concat(used))],
       sales:Array.isArray(s.sales)?s.sales:[],rolesV2:true})];
   }
-  const listNcr=async()=>(await selectAll('app_settings',q=>q.like('id',NCR_PREFIX+'%'))).map(r=>Object.assign({},r.data||{},{id:r.id.slice(NCR_PREFIX.length)}));
+  /* app_settings records: one by id, a file's chunks by fileId, or all of the entity */
+  async function listKv(entity,f){
+    const p=KV_PREFIX[entity];const fileId=entity==='filechunks'&&(f.eq||[]).find(([k])=>k==='fileId');
+    const narrow=f.id!=null?q=>q.eq('id',p+f.id):fileId?q=>q.like('id',p+fileId[1]+'_%'):q=>q.like('id',p+'%');
+    return (await selectAll('app_settings',narrow)).map(r=>Object.assign({},r.data||{},{id:r.id.slice(p.length)}));
+  }
 
   /* ---------- write: app entities -> rows (merged with what is stored) ---------- */
   const isLeaveTask=t=>t.jobType==='leave';
@@ -138,6 +152,7 @@ function supabaseBackend(client,{dept}){
       detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
+      photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       createdAt:t.createdAt||(old&&old.createdAt)||'',createdBy:t.createdBy||(old&&old.createdBy)||null,updatedAt:t.updatedAt||'',updatedBy:t.updatedBy||null}));
   }
   /* transport text -> crane ids, when every name matches a registered vehicle (plate or name) */
@@ -159,6 +174,7 @@ function supabaseBackend(client,{dept}){
       tag:d.tag!=null?d.tag:(t.planNo||''),scope:Array.isArray(d.scope)?d.scope:asList(d.scope),equipment:asList(d.equipment),
       createdBy:d.createdBy||t.createdBy||'',bu1wp:bu1wpOf(t,d.bu1wp)});
     if(t.areaId)d.areaId=t.areaId;else delete d.areaId;
+    if(t.sharedTeam)d.allowSharedTeam=true;else delete d.allowSharedTeam;/* BU2's own field: the old app reads it too */
     if(t.period==='am')d.session='morning';else if(t.period==='pm')d.session='afternoon';else delete d.session;
     if(t.period==='am'||t.period==='pm')d.craneSlot=t.period;else delete d.craneSlot;
     if(d.groupId===undefined)d.groupId=null;if(d.problem==null)d.problem='';
@@ -219,8 +235,8 @@ function supabaseBackend(client,{dept}){
       else if(entity==='staff')rows=(await selectAll('people')).map(staffOf);
       else if(entity==='resources')rows=(await selectAll('cranes')).map(resourceOf);
       else if(entity==='config')rows=await listConfig();
-      else if(entity==='ncr')rows=await listNcr();
-      else rows=[];/* projects, photos, files: no central storage yet */
+      else if(KV_PREFIX[entity])return listKv(entity,f);
+      else rows=[];/* projects: no central storage yet */
       return f.id!=null&&entity!=='tasks'?rows.filter(r=>r.id===String(f.id)):rows;
     },
     async upsert(entity,rows){
@@ -230,7 +246,7 @@ function supabaseBackend(client,{dept}){
       if(entity==='staff')return writePeople(rows);
       if(entity==='resources')return writeCranes(rows.filter(r=>(r.kind||'vehicle')==='vehicle'));
       if(entity==='config')return put('app_settings',rows.filter(r=>r.id==='main').map(r=>{const d=plain(r);delete d.rolesV2;return settingsRow(CFG_ID,d)}));
-      if(entity==='ncr')return put('app_settings',rows.map(r=>settingsRow(NCR_PREFIX+r.id,plain(r))));
+      if(KV_PREFIX[entity])return put('app_settings',rows.map(r=>settingsRow(KV_PREFIX[entity]+r.id,plain(r))));
       throw unsupportedErr(entity);
     },
     async remove(entity,ids){
@@ -242,7 +258,7 @@ function supabaseBackend(client,{dept}){
       }
       if(entity==='staff')return drop('people',ids);
       if(entity==='resources'){await drop('cranes',ids);lookups=null;return}
-      if(entity==='ncr')return drop('app_settings',ids.map(i=>NCR_PREFIX+i));
+      if(KV_PREFIX[entity])return drop('app_settings',ids.map(i=>KV_PREFIX[entity]+i));
       throw unsupportedErr(entity);
     },
     /* live changes of one entity; returns an unsubscribe function */

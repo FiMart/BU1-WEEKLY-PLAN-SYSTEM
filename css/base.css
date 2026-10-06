@@ -122,6 +122,18 @@ textarea{resize:vertical;line-height:1.55}
   .bottom-nav svg{width:21px;height:21px}
   .bottom-nav button[aria-selected="true"]{color:#fff;background:rgba(92,200,255,.14)}
   .bottom-nav button[aria-selected="true"] svg{color:var(--nav-accent)}
+  /* 5 slots (แผนงาน · Booking · Safety · รายคน · เพิ่มเติม); a hidden slot (Safety off the central DB) gives its room to the others */
+  nav.bottom-nav{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+  nav.bottom-nav button{font-size:11.5px;padding:7px 2px 6px;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:54px;align-content:center}
+  nav.bottom-nav svg{width:22px;height:22px}
+  nav.bottom-nav .bn-more.on,nav.bottom-nav .bn-more[aria-expanded="true"]{color:#fff;background:rgba(92,200,255,.14)}
+  nav.bottom-nav .bn-more.on svg{color:var(--nav-accent)}
+  .bn-sheet{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:31;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px;
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(4,14,40,.28)}
+  .bn-sheet[hidden]{display:none}
+  .bn-sheet button{display:grid;justify-items:center;gap:5px;padding:12px 4px;border:0;border-radius:12px;background:var(--surface-2);color:var(--ink);font:500 13px/1.25 var(--f-body);cursor:pointer}
+  .bn-sheet svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
+  .bn-sheet button[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent);font-weight:600}
   .app{padding-bottom:104px!important}
   .toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 }
@@ -174,10 +186,41 @@ textarea{resize:vertical;line-height:1.55}
 .empty-ico{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 20px/1 var(--f-disp)}
 .empty h3{margin:0;font:600 18px var(--f-disp)}
 .empty p{margin:0;color:var(--muted);max-width:52ch}
-.skeleton{display:grid;gap:8px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.skeleton i{display:block;height:14px;border-radius:6px;background:linear-gradient(90deg,var(--line-2),var(--surface-2),var(--line-2));background-size:200% 100%;animation:shimmer 1.2s linear infinite}
-.skeleton i:nth-child(2){width:80%}.skeleton i:nth-child(3){width:60%}
-@keyframes shimmer{to{background-position:-200% 0}}
+/* loading placeholders (loading() in js/ui/render.js): the shape of the page that is coming, with a moving shine */
+.skeleton{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0;overflow:hidden;animation:fadeIn .25s ease-out both}
+.skeleton>*{min-width:0}
+/* tones from the text colour, so the blocks show on the light and the dark theme alike */
+.skeleton .sk{display:block;height:14px;border-radius:8px;background:linear-gradient(100deg,color-mix(in srgb,var(--ink) 7%,transparent) 30%,color-mix(in srgb,var(--ink) 15%,transparent) 50%,color-mix(in srgb,var(--ink) 7%,transparent) 70%);background-size:300% 100%;animation:shimmer 1.4s ease-in-out infinite}
+.sk-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sk-head .sk-t{width:180px;height:20px}.sk-head .sk-s{width:120px;height:14px}
+.sk-note{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.sk-spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
+.sk-week{display:grid;grid-template-columns:110px repeat(var(--n),minmax(0,1fr));gap:8px}
+.sk-week .sk-corner,.sk-week .sk-day{height:38px;border-radius:10px}
+.sk-week .sk-row{height:auto;min-height:70px;border-radius:10px;opacity:.75}
+.sk-cell{display:grid;gap:6px;align-content:start;min-height:70px;min-width:0;padding:6px;border:1px dashed var(--line);border-radius:10px}
+.sk-cell .sk-card{height:54px;border-radius:9px}
+.sk-strip{display:flex;gap:8px;overflow:hidden}
+.sk-strip .sk-chip{flex:1 1 0;min-width:0;height:52px;border-radius:12px}
+.sk-list{display:grid;gap:10px}
+.sk-list .sk-card.big{height:112px;border-radius:14px}
+.sk-list .sk-line{height:16px}
+.sk-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sk-tiles .sk-tile{height:76px;border-radius:14px}
+.skeleton .sk:nth-child(3n+2){animation-delay:.12s}.skeleton .sk:nth-child(3n){animation-delay:.24s}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* thin bar at the very top while data loads or saves (netTrack in js/ui/render.js) */
+.net-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s}
+.net-bar i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--accent),var(--sky,#38bdf8));border-radius:0 3px 3px 0;box-shadow:0 0 8px color-mix(in srgb,var(--accent) 60%,transparent)}
+.net-bar.on{opacity:1}
+.net-bar.on i{animation:netGo 8s cubic-bezier(.08,.7,.2,1) forwards}
+.net-bar.on.done i{animation:netEnd .3s ease-out forwards}
+@keyframes netEnd{from{width:80%}to{width:100%}}
+.net-bar.on.done{opacity:0;transition:opacity .3s .2s}
+@keyframes netGo{0%{width:0}20%{width:45%}60%{width:75%}100%{width:92%}}
+@media (max-width:640px){.sk-head .sk-t{width:130px}.skeleton{padding:12px}}
+@media (prefers-reduced-motion:reduce){.skeleton .sk,.sk-spin{animation:none}.net-bar.on i{animation:none;width:60%}}
 
 /* board grid */
 table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}
@@ -507,6 +550,15 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0;display:contents}
 .card-sum.warn{background:color-mix(in srgb,var(--warn) 10%,var(--surface));border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
 .card-sum.bad{background:color-mix(in srgb,var(--crit-ink) 8%,var(--surface));border-color:color-mix(in srgb,var(--crit-ink) 35%,var(--line))}
 .card-sum b{color:var(--ink)}
+/* yes / no confirmation (askConfirm in js/ui/render.js) */
+.confirm-dlg{width:min(400px,calc(100vw - 32px))}
+.confirm-wrap{display:grid;justify-items:center;gap:10px;padding:26px 24px 20px;text-align:center}
+.confirm-ico{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--crit-ink) 12%,var(--surface));color:var(--crit-ink)}
+.confirm-ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.confirm-wrap h2{margin:4px 0 0;font-size:18px;font-weight:700}
+.confirm-wrap p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.6;overflow-wrap:anywhere;white-space:pre-line}
+.confirm-act{display:flex;gap:10px;width:100%;margin-top:8px}
+.confirm-act .btn{flex:1;justify-content:center}
 /* Booking Plan (js/views/booking.js) */
 .bk-bar #bk-q{flex:1;min-width:200px}
 .bk-cust{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
@@ -523,8 +575,8 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0;display:contents}
 .avstack .avatar.xs:first-child{margin-left:0}
 .avstack .more{margin-left:5px;font-size:11.5px;color:var(--muted);white-space:nowrap}
 .bk-table .booker{font-size:12.5px;color:var(--ink-2);white-space:nowrap}
-/* central database (Supabase): photos, files and projects have no storage there yet, so their UI is hidden */
-body.central [data-view="projects"],body.central #photoBox{display:none!important}
+/* central database (Supabase): projects have no storage there yet, so its page is hidden (photos and files: app_settings rows) */
+body.central [data-view="projects"]{display:none!important}
 .tp-tag.guest{background:var(--surface);border-style:dashed;border-color:var(--muted)}
 .tp-tag.guest .avatar{background:var(--sunken);color:var(--ink-2)}
 .tp-tag small{font-weight:500;color:var(--muted);font-size:11px}

@@ -32,35 +32,66 @@ async function exportXlsx(btn){
   finally{btn.disabled=false;btn.textContent=old}
 }
 const LOGO_MARK='<svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="rp-drop" x1="12" y1="3" x2="36" y2="46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8BE0FF"/><stop offset=".5" stop-color="#2E8BF5"/><stop offset="1" stop-color="#1747C4"/></linearGradient></defs><path d="M24 2.5C23.1 2.5 8.5 18.8 8.5 30.3a15.5 15.5 0 0 0 31 0C39.5 18.8 24.9 2.5 24 2.5Z" fill="url(#rp-drop)"/><path d="M13 30c2.4-2.7 4.9-2.7 7.3 0s4.9 2.7 7.3 0 4.9-2.7 7.3 0" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/><path d="M15 37c2-2.1 4-2.1 6 0s4 2.1 6 0 4-2.1 6 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.4" stroke-linecap="round"/></svg>';
+/* Print / PDF: the Weekly Plan of the open week as the board shows it — rows = หัวข้องาน (or ลูกค้า, as on screen; ลา last),
+   columns = days — on A3 landscape; page 2 = สรุปรายคนรายวัน with signature lines. Opens a print window at once
+   (the page prints itself when its fonts are ready); if the browser blocks the window, the same page is downloaded instead. */
 async function exportReport(){
-  const days=weekDays();const tasks=shownTasks();const conf=allConflicts();const wn=weekName(S.week);const last=addDays(S.week,6);
-  const staff=visibleStaff(tasks.filter(isWorking));const now=new Date();
-  const r=(k,v,always)=>(v||always)?`<tr><th>${k}</th><td>${esc(v||'')}</td></tr>`:'';
-  const cardH=t=>{const ty=typeOf(t);const tel=saleTel(t.sale);const c=conf.get(t.id);
-    return `<div class="cd${t.status==='cancelled'?' x':''}" style="--c:${safeColor(ty.color)}"><div class="bd"><b>${esc(typeLabel(t))}</b><span>${esc(pName(t))}</span></div><table>
-${r('Plan No.',t.planNo,true)}${r('Sale',[t.sale,tel].filter(Boolean).join(' · '))}${r('Customer',t.customer,true)}${r('Location',t.location)}${r('Time',t.timeNote)}${r('Detail',detailOf(t).trim())}${r('Request',t.request)}${r('Transport',transportText(t))}${r('Contact',[t.contact,t.contactTel].filter(Boolean).join(' '))}${r('Team',teamNames(t).join(', '),true)}${t.status&&t.status!=='planned'?r('สถานะ',statusText(t)):''}
-</table>${c?`<div class="w">⚠ ${esc(confLabel(c))}</div>`:''}</div>`};
-  const legend=jobTypes().filter(t=>t.active!==false).map(t=>`<span><i style="background:${safeColor(t.color)}"></i>${esc(t.name)}</span>`).join('');
+  const days=weekDays();const tasks=shownTasks();const conf=allConflicts();const wn=weekName(S.week);const last=days[days.length-1];
+  const staff=visibleStaff(tasks.filter(isWorking));const now=new Date();const today=ymd(now);
+  const groups=planGroups(tasks);
+  const work=tasks.filter(t=>isWorking(t)&&!isLeave(t));const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
+  const cardH=t=>{const ty=typeOf(t);const c=conf.get(t.id);const st=t.status||'planned';
+    const det=detailOf(t).split('\n').map(x=>x.trim()).filter(Boolean).slice(0,3).join('\n');const tr=transportText(t);
+    return `<div class="cd st-${esc(st)}" style="--c:${safeColor(ty.color)}">
+      <div class="ct"><b class="pn">${esc(t.planNo||typeLabel(t))}</b><i class="dot" title="${esc(stTh(st))}"></i></div>
+      <div class="cs"><span class="per">${esc(pName(t))}</span>${esc([t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · '))}</div>
+      ${t.location?`<div class="cl">L : <b>${esc(t.location)}</b></div>`:''}${t.customer&&S.pf.by!=='cust'?`<div class="cc">${esc(t.customer)}</div>`:''}
+      ${det?`<div class="cdet">${esc(det)}</div>`:''}${tr?`<div class="ctr">🚗 ${esc(tr)}</div>`:''}
+      ${teamNames(t).length?`<div class="cpp">${teamNames(t).map(n=>`<span>${esc(n)}</span>`).join('')}</div>`:''}
+      ${NEEDS_REASON.has(st)?`<div class="w">${esc(statusFlag(st))}${t.statusNote?': '+esc(t.statusNote):''}</div>`:''}${c?`<div class="w">⚠ ${esc(confLabel(c))}</div>`:''}</div>`};
+  const head=days.map(d=>{const k=ymd(d);const n=tasks.filter(t=>t.date===k).length;const hol=holidayOf(k);
+    return `<th class="${isOffDay(d)?'we':''}${k===today?' td':''}"><b>${EN_DAY[d.getDay()]}</b><span>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</span>${hol?`<em>${esc(hol)}</em>`:''}<small>${n}/${MAX_CARDS} แผน</small></th>`}).join('');
+  const body=groups.map(g=>`<tr><th class="gh" style="--c:${safeColor(g.color)}"><b>${esc(g.label)}</b><small>${g.tasks.length} แผน</small></th>${days.map(d=>{const k=ymd(d);
+    return `<td class="${isOffDay(d)?'we':''}">${g.tasks.filter(t=>t.date===k).sort(byTime).map(cardH).join('')}</td>`}).join('')}</tr>`).join('')
+    ||`<tr><td colspan="${days.length+1}" class="empty">ยังไม่มีแผนในสัปดาห์นี้</td></tr>`;
+  const legend=`<span><i style="background:#8a979c"></i>วางแผน ${cnt('planned')}</span><span><i style="background:#0ca30c"></i>เสร็จ ${cnt('done')}</span><span><i style="background:#fab219"></i>เลื่อน ${cnt('postponed')}</span>${cnt('notdone')?`<span><i style="background:#d03b3b"></i>ไม่เสร็จ ${cnt('notdone')}</span>`:''}${conf.size?`<span class="alert">⚠ จัดชน ${tasks.filter(t=>conf.has(t.id)).length}</span>`:''}`;
   const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weekly Plan ${esc(wn)}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600&family=IBM+Plex+Mono&display=swap">
-<style>@page{size:A3 landscape;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:10px/1.4 "IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#0b1b33;margin:12px}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>@page{size:A3 landscape;margin:7mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font:9.5px/1.4 "IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#0b1b33;margin:12px}
 .bar{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px 12px;background:#eef3fa;border-radius:8px;font-size:13px}.bar button{font:inherit;font-weight:600;padding:6px 14px;border-radius:6px;border:0;background:#1462d0;color:#fff;cursor:pointer}
-.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1462d0;padding-bottom:5px;margin-bottom:6px}.hd h1{font-size:20px;margin:0}.hd p{margin:0;color:#34496b}
-.lg{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 6px;color:#34496b}.lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
-.wk{display:grid;grid-template-columns:repeat(${days.length},minmax(0,1fr));gap:2.5mm;align-items:start}.dy>h2{margin:0 0 2mm;font-size:12px;background:#0a2150;color:#fff;padding:3px 6px;border-radius:4px;display:flex;justify-content:space-between}
-.cd{border:1px solid #6b7c93;border-radius:4px;margin-bottom:2mm;break-inside:avoid;page-break-inside:avoid;overflow:hidden}.cd.x{opacity:.5}.bd{display:flex;justify-content:space-between;gap:4px;background:var(--c);color:#fff;padding:2px 5px;font-size:10.5px}.bd b{font-weight:600}
-.cd table{border-collapse:collapse;width:100%}.cd th,.cd td{border-top:1px solid #c6d9f1;padding:1px 4px;vertical-align:top;text-align:left;font-size:9.5px}.cd th{width:15mm;background:#92D050;font-weight:600;white-space:nowrap}.cd td{white-space:pre-line;overflow-wrap:anywhere}
-.w{background:#fbeae9;color:#b42323;font-weight:600;padding:2px 4px;font-size:9.5px}.pb{break-before:page;page-break-before:always}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid #1462d0;padding-bottom:5px;margin-bottom:6px}.hd h1{font-size:20px;margin:0;line-height:1.25}.hd p{margin:0;color:#34496b;font-size:11px}
+.lg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 6px;color:#34496b;font-size:10.5px}.lg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}.lg .alert{color:#b42323;font-weight:600}
+table.wp{border-collapse:collapse;width:100%;table-layout:fixed}
+.wp col.g{width:24mm}.wp th,.wp td{border:1px solid #c6d3e4;vertical-align:top;padding:1.5mm}
+.wp thead th{background:#0a2150;color:#fff;text-align:center;padding:1.5mm 1mm}.wp thead th b{display:block;font-size:12px;letter-spacing:.06em}.wp thead th span{display:block;font-size:9.5px;opacity:.9}
+.wp thead th small{display:inline-block;margin-top:2px;padding:0 6px;border-radius:99px;background:rgba(255,255,255,.18);font-size:9px}.wp thead th em{display:block;font-style:normal;font-size:9px;color:#ffd6d6}
+.wp thead th.we{background:#33476b}.wp thead th.td{background:#1462d0}.wp thead th.corner{text-align:left;font-size:9.5px;font-weight:500}
+.wp td.we{background:#f7f4ee}.wp tr{break-inside:avoid;page-break-inside:avoid}
+.gh{background:#f5f8fd;text-align:left;border-left:3px solid var(--c)!important}.gh b{display:block;font-size:11px;font-weight:600}.gh small{color:#62738f}
+.cd{border:1px solid #b9c6d8;border-left:3px solid var(--c);border-radius:4px;padding:1.2mm 1.5mm;margin-bottom:1.5mm;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.cd.st-cancelled{opacity:.5}.cd.st-done{background:#f1faf1}
+.ct{display:flex;justify-content:space-between;align-items:center;gap:4px}.pn{font:600 9.5px/1.3 "IBM Plex Mono","IBM Plex Sans Thai",monospace;overflow-wrap:anywhere}
+.dot{width:7px;height:7px;border-radius:50%;background:#8a979c;flex:none}.st-done .dot{background:#0ca30c}.st-postponed .dot{background:#fab219}.st-notdone .dot{background:#d03b3b}.st-cancelled .dot{background:#c6d3e4}
+.cs{color:#34496b;font-size:9px}.per{display:inline-block;margin-right:4px;padding:0 4px;border-radius:3px;background:#e6f1fd;color:#1462d0;font-weight:600}
+.cl{font-size:9px}.cc{font-weight:600;font-size:9.5px}.cdet{white-space:pre-line;font-size:9px;color:#34496b;overflow-wrap:anywhere}.ctr{font-size:9px;color:#6d46c8}
+.cpp{display:flex;flex-wrap:wrap;gap:2px;margin-top:1px}.cpp span{padding:0 4px;border-radius:3px;background:#eef3fa;font-size:9px}
+.w{margin-top:1px;background:#fbeae9;color:#b42323;font-weight:600;padding:1px 3px;border-radius:3px;font-size:8.5px}
+.empty{text-align:center;padding:10mm;color:#62738f}.pb{break-before:page;page-break-before:always}
 .sm{border-collapse:collapse;width:100%}.sm th,.sm td{border:1px solid #c6d9f1;padding:3px 5px;text-align:left;vertical-align:top;font-size:10px}.sm thead th{background:#e6f1fd}.fr{color:#006300;font-weight:600}.lv{color:#875800;font-weight:600}
 .sig{display:flex;gap:40px;margin-top:30px}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:30px 16px 4px}
 @media print{.bar{display:none}body{margin:0}}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Weekly Plan</p><h1>${esc(wn)}</h1></div></div><p>${esc(`จันทร์ ${fmtShort(S.week)} – อาทิตย์ ${fmtShort(last)} ${be(last)}`)}<br>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Weekly Planning</p><h1>${esc(`${fmtShort(S.week)} – ${fmtShort(last)} ${be(last)}`)}</h1></div></div><p>${esc(`สัปดาห์ที่ ${isoWeek(S.week)} · ${wn}`)}<br>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>
 <div class="lg">${legend}</div>
-<div class="wk">${days.map(d=>{const l=tasks.filter(t=>t.date===ymd(d)).sort(byTime);return `<div class="dy"><h2><span>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</span><span>${l.length}/${MAX_CARDS}</span></h2>${l.map(cardH).join('')}</div>`}).join('')}</div>
+<table class="wp"><colgroup><col class="g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>${head}</tr></thead><tbody>${body}</tbody></table>
 <h2 class="pb" style="font-size:14px;margin:0 0 6px">สรุปรายคนรายวัน · ${esc(wn)}</h2>
 <table class="sm"><thead><tr><th>พนักงาน</th>${days.map(d=>`<th>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</th>`).join('')}</tr></thead><tbody>${staff.map(s=>`<tr><th>${esc(s.name)}<br><span style="font-weight:400;color:#62738f">${esc(s.role||'')}</span></th>${days.map(d=>{const l=tasks.filter(t=>t.date===ymd(d)&&isWorking(t)&&(t.staffIds||[]).includes(s.id)).sort(byTime);const r2=daySummary(l);
   return `<td>${r2.free?'<span class="fr">ว่าง</span>':`${r2.jobs?`<b>${r2.jobs} งาน</b> แรก ${esc(r2.first)} · สุดท้าย ${esc(r2.last)}`:''}${r2.leave?` <span class="lv">ลา ${esc(r2.leave)}</span>`:''}<br>${l.filter(t=>!isLeave(t)).map(t=>esc(`${pName(t)} ${typeLabel(t)}${t.planNo?' '+t.planNo:''}`)).join('<br>')}`}</td>`}).join('')}</tr>`).join('')}</tbody></table>
-<div class="sig"><div><span></span>ผู้จัดทำ</div><div><span></span>หัวหน้า Lab / ผู้ตรวจสอบ</div><div><span></span>ผู้อนุมัติ</div></div></body></html>`;
+<div class="sig"><div><span></span>ผู้จัดทำ</div><div><span></span>หัวหน้า Lab / ผู้ตรวจสอบ</div><div><span></span>ผู้อนุมัติ</div></div>
+<script>/* opened from the app: print once the Thai font is ready (a downloaded copy just shows the button) */
+if(window.opener)window.addEventListener('load',function(){(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print()},300)})});</script></body></html>`;
+  let w=null;try{w=window.open('','_blank')}catch(e){}
+  if(w&&w.document){w.document.open();w.document.write(html);w.document.close();return}
   await saveFile(fileWeek()+'_A3.html',html,'ดาวน์โหลดแล้ว เปิดไฟล์แล้วกด "พิมพ์ / บันทึกเป็น PDF" เลือก A3 แนวนอน');
 }

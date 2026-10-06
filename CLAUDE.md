@@ -31,6 +31,9 @@ Added later on request: **Booking Plan** page (js/views/booking.js) = BU2's read
 From Safety, only the **area-card check when picking the team** (js/features/safety.js loads data, read only; rules in js/features/cert-status.js = **exactly BU2's certStatus** (user, 6 Oct 2026): first active area rule by cert_type_id, cards of that type with area_id = area or empty, latest expiry, compared with today; badges only ใกล้หมด / หมดอายุ / ไม่มีบัตร):
 `people.id → core.person_id_map → safety.certificates`, area chosen per plan (`task.areaId` = `Booking.areaId`, auto-matched from Location by exact name / id / `match_terms`). Unlinked person = no badge (not "ไม่มีบัตร"); badges are warnings, never block; Safety failing to load must not stop planning; re-read on tab focus and every 60 s.
 Sale may add/edit plans (same rights as Engineer, like BU2's `canEditPlan`).
+**ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน** (task.sharedTeam ↔ BU2's `data.allowSharedTeam`): same people on two plans of the same day/period are not a clash only when BOTH plans have it on and share the area (Safety area if both set, else the same Location, spaces/case ignored); leave never shares; vehicles still clash (`teamShared()` in js/data/conflicts.js).
+Version: v4.0.0 (6 Oct 2026) in js/features/about.js covers everything since 3.8.0.
+**Staff ↔ HR link** (js/features/staff-link.js, Safety tab "จับคู่พนักงาน"): writes `core.person_id_map` (dept_id, people_id, emp_code, verified_by, verified_at), admin/planer only. Suggests by name (exact, or first name) but every link is a person's choice (0022: no automatic name matching); one bulk button for letter-for-letter matches after a confirm listing them. The plan picker has "เฉพาะคนที่มีบัตรพื้นที่นี้" (card ok or warn today) and the team summary links to this tab when people are unlinked.
 
 ## Stages
 
@@ -42,12 +45,14 @@ Sale may add/edit plans (same rights as Engineer, like BU2's `canEditPlan`).
    staff → `people`, vehicles → `cranes` (merged), config (job types, positions, **Sale list**) → `app_settings` id `bu1wp_config`, **NCR** → `app_settings` ids `bu1wp_ncr:<id>` (no new table: DDL is BU2's; the old app reads only the `targets` row);
    projects / photos / files → refused (`unsupported`). A failed write shows a red banner until a later write succeeds (`S.writeFail`, js/data/supabase.js).
    Tested only against an in-memory stand-in (49 checks); first real test = one test plan, then delete it.
-4. Realtime both ways · 5. GA car badge (`gaCar`) · 6. REQUEST-TO-BU2 for photo/file storage, projects, and (optional) proper NCR / settings tables.
+4. Realtime both ways — auto refresh in place (`supaDb` in js/data/supabase.js): Supabase realtime if the tables publish it, plus a quiet re-read every 20 s, on tab focus and on `online`; callbacks fire only when rows changed. Loading UI: `loading(kind)` skeletons and the top bar `netTrack()` / `quietly()` in js/ui/render.js (background reads stay silent) · 5. GA car badge (`gaCar`) · 6. REQUEST-TO-BU2 for photo/file storage, projects, and (optional) proper NCR / settings tables.
 
 ## User decisions (6 Oct 2026)
 
 - ใบเตรียมงาน: keep this app's per-plan checklist, stored as an extra field (`data.bu1wp.prep`), not BU2's Tag-based model.
 - Transport: stays free text (also pick from the vehicle list); not limited to registered vehicles.
-- Photos / file attachments / projects: hidden (`body.central`) until BU2 adds storage for them.
+- Photos / file attachments: switched back on (user, 6 Oct 2026) as a stopgap in `app_settings` rows `bu1wp_photo:<id>` (resized JPEG data URL) and `bu1wp_file:<fileId>_<n>` (180 kB base64 chunks); the plan lists them in `data.bu1wp.photoIds/fileIds/files`. Move them to a Storage bucket once BU2 creates one (REQUEST-TO-BU2).
+- Projects: still hidden (`body.central`), no storage.
+- Phone bottom bar: 5 slots (แผนงาน · Booking · Safety · รายคน · เพิ่มเติม); "เพิ่มเติม" opens `#bnSheet` with the other pages.
 
 `supabase/schema.sql` and `supabase/HANDOFF.md` describe an own-schema design (`bu1wp`) that the central project does not use — obsolete, kept for history only.

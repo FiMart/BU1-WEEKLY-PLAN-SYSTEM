@@ -24,13 +24,15 @@ async function loadSafety(force){
   SAFE.loading=true;
   try{
     const sf=sb.schema('safety'),core=sb.schema('core');
-    const [areas,rules,types,certs,map]=await Promise.all([
+    const track=p=>SAFE.ready?p:netTrack(p);/* first load shows the loading bar; the refresh every minute is quiet */
+    const [areas,rules,types,certs,map]=await track(Promise.all([
       safePages(()=>sf.from('areas').select('id,name,client,parent_id,match_terms,active'),'id'),
       safePages(()=>sf.from('area_cert_rules').select('area_id,cert_type_id,validity_months,requires_health_check,warn_days_before,active'),'area_id'),
       safePages(()=>sf.from('cert_types').select('id,name,scope,validity_months,active'),'id'),
       safePages(()=>sf.from('certificates').select('id,emp_code,cert_type_id,area_id,issued_date,expiry_date,card_issued,cert_number'),'id'),
-      safePages(()=>core.from('person_id_map').select('people_id,emp_code').eq('dept_id',DEPT()),'people_id'),
-    ]);
+      safePages(()=>core.from('person_id_map').select('people_id,emp_code,verified_by,verified_at').eq('dept_id',DEPT()),'people_id'),
+    ]));
+    SAFE.mapRows=map;
     SAFE.areas=areas;SAFE.rules=rules;SAFE.types=new Map(types.map(t=>[t.id,t.name]));SAFE.typeRows=types;SAFE.certs=certs;
     SAFE.empOf=new Map(map.map(m=>[m.people_id,m.emp_code]));
     SAFE.certsByEmp=new Map();certs.forEach(c=>{if(!SAFE.certsByEmp.has(c.emp_code))SAFE.certsByEmp.set(c.emp_code,[]);SAFE.certsByEmp.get(c.emp_code).push(c)});
@@ -74,7 +76,9 @@ function cardSummary(ids,areaId){
   const n=teamCardCounts(SAFE,ids,areaId);
   const parts=[n.ok&&`${CERT_LABEL.ok} ${n.ok}`,n.warn&&`${CERT_LABEL.warn} ${n.warn}`,n.bad&&`${CERT_LABEL.bad} ${n.bad}`,n.none&&`ไม่มีบัตร ${n.none}`,n.unknown&&`ไม่ทราบ ${n.unknown}`].filter(Boolean);
   const bad=n.bad+n.none;
-  return `<div class="card-sum${bad?' bad':n.warn?' warn':''}"><b>${esc(SAFE.types.get(rule.cert_type_id)||rule.cert_type_id)} · ${esc(areaName(areaId))}</b> ${parts.join(' · ')}${bad?' · เป็นคำเตือน ยังเลือกคนได้ตามปกติ':''}</div>`;
+  /* "ไม่ทราบ" = not linked to an HR record yet: the card cannot be checked until someone links them */
+  const unk=n.unknown?` · <span class="hint">${n.unknown} คนยังไม่ได้จับคู่กับทะเบียน HR จึงเช็คบัตรไม่ได้</span>${S.perm&&S.perm.master?' <button type="button" class="lnk" data-sf-golink>จับคู่พนักงาน</button>':''}`:'';
+  return `<div class="card-sum${bad?' bad':n.warn||n.unknown?' warn':''}"><b>${esc(SAFE.types.get(rule.cert_type_id)||rule.cert_type_id)} · ${esc(areaName(areaId))}</b> ${parts.join(' · ')}${bad?' · เป็นคำเตือน ยังเลือกคนได้ตามปกติ':''}${unk}</div>`;
 }
 
 /* ---------- plan form ---------- */

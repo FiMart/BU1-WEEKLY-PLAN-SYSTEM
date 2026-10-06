@@ -8,8 +8,10 @@ S.srch={q:'',by:'all',from:'',to:''};S.showAvail=true;S.pmode=null;S.pday=null;S
 const flashIds=new Set();
 const known=new Map();
 const reduceMotion=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
-/* the open page is kept for this tab only (survives F5): closing and reopening the site starts on Weekly Plan */
-try{const v=sessionStorage.getItem('bu1wp.view');if(VIEWS.includes(v))S.view=v}catch(e){}
+/* start page: Weekly Plan, every time the site is opened. Only a refresh (F5) stays on the page that was open — a reopened
+   tab or a restored browser session also brings back sessionStorage, so the navigation type decides, not the stored value */
+const isReload=(()=>{try{const n=performance.getEntriesByType('navigation')[0];if(n)return n.type==='reload';return performance.navigation&&performance.navigation.type===1}catch(e){return false}})();
+try{const v=sessionStorage.getItem('bu1wp.view');if(isReload&&VIEWS.includes(v))S.view=v;else sessionStorage.removeItem('bu1wp.view')}catch(e){}
 try{localStorage.removeItem('bu1wp.view')}catch(e){}
 {const h=(location.hash||'').slice(1);if(VIEWS.includes(h))S.view=h}
 const rememberView=v=>{try{sessionStorage.setItem('bu1wp.view',v)}catch(e){}};

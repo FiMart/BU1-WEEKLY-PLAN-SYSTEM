@@ -16,3 +16,27 @@
 .sb-theme,.side .sync,.side .me,.sb-collapse{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
 .sb-theme:hover{background:rgba(255,255,255,.18)}
 .mtop,.selbar{background:linear-gradient(90deg,var(--side),#0D46B5 60%,#1377D6)}
+
+/* proportions (Oct 2026): narrower bar, collapse button in the logo row, even menu rows, a lighter footer
+   (account first, theme toggle, connection status as a quiet line, version) */
+:root{--side-w:220px}
+body.mini{--side-w:72px}
+.side{padding:calc(16px + env(safe-area-inset-top,0px)) 10px calc(12px + env(safe-area-inset-bottom,0px));gap:4px}
+.sb-logo{padding:2px 4px;gap:10px;padding-right:40px}
+.sb-mark{width:38px;height:38px;border-radius:11px;font-size:14px}
+.sb-txt b{font-size:15px}
+.sb-txt small{font-size:11.5px}
+.sb-collapse{position:absolute;top:calc(20px + env(safe-area-inset-top,0px));right:10px;width:28px;height:28px}
+.sb-rule{margin:10px 4px 6px}
+.sb-nav{gap:2px;margin-top:0}
+.sb-nav button{padding:9px 12px;gap:11px;min-height:42px}
+.sb-nav button svg{width:19px;height:19px;flex:none}
+.sb-foot{gap:8px}
+.side .acct-card{order:-1;padding:7px 9px 7px 7px;border-radius:12px}
+.acct-card img{width:32px;height:32px}
+.sb-theme{padding:8px 10px;font-size:13px;border-radius:10px}
+.side .sync{border:0;background:none;padding:0 4px;font-size:11.5px;justify-content:center}
+.sb-ver{padding:0}
+body.mini .sb-logo{padding:2px 0}
+body.mini .sb-collapse{position:static;margin:6px auto 0}
+body.mini .sb-nav button{min-height:42px}

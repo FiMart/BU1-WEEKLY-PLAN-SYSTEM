@@ -10,13 +10,14 @@ const PAGES={
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
   search:['ค้นหางานย้อนหลัง','ค้นด้วย Plan No. ชื่อลูกค้า หรือชื่อพนักงาน จากแผนทุกสัปดาห์'],
   ncr:['NCR · งานไม่สำเร็จ','บันทึกงานที่ไม่สำเร็จ (Non-Conformance Report) สาเหตุ การแก้ไข และติดตามจนปิด NCR'],
-  dash:['Dashboard','รายงานผลการปฏิบัติงานสำหรับหัวหน้างานและผู้บริหาร รายสัปดาห์ รายเดือน รายไตรมาส และรายปี'],
+  dash:['Dashboard','รายงานผลการปฏิบัติงาน รายสัปดาห์ รายเดือน รายไตรมาส และรายปี'],
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
 const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
+  {const mb=document.querySelector('.bn-more');if(mb)mb.classList.toggle('on',!!document.querySelector(`#bnSheet [data-view="${S.view}"]`))}
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
   renderSync();renderBanners();renderWeekbar();renderPlanbar();renderChips();renderActions();renderAccountCard();moveInd();
   updateSelbar();
@@ -87,12 +88,13 @@ function syncRowPicks(){
 function renderSync(){
   const el=$('#sync');const m=S.mode;
   el.className='sync'+(m==='live'?' live':m==='error'?' err':'');
-  el.querySelector('span').textContent=m==='live'?'ออนไลน์ · อัปเดตพร้อมกันทั้งทีม':m==='local'?'ออฟไลน์ · ไม่บันทึก':m==='error'?'การเชื่อมต่อขาด':'กำลังเชื่อมต่อ…';
+  el.title=m==='live'&&S.syncAt?`ข้อมูลอัปเดตเองทุก 20 วินาที และทันทีเมื่อกลับมาที่หน้านี้ · ตรวจล่าสุด ${S.syncAt.toLocaleTimeString('th-TH')}`:'';
+  el.querySelector('span').textContent=m==='live'?'ออนไลน์ · อัปเดตอัตโนมัติ':m==='local'?'ออฟไลน์ · ไม่บันทึก':m==='error'?'การเชื่อมต่อขาด':'กำลังเชื่อมต่อ…';
 }
 function renderBanners(){
   const b=[];
   if(S.mode==='local')b.push(`<div class="banner warn"><b>โหมดตัวอย่างในเครื่อง</b> ข้อมูลที่แก้ในหน้านี้จะหายเมื่อปิดหน้า และไม่แชร์ให้ทีม เปิดหน้านี้ผ่านลิงก์ claude.ai เพื่อใช้ฐานข้อมูลร่วมกัน</div>`);
-  if(S.mode==='error')b.push(`<div class="banner err"><b>การเชื่อมต่อฐานข้อมูลขาด</b> โหลดหน้าใหม่เพื่อเชื่อมต่ออีกครั้ง ข้อมูลที่แสดงอยู่อาจไม่เป็นปัจจุบัน</div>`);
+  if(S.mode==='error')b.push(`<div class="banner err"><b>การเชื่อมต่อฐานข้อมูลขาด</b> ${S.backend==='supabase'?'ระบบกำลังลองเชื่อมต่อใหม่อัตโนมัติ':'โหลดหน้าใหม่เพื่อเชื่อมต่ออีกครั้ง'} ข้อมูลที่แสดงอยู่อาจไม่เป็นปัจจุบัน</div>`);
   if(S.writeFail)b.push(`<div class="banner err"><b>บันทึกล่าสุดไม่สำเร็จ</b> ข้อมูลที่เพิ่งแก้ยังไม่ถึงฐานข้อมูลกลาง (${esc(String(S.writeFail.msg||'').slice(0,160))}) · ตรวจการเชื่อมต่อแล้วบันทึกอีกครั้ง แถบนี้จะหายเมื่อบันทึกสำเร็จ</div>`);
   if(S.backend==='supabase'&&S.mode==='live'&&isReadOnly())b.push(`<div class="banner warn"><b>โหมดอ่านอย่างเดียว · ทดสอบเทียบข้อมูล</b> แสดงข้อมูล BU1 จริงจากฐานข้อมูลกลาง (ชุดเดียวกับแอป BU1 ตัวเก่า) แต่ยังไม่บันทึกอะไรลงไป เปิดสัปดาห์เดียวกันในแอปเก่าแล้วเทียบจำนวนงาน คน และรถ</div>`);
   else if(!S.canWrite){
@@ -152,7 +154,51 @@ function legendStrip(){
     <div class="grp"><span class="lg-title">สถานะ</span>${STATUSES.map(s=>`<span><span class="s-${s.id}">${s.icon}</span> ${s.th}</span>`).join('')}</div></div>`;
 }
 function emptyState(title,text,btn,ico){return `<div class="empty"><div class="empty-ico" aria-hidden="true">${ico||'+'}</div><h3>${title}</h3><p>${text}</p>${btn||''}</div>`}
-function loading(){return `<div class="skeleton" aria-label="กำลังโหลด"><i></i><i></i><i></i></div>`}
+/* placeholders while data loads: the shape of the page that is coming (week grid / day list on a phone / cards) */
+function loading(kind){
+  const sh=(c,s)=>`<i class="sk ${c||''}"${s?` style="${s}"`:''}></i>`;
+  const head=`<div class="sk-head">${sh('sk-t')}${sh('sk-s')}<span class="sk-note"><span class="sk-spin" aria-hidden="true"></span>กำลังโหลดข้อมูล…</span></div>`;
+  let body;
+  if(kind==='plan'&&!isPhoneW()){
+    const cols=S.showSun?7:6;
+    body=`<div class="sk-week" style="--n:${cols}">${sh('sk-corner')}${Array.from({length:cols},()=>sh('sk-day')).join('')}`
+      +[3,2,2,1].map(r=>sh('sk-row')+Array.from({length:cols},(_,c)=>`<span class="sk-cell">${Array.from({length:(r+c)%3?1:Math.min(r,2)},()=>sh('sk-card')).join('')}</span>`).join('')).join('')+`</div>`;
+  }else if(kind==='plan'){
+    body=`<div class="sk-strip">${Array.from({length:6},()=>sh('sk-chip')).join('')}</div><div class="sk-list">${[0,1,2].map(()=>sh('sk-card big')).join('')}</div>`;
+  }else{
+    body=`<div class="sk-tiles">${[0,1,2,3].map(()=>sh('sk-tile')).join('')}</div><div class="sk-list">${[100,92,84,96,70].map(w=>sh('sk-line',`width:${w}%`)).join('')}</div>`;
+  }
+  return `<div class="skeleton sk-page" role="status" aria-label="กำลังโหลดข้อมูล">${head}${body}</div>`;
+}
+/* ---------- network activity: a thin bar at the top while data loads or saves (desktop and phone)
+   background refreshes (realtime, auto refresh) run inside quietly() and stay silent ---------- */
+const NET={n:0,quiet:0,timer:null};
+function netTrack(p){
+  if(NET.quiet)return p;
+  NET.n++;netBar();
+  return Promise.resolve(p).finally(()=>{NET.n=Math.max(0,NET.n-1);netBar()});
+}
+function quietly(fn){NET.quiet++;try{return fn()}finally{NET.quiet--}}
+function netBar(){
+  let el=document.getElementById('netBar');
+  if(!el){el=document.createElement('div');el.id='netBar';el.className='net-bar';el.setAttribute('aria-hidden','true');el.innerHTML='<i></i>';document.body.appendChild(el)}
+  clearTimeout(NET.timer);
+  if(NET.n>0){if(!el.classList.contains('on'))NET.timer=setTimeout(()=>{el.classList.remove('done');el.classList.add('on')},120)}/* quick answers never flash the bar */
+  else if(el.classList.contains('on')){el.classList.add('done');NET.timer=setTimeout(()=>el.classList.remove('on','done'),420)}
+}
+/* a yes / no question in the app's own dialog (#confirmDlg); resolves true only for the confirm button.
+   "ยกเลิก" has the focus, so Enter or Esc does not log anyone out by accident */
+function askConfirm(title,msg,okLabel){
+  const d=$('#confirmDlg');if(!d||!d.showModal)return Promise.resolve(confirm(`${title}\n\n${msg}`));
+  $('#confirmTitle').textContent=title;$('#confirmMsg').textContent=msg;$('#confirmOk').textContent=okLabel||'ตกลง';
+  return new Promise(res=>{
+    const done=v=>{d.removeEventListener('click',onClick);d.removeEventListener('cancel',onCancel);if(d.open)d.close();res(v)};
+    const onClick=e=>{const b=e.target.closest('[data-confirm]');if(b)done(b.dataset.confirm==='yes');else if(e.target===d)done(false)};
+    const onCancel=e=>{e.preventDefault();done(false)};
+    d.addEventListener('click',onClick);d.addEventListener('cancel',onCancel);
+    d.showModal();d.querySelector('[data-confirm="no"]').focus();
+  });
+}
 function initialOf(name){const m=String(name||'').match(/[ก-ฮA-Za-z0-9]/);return m?m[0].toUpperCase():'?'}
 function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;const hol=holidayOf(k);
   return `<th class="${isT?'is-today':''}${hol?' hol-day':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${hol?`<span class="hol-pill" title="${esc(hol)}">${esc(hol)}</span>`:''}${meta||''}</div></div></th>`}

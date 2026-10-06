@@ -52,10 +52,11 @@ function noteWriteError(e){if(e&&e.code==='invalid_argument'){S.canWrite=false;r
 const RC=new Map();const ALL={data:null,stale:true,loading:false};
 /* gen counts invalidations, so one that arrives while a load is running is not lost (that load's result is already old) */
 function invalidate(){RC.forEach(e=>{e.stale=true;e.gen=(e.gen||0)+1});ALL.stale=true;ALL.gen=(ALL.gen||0)+1}
+/* a refresh of data already on screen (auto refresh) is quiet and redraws only when something changed */
 function loadInto(e,fn,after){
-  if(!e.stale||e.loading)return;e.loading=true;const g=e.gen||0;
-  fn().then(d=>{e.data=d;d.forEach(t=>known.set(t.id,t))}).catch(()=>{if(!e.data)e.data=[]})
-    .finally(()=>{e.stale=(e.gen||0)!==g;e.loading=false;if(after)after();render()});
+  if(!e.stale||e.loading)return;e.loading=true;const g=e.gen||0;const had=e.data;let changed=!had;
+  (had?quietly(fn):fn()).then(d=>{changed=changed||JSON.stringify(d)!==JSON.stringify(had);e.data=d;d.forEach(t=>known.set(t.id,t))}).catch(()=>{if(!e.data)e.data=[]})
+    .finally(()=>{e.stale=(e.gen||0)!==g;e.loading=false;if(changed||e.stale){if(after)after();render()}});
 }
 function rangeTasks(from,to){const k=from+'|'+to;let e=RC.get(k);if(!e){e={data:null,stale:true,loading:false};RC.set(k,e)}loadInto(e,()=>Store.range('tasks',from,to));return e.data}
 function allTasks(){loadInto(ALL,()=>Store.all('tasks'),()=>{if(S.view==='search')fillSearch()});return ALL.data}
