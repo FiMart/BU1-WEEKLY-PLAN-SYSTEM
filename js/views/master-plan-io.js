@@ -117,13 +117,13 @@ function mpxHave(){
 function mpxOpen(){const d=$('#mpxDlg');if(!d)return;mpxFill();if(!d.open)d.showModal()}
 function mpxClose(){const d=$('#mpxDlg');if(d&&d.open&&!MPX.busy)d.close();MPX.wb=null}
 function mpxFill(){
-  const d=$('#mpxDlg');if(!d)return;const P=MPX.parsed;const tabName=MPX.tab==='ins'?'Master Plan Instrument':'Master Plan Flow Meter';
+  const d=$('#mpxDlg');if(!d)return;const P=MPX.parsed;const tabName=MPX.tab==='ins'?'Instrument':'Flow Meter';
   $('#mpxTitle').textContent='นำเข้า Excel · '+tabName;$('#mpxSub').textContent=MPX.file;
   const [y,m]=MPX.month.split('-').map(Number);const monName=`${TH_MON_FULL[m-1]} ${y+543}`;
   const fields=(MPX.tab==='ins'?MPI_FIELDS.concat(['_total']):MP_FIELDS);
   let h=`<div class="mpx-opts">
     ${MPX.sheets.length>1?`<label><span>ชีต</span><select id="mpx-sheet">${MPX.sheets.map((s,i)=>`<option value="${i}"${i===MPX.sheet?' selected':''}>${esc(s.name)}${s.fm||s.ins?'':' (ไม่พบหัวตาราง)'}</option>`).join('')}</select></label>`:''}
-    <label><span>นำเข้าเป็น</span><select id="mpx-tab"><option value="fm"${MPX.tab==='fm'?' selected':''}>Master Plan Flow Meter</option><option value="ins"${MPX.tab==='ins'?' selected':''}>Master Plan Instrument</option></select></label>
+    <label><span>นำเข้าเป็น</span><select id="mpx-tab"><option value="fm"${MPX.tab==='fm'?' selected':''}>Flow Meter</option><option value="ins"${MPX.tab==='ins'?' selected':''}>Instrument</option></select></label>
     <label><span>เดือน</span><input type="month" id="mpx-month" value="${esc(MPX.month)}"></label></div>`;
   if(!P.ok){h+=`<div class="mpx-bad"><b>อ่านชีตนี้ไม่ได้</b> ${esc(P.why)} · ตรวจว่าเป็นแผ่นงาน ${esc(tabName)} ที่มีแถวหัวตาราง (Request No., Customer, Tag …)</div>`}
   else{
@@ -182,7 +182,7 @@ document.addEventListener('click',e=>{
 const mpFile=ext=>`BU1-Master-Plan-${mpTab()==='ins'?'Instrument':'Flow-Meter'}_${mpMonth()}.${ext}`;
 function mpSheetData(){
   const tab=mpTab();const days=mpDays();const all=mpSorted();const [y,m]=mpMonth().split('-').map(Number);
-  const title=`BU1 Lab · ${tab==='ins'?'Master Plan Instrument':'Master Plan Flow Meter'} · ${EN_MON[m-1].toUpperCase()} ${y} (${TH_MON_FULL[m-1]} ${y+543})`;
+  const title=`BU1 Lab · Master Plan · ${tab==='ins'?'Instrument':'Flow Meter'} · ${EN_MON[m-1].toUpperCase()} ${y} (${TH_MON_FULL[m-1]} ${y+543})`;
   const dn=days.map(d=>d.getDate());
   if(tab==='ins'){
     const head=['#','Request No. / PN','LAB','Customer','Plant','Tag','Type','Range / Set Point / Nor.Temp (Unit)','Remove','Cal','install (final)','BU','รับ/ส่ง','SALE (Contact)','ชื่อลูกค้า','Total Booking','Total cal',...dn,'Remark'];
@@ -255,7 +255,7 @@ h2{font-size:12px;margin:10px 0 4px}.lg .lgh{text-align:left;width:120px;backgro
 .sig{display:flex;gap:40px;margin-top:24px;break-inside:avoid}.sig div{flex:1;text-align:center;font-size:10px}.sig span{display:block;border-top:1px solid #0b1b33;margin:26px 16px 4px}
 @media print{.bar{display:none}body{margin:0}}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics · เลือกเครื่องพิมพ์ "Save as PDF" เพื่อได้ไฟล์ PDF</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · ${ins?'Master Plan Instrument':'Master Plan Flow Meter'}</p><h1>${esc(D.title.replace(/^BU1 Lab · [^·]+· /,''))}</h1></div></div><p>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้พิมพ์ ${esc(S.account.name)}`:''}</p></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Master Plan</p><h1>${esc(D.title.replace(/^BU1 Lab · Master Plan · /,''))}</h1></div></div><p>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้พิมพ์ ${esc(S.account.name)}`:''}</p></div>
 <div class="st">${D.stats.map(([v,l])=>`<span><b>${esc(v)}</b>${esc(l)}</span>`).join('')}</div>
 <table class="mp"><thead>${tops}<tr>${th}</tr></thead><tbody>${body}${D.rows.length?foot:''}</tbody></table>
 ${legend}

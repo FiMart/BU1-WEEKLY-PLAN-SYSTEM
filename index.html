@@ -201,7 +201,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
           <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
           <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
           <div class="tr-grid" id="trGrid"></div>
-          <label class="ga-box" id="gaBox" for="f-needGA"><input type="checkbox" id="f-needGA"><span><b>ต้องการรถส่วนกลาง</b><small>GA จะระบุรถและทะเบียนให้ภายหลัง</small></span></label>
+          <label class="ga-box" id="gaBox" for="f-needGA"><input type="checkbox" id="f-needGA"><span><b>ต้องการรถส่วนกลาง</b><small>GA จะระบุรถและทะเบียนให้ภายหลัง · ระบุเวลาไป-กลับ ให้ GA จัดรถได้ตรงเวลา</small></span></label>
+          <div class="ga-times" id="gaTimes" hidden><label><span>เวลาไป <small>ออกจากบริษัท</small></span><input type="time" id="f-gaGo" aria-label="เวลาไป (ออกจากบริษัท)"></label><label><span>เวลากลับ <small>ออกจากหน้างาน</small></span><input type="time" id="f-gaBack" aria-label="เวลากลับ (ออกจากหน้างาน)"></label></div>
           <span class="hint">กดเลือกรถจากรายการ สีเทา = ถูกใช้แล้วในช่วงเวลาที่ทับกัน · ถ้าไม่มีให้พิมพ์ชื่อรถหรือทะเบียน แล้วกดปุ่มเพิ่มเข้าข้อมูลรถ ครั้งหน้าจะเลือกได้เลย</span>
         </div>
 

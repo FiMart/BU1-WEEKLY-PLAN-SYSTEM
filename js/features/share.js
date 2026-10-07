@@ -21,7 +21,7 @@ function jobLines(t,withPeriod){
     ...(team.length>1?['👷 ทีมงาน :'].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ทีมงาน : ${team[0]||'-'}`]),
     ...(t.sale?[`💼 Sale : ${t.sale}${tel?' '+tel:''}`]:[]),
     ...(LINE_STATUS[t.status]?[`${LINE_STATUS[t.status]} สถานะ : ${statusText(t)}`]:[]),
-    ...(reportsOf(t).length?[`📎 Service Report : ${reportsOf(t).length} ไฟล์`]:[]),
+    ...(reportsOf(t).length||docNeeded(t)?[`📎 เอกสาร : ${DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)).map(k=>`${k.name} ${docsOf(t,k.id).length?'✅':'❌'}`).join(' · ')}`]:[]),
   ];
 }
 const lineLabel=t=>LINE[lineOf(t)]?LINE[lineOf(t)].name:'';

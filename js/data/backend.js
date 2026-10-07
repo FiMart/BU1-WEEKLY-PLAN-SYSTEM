@@ -96,10 +96,10 @@ function supabaseBackend(client,{dept}){
       planNo:d.jobNo||'',customer:CENTRAL_CUSTOMERS[d.customer]||d.customer||'',location:d.location||'',areaId:d.areaId||'',
       timeNote:x.timeNote!=null?x.timeNote:[d.startTime,d.endTime].filter(Boolean).join('–')+(d.startTime?' น.':''),
       detail,request:x.request||'',transport:x.transport!=null?x.transport:cranes.join(', '),
-      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaCar:d.gaCar||null,
+      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaGo:x.gaGo||'',gaBack:x.gaBack||'',gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar')),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
-      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
+      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
   }
@@ -151,16 +151,17 @@ function supabaseBackend(client,{dept}){
 
   /* ---------- write: app entities -> rows (merged with what is stored) ---------- */
   const isLeaveTask=t=>t.jobType==='leave';
-  const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
+  const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */
-      detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,
+      detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */
       insItems:asList(t.insItems),/* Weekly plan instrument rows + certificates (js/features/instrument.js) */
-      reports:asList(t.reports),/* Service Report files (js/dialog/report.js), bytes in app_settings like the files above */
+      docNA:asList(t.docNA),/* เอกสารหลังจบงาน marked ไม่มีสำหรับงานนี้: 'sr' | 'qc' | 'job' */
+      reports:asList(t.reports),/* Service Report / QC / ใบรับงาน files (js/dialog/report.js), bytes in app_settings like the files above */
       createdAt:t.createdAt||(old&&old.createdAt)||'',createdBy:t.createdBy||(old&&old.createdBy)||null,updatedAt:t.updatedAt||'',updatedBy:t.updatedBy||null}));
   }
   /* transport text -> crane ids, when every name matches a registered vehicle (plate or name) */

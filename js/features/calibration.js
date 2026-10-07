@@ -1,5 +1,5 @@
 'use strict';
-/* BU1 Weekly Plan · Weekly plan calibration (สายงาน Calibration Flow Meter)
+/* BU1 Weekly Plan · Weekly plan calibration (สายงาน Flow Meter)
    The team's sheet "Weekly plan calibration": DATE · No. · Request No. · Customer · Tag/SN · Size · Type ·
    Range for Customer · Point cal · Round · Sale · Lab · Status · Pass/Fail · Detail.
    DATE, Customer and Sale come from the plan; the other columns are one row per meter in task.calItems

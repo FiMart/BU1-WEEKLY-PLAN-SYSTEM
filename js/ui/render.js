@@ -140,7 +140,7 @@ const jr=(k,v,cls)=>v?`<span class="jr"><span class="k">${k}</span><span class="
 function card(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
   return `<button type="button" class="jc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,40)}" data-edit="${esc(t.id)}">
-    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${reportsOf(t).length?`<span class="pcount sr" title="มี Service Report ${reportsOf(t).length} ไฟล์">${REP_ICON}${reportsOf(t).length}</span>`:''}${prepChip(t)}${statusIcon(t.status)}</span>
+    <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${docChip(t)}${prepChip(t)}${statusIcon(t.status)}</span>
     <span class="jc-body">
       ${t.planNo?`<span class="pn">${esc(t.planNo)}</span>`:''}
       ${t.customer?`<span class="jc-cust">${esc(t.customer)}</span>`:''}
@@ -151,7 +151,7 @@ function card(t,conf,i){
     </span>
   </button>`;
 }
-/* ---------- สายงาน (Calibration Flow Meter / Instrument): tabs and card tags ---------- */
+/* ---------- สายงาน (Flow Meter / Instrument): tabs and card tags ---------- */
 /* what each tab would show (leave left out): {'':all, fm, ins} → {n plans, done, meters} — plans without a line count on both */
 function lineCounts(list){
   const jobs=list.filter(t=>!isLeave(t));const of=l=>({n:l.length,done:l.filter(t=>t.status==='done').length,meters:l.reduce((a,t)=>a+calOf(t).length,0),ins:l.reduce((a,t)=>a+insOf(t).length,0)});

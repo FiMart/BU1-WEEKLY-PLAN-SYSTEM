@@ -9,7 +9,7 @@ function normTransport(val){
 }
 function fillTransportList(){
   $('#dl-transport').innerHTML=vehicles().filter(r=>r.active!==false).map(r=>`<option value="${esc(r.name)}">${esc(r.code||'รถบริษัท')}</option>`).join('')
-    +FIXED_TRANSPORT.map(x=>`<option value="${esc(x)}">${x==='GA'?'รถจาก GA':x==='รถลูกค้า'?'ลูกค้ารับ-ส่ง':'งานไม่ใช้รถ'}</option>`).join('');
+    +FIXED_TRANSPORT.map(x=>`<option value="${esc(x)}">${TRANSPORT_SUB[x]}</option>`).join('');
   renderTrGrid();
 }
 /* vehicle tiles grouped by ประเภทรถ (resources.group); grey = used by another plan in an overlapping period that day */
@@ -33,8 +33,8 @@ function renderTrGrid(){
     return `<button type="button" class="tr-tile${on?' on':''}${hit?' busy':''}" data-tr="${esc(name)}" aria-pressed="${on}"${lock?' aria-disabled="true"':''} title="${esc([name,sub,tip].filter(Boolean).join(' · '))}">${TRUCK_ICON}<b>${esc(name)}</b>${sub?`<small>${esc(sub)}</small>`:''}${hit?`<em>${esc(tip)}</em>`:''}</button>`};
   let i=0;let h='';
   for(const [g,list] of groups)h+=`<div class="tr-grp" style="--gc:${POS_COLORS[i++%POS_COLORS.length]}"><p class="tr-gh"><i></i>${esc(g)}<span>${list.length}</span></p><div class="tr-tiles">${list.map(r=>tile(r.name,r.code)).join('')}</div></div>`;
-  const fixed=['รถลูกค้า','ไม่ใช้รถ'].filter(x=>!q||norm(x).includes(q));
-  if(fixed.length)h+=`<div class="tr-grp" style="--gc:#8a979c"><p class="tr-gh"><i></i>อื่นๆ<span>${fixed.length}</span></p><div class="tr-tiles">${fixed.map(x=>tile(x,x==='รถลูกค้า'?'ลูกค้ารับ-ส่ง':'งานไม่ใช้รถ',{fixed:true})).join('')}</div></div>`;
+  const fixed=['รถลูกค้า','ขับรถเอง','ไม่ใช้รถ'].filter(x=>!q||norm(x).includes(q));
+  if(fixed.length)h+=`<div class="tr-grp" style="--gc:#8a979c"><p class="tr-gh"><i></i>อื่นๆ<span>${fixed.length}</span></p><div class="tr-tiles">${fixed.map(x=>tile(x,TRANSPORT_SUB[x],{fixed:true})).join('')}</div></div>`;
   grid.innerHTML=h||`<div class="tp-empty">${all.length?`ไม่พบรถ “${esc(val)}” ในข้อมูลหลัก กดปุ่มเพิ่มเข้าข้อมูลรถได้`:'ยังไม่มีข้อมูลรถ พิมพ์ชื่อรถหรือทะเบียน แล้วกดเพิ่มเข้าข้อมูลรถ'}</div>`;
   $('#trClear').hidden=!val;
   const r=document.querySelector(`input[name="tr-per"][value="${$('#f-period').value}"]`);if(r)r.checked=true;
@@ -44,8 +44,45 @@ function pickTransport(name){
   syncTrAdd();renderTrGrid();checkConflicts();
 }
 /* "ต้องการรถส่วนกลาง": GA assigns the car and plate later; the plan shows "รอระบุทะเบียน" until someone fills in a plate */
-const gaWaiting=t=>!!(t&&t.needGA)&&(!t.transport||t.transport==='GA'||t.transport==='ไม่ใช้รถ');
-const transportText=t=>gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':'');
+const gaWaiting=t=>!!(t&&t.needGA)&&(!t.transport||t.transport==='GA'||t.transport==='ไม่ใช้รถ')&&!gaInfo(t);
+/* GA's answer (user, 7 Oct 2026: "แอป GA กรอกข้อมูลรถให้แล้ว ให้ไปโชว์ข้อมูลทั้งหมดของ GA"): data.gaCar and any other
+   data.ga… field the GA app writes on the booking (task.gaCar / task.gaMore, read only — never written back).
+   The GA app's format is not documented here, so every field is shown: known names get a Thai label, the rest keep
+   their own name; nested objects are flattened ("driver › phone"), dates shown in local time. */
+const GA_LABELS=[[/^(plate|plateno|licen[cs]e(plate|no)?|carplate|registration|ทะเบียน)$/,'ทะเบียน'],[/^(car|carname|vehicle|vehiclename|name|model|brand)$/,'รถ'],
+  [/^(type|cartype|vehicletype|kind)$/,'ประเภทรถ'],[/^(driver|drivername)$/,'พนักงานขับรถ'],[/^(driverphone|drivertel|phone|tel|mobile)$/,'เบอร์โทร'],
+  [/^(depart|departtime|departure|go|gotime|pickup|pickuptime|start|starttime|out|outtime)$/,'เวลาออก'],[/^(return|returntime|back|backtime|end|endtime|in|intime)$/,'เวลากลับ'],
+  [/^(seat|seats|capacity)$/,'ที่นั่ง'],[/^(status|state)$/,'สถานะ'],[/^(note|notes|remark|remarks|comment)$/,'หมายเหตุ'],
+  [/^(by|assignedby|updatedby|staff|gastaff)$/,'ผู้จัดรถ'],[/^(at|assignedat|updatedat|time|date)$/,'จัดเมื่อ']];
+const gaKey=k=>String(k).replace(/^ga(?=[A-Z_])/,'').replace(/[_\s-]/g,'').toLowerCase();
+const gaLabel=k=>{const n=gaKey(k);const hit=GA_LABELS.find(([re])=>re.test(n));return hit?hit[1]:String(k).replace(/^ga(?=[A-Z_])/,'').replace(/[_-]+/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2')};
+function gaVal(v){
+  if(typeof v==='boolean')return v?'ใช่':'ไม่';
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)){const d=new Date(s);if(!isNaN(d))return `${fmtShort(d)} ${be(d)} ${pad(d.getHours())}:${pad(d.getMinutes())} น.`}
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return `${fmtShort(parseD(s))} ${be(parseD(s))}`;
+  return s;
+}
+/* [[label, value], …] or null when GA has written nothing yet */
+function gaInfo(t){
+  if(!t)return null;const out=[];const seen=new Set();
+  const add=(label,v)=>{if(v==null||v===''||(Array.isArray(v)&&!v.length))return;const s=Array.isArray(v)?v.map(x=>x&&typeof x==='object'?Object.values(x).filter(y=>y!=null&&y!=='').join(' '):gaVal(x)).filter(Boolean).join(', '):gaVal(v);if(s)out.push([label,s])};
+  const walk=(o,pre)=>Object.entries(o).forEach(([k,v])=>{if(/^(id|dept_?id)$/i.test(k))return;const label=(pre?pre+' › ':'')+gaLabel(k);
+    if(v&&typeof v==='object'&&!Array.isArray(v))walk(v,label);else if(!seen.has(label)){seen.add(label);add(label,v)}});
+  const g=t.gaCar;if(g!=null&&g!==''){if(typeof g==='object')walk(Array.isArray(g)?{car:g}:g,'');else add('รถ',g)}
+  if(t.gaMore&&typeof t.gaMore==='object')walk(t.gaMore,'');
+  if(!out.length)return null;
+  const order=l=>{const i=GA_LABELS.findIndex(([,x])=>x===l);return i<0?99:i};
+  return out.sort((a,b)=>order(a[0])-order(b[0]));
+}
+/* one line for the card / LINE / exports: plate and car, then the driver */
+function gaSummary(t){const l=gaInfo(t);if(!l)return '';const v=k=>(l.find(([x])=>x===k)||[])[1];
+  const s=[v('ทะเบียน'),v('รถ'),v('พนักงานขับรถ')&&'คนขับ '+v('พนักงานขับรถ')].filter(Boolean);return (s.length?s:l.slice(0,2).map(([,x])=>x)).join(' · ')}
+function gaInfoHtml(t){const l=gaInfo(t);if(!l)return '';
+  return `<div class="ga-info"><b>${CAR_ICON}ข้อมูลรถจาก GA</b><dl>${l.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></div>`}
+/* the times asked of GA (user, 7 Oct 2026): ไป = leave the office, กลับ = back; both optional */
+const gaTimes=t=>t&&t.needGA&&(t.gaGo||t.gaBack)?[t.gaGo?`ไป ${t.gaGo} น.`:'',t.gaBack?`กลับ ${t.gaBack} น.`:''].filter(Boolean).join(' · '):'';
+const transportText=t=>(gaInfo(t)?`รถส่วนกลาง GA · ${gaSummary(t)}`+(t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!gaSummary(t).includes(t.transport)?' · '+t.transport:''):gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':''))+(gaTimes(t)?' · '+gaTimes(t):'');
 /* ใช้ทีมร่วมฯ: the box turns solid when on, and names the area it applies to */
 function syncSharedArea(){
   const box=$('#shareBox');if(!box)return;box.classList.toggle('on',$('#f-sharedTeam').checked);
@@ -53,7 +90,7 @@ function syncSharedArea(){
   $('#f-sharedArea').textContent=name?`พื้นที่ ${name} `:'พื้นที่เดียวกัน';
 }
 function syncNeedGA(){
-  const on=$('#f-needGA').checked;$('#gaBox').classList.toggle('on',on);
+  const on=$('#f-needGA').checked;$('#gaBox').classList.toggle('on',on);$('#gaTimes').hidden=!on;
   $('#f-transport').placeholder=on?'รอ GA ระบุรถ · กรอกทะเบียนภายหลังได้':'ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ';
 }
 function syncTrAdd(){

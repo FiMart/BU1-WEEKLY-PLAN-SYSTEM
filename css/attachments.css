@@ -80,3 +80,42 @@
 .tr-tile.busy:not(.on){background:var(--surface-2);color:var(--muted);cursor:not-allowed;opacity:.7}
 .tr-tile.busy:not(.on) b{color:var(--muted)}
 .tr-tile.busy.on{border-color:var(--crit);box-shadow:inset 0 0 0 1px var(--crit)}
+
+/* ต้องการรถส่วนกลาง: เวลาไป / กลับ for GA (user, 7 Oct 2026), shown under the box while it is ticked */
+.ga-times{display:flex;flex-wrap:wrap;gap:10px 14px;justify-self:start;max-width:460px;width:100%;margin-top:-2px;padding:10px 14px 12px;border:1.5px solid var(--good);border-top:0;border-radius:0 0 12px 12px;background:color-mix(in srgb,var(--good) 6%,var(--surface))}
+.ga-times[hidden]{display:none}
+.ga-times label{display:grid;gap:4px;flex:1 1 150px;font-size:12.5px;font-weight:600;color:var(--good-ink)}
+.ga-times label small{font-weight:400;color:var(--muted)}
+.ga-times input{font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
+.ga-box.on:has(+ .ga-times:not([hidden])){width:100%;border-radius:12px 12px 0 0}
+.ga-when{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--good-ink);background:color-mix(in srgb,var(--good) 12%,transparent);font-variant-numeric:tabular-nums}
+.tchip.own{color:var(--ink-2);border-color:color-mix(in srgb,var(--ink-2) 35%,var(--line))}
+/* เอกสารหลังจบงาน (js/dialog/report.js, user 7 Oct 2026): Service Report · QC · ใบรับงาน */
+.v-report.miss{border-color:color-mix(in srgb,var(--crit) 55%,var(--line));background:color-mix(in srgb,var(--crit) 4%,var(--surface))}
+.vr-head .opt.ok{color:var(--good-ink);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.vr-head .opt.bad{color:#fff;background:var(--crit);border-color:var(--crit)}
+.vr-head .hint{font-size:12px}
+.doc-cks{display:flex;flex-wrap:wrap;gap:6px}
+.doc-ck{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink)}
+.doc-ck i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-style:normal;font-size:11px;font-weight:700;background:var(--surface-2,var(--line));color:var(--muted)}
+.doc-ck small{font-weight:400;color:var(--muted)}
+.doc-ck .lnk{font-size:11.5px;font-weight:400;color:var(--muted)}
+.doc-ck.ok{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}.doc-ck.ok i{background:var(--good);color:#fff}
+.doc-ck.miss{border-color:color-mix(in srgb,var(--crit) 50%,var(--line));color:var(--crit-ink)}.doc-ck.miss i{background:var(--crit);color:#fff}
+.doc-ck.na{border-style:dashed;opacity:.75}
+.ds-act{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.ds-act .hint{font-size:12px}
+.doc-file{flex-wrap:wrap;row-gap:6px}
+.doc-file .fmeta{flex:1 1 160px;min-width:0}
+#dlg .doc-file input.doc-lbl{order:5;flex:1 1 100%;min-width:0;height:32px;min-height:0;padding:0 10px;font:inherit;font-size:13px;font-weight:600;border-radius:8px}
+#dlg .doc-file input.doc-lbl.empty{border-color:color-mix(in srgb,var(--warn) 60%,var(--line));background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+.doc-tag{flex:none;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:var(--good-ink);background:color-mix(in srgb,var(--good) 12%,transparent)}.pcount.sr.miss{color:var(--crit-ink)}
+.fstat.doc{color:var(--crit-ink);background:var(--crit-soft)}/* ข้อมูลรถจาก GA (gaCar + ga… fields, read only) */
+.tchip.gaok{color:var(--good-ink);border-color:color-mix(in srgb,var(--good) 50%,var(--line));background:color-mix(in srgb,var(--good) 9%,var(--surface))}
+.ga-info{margin-top:8px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--good) 6%,var(--surface))}
+.ga-info>b{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--good-ink);margin-bottom:6px}
+.ga-info>b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ga-info dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;margin:0}
+.ga-info dl div{display:grid;gap:1px;min-width:0}
+.ga-info dt{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
+.ga-info dd{margin:0;font-size:13.5px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}

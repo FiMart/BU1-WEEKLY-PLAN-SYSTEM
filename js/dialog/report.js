@@ -1,64 +1,131 @@
 'use strict';
-/* BU1 Weekly Plan · Service Report: documents that confirm a plan was finished (optional)
-   Attached in the plan view once the status is "เสร็จแล้ว" and saved at once (no "บันทึก" needed).
+/* BU1 Weekly Plan · เอกสารหลังจบงาน (user, 7 Oct 2026)
+   Documents every finished work plan should carry: Service Report · QC (check sheet, e.g. Remove-Reinstall Transmitter
+   Check Sheet) · ใบรับงาน (the service request form from Sale). Upload is free (user: "ไม่ต้องล็อคชื่อเอกสาร"): one button,
+   any files, each file keeps its own name and gets an editable label — suggested from the file name, picked from the list
+   or typed (one file may cover several: "Service Report, QC"). The checklist ticks a document when a file's label names it.
+   Allowed in any status (ใบรับงาน usually comes first); counted as missing once the plan is "เสร็จแล้ว". A document that
+   does not apply can be marked "ไม่มีสำหรับงานนี้" (docNA). Saved at once (no "บันทึก" needed).
    The bytes go where other attachments go (filechunks/<fileId>_<i>, ≤ 4 MB a file); the plan lists them in
-   reports[{id,name,size,type,at,by}] (central DB: data.bu1wp.reports) — apart from files/fileIds, so saving the
-   edit form never drops them and a copied plan does not carry them. */
-const MAX_REPORTS=5;let repBusy=false;
+   reports[{id,name,size,type,at,by,label}] (central DB: data.bu1wp.reports; older entries: kind 'sr'|'qc'|'job', or
+   nothing = Service Report) and docNA ['qc', …] (data.bu1wp.docNA) — apart from files/fileIds, so saving the edit form
+   never drops them and a copied plan does not carry them. */
+const DOC_KINDS=[
+  {id:'sr',name:'Service Report',sub:'ใบรายงานบริการที่ลูกค้าเซ็น',re:/^(sr|s\/r|service\s*report|รายงานบริการ)$/i},
+  {id:'qc',name:'QC',sub:'Check Sheet ตรวจสอบงาน',re:/^(qc|q\/c|check\s*sheet|checksheet|ใบตรวจสอบ|ใบ\s*qc)$/i},
+  {id:'job',name:'ใบรับงาน',sub:'ใบรับคำร้องขอรับบริการ ที่ได้จาก Sale',re:/^(ใบรับงาน|ใบรับคำร้อง.*|job\s*order|request\s*form)$/i}];
+const DOC_NAME=Object.fromEntries(DOC_KINDS.map(k=>[k.id,k.name]));
+const MAX_REPORTS=15;let repBusy=false;
 const reportsOf=t=>Array.isArray(t&&t.reports)?t.reports:[];
+/* a file's label: its own, else the old fixed kind, else (oldest files) Service Report */
+const docLabel=f=>f&&f.label!=null?String(f.label):f&&DOC_NAME[f.kind]?DOC_NAME[f.kind]:'Service Report';
+const docParts=l=>String(l||'').split(/\s*(?:,|\+|\/(?!r|c)|·|และ)\s*/i).map(x=>x.trim()).filter(Boolean);
+const docOfKind=(f,k)=>{const kd=DOC_KINDS.find(x=>x.id===k);return !!kd&&docParts(docLabel(f)).some(p=>kd.re.test(p))};
+const docNAOf=t=>Array.isArray(t&&t.docNA)?t.docNA.filter(k=>DOC_NAME[k]):[];
+const docsOf=(t,k)=>reportsOf(t).filter(f=>docOfKind(f,k));
+/* the label a new file starts with, from its name ("SR PN-26-07103.pdf" → Service Report) */
+function docGuess(name){const n=String(name||'');
+  if(/service\s*report|(^|[^a-z])s\.?r([^a-z]|$)/i.test(n))return 'Service Report';
+  if(/(^|[^a-z])qc([^a-z]|$)|check\s*sheet|checksheet/i.test(n))return 'QC';
+  if(/ใบรับ|คำร้อง|request\s*form|job\s*order/i.test(n))return 'ใบรับงาน';
+  return '';}
+const docCanon=l=>docParts(l).map(p=>{const k=DOC_KINDS.find(x=>x.re.test(p));return k?k.name:p}).join(', ');
+/* the documents a plan still owes: only work plans that are "เสร็จแล้ว" */
+const docNeeded=t=>!!t&&!isLeave(t)&&t.status==='done';
+const docMissing=t=>docNeeded(t)?DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)&&!docsOf(t,k.id).length).map(k=>k.id):[];
+function docState(t){const na=docNAOf(t);const need=DOC_KINDS.filter(k=>!na.includes(k.id));return {need:need.length,have:need.filter(k=>docsOf(t,k.id).length).length,na}}
 const REP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13l2 2 4-4"/></svg>';
-function reportRow(f,canDel){
-  const ext=fileExt(f.name);const when=f.at?new Date(f.at):null;
-  return `<div class="fchip"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${when&&!isNaN(when)?` · แนบเมื่อ ${fmtShort(when)} ${when.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`:''}</small></span><button type="button" class="btn sm" data-rep-dl="${esc(f.id)}">ดาวน์โหลด</button>${canDel?`<button type="button" class="ph-x2" data-rep-del="${esc(f.id)}" aria-label="ลบ ${esc(f.name)}">×</button>`:''}</div>`;
+/* the card's chip: "2/3" once the job is done (red while missing), a plain file count before */
+function docChip(t){
+  if(!t||isLeave(t))return '';const s=docState(t);const n=reportsOf(t).length;
+  if(docNeeded(t)){const ok=s.have>=s.need;const miss=docMissing(t).map(k=>DOC_NAME[k]);
+    return `<span class="pcount sr${ok?'':' miss'}" title="${ok?'เอกสารหลังจบงานครบ':'ยังไม่ได้ส่ง: '+esc(miss.join(', '))}">${REP_ICON}${s.have}/${s.need}</span>`}
+  return n?`<span class="pcount sr" title="แนบเอกสารแล้ว ${n} ไฟล์">${REP_ICON}${n}</span>`:'';
 }
-/* read-only list in the plan's details (everyone who can open the plan) */
-function reportViewHtml(t,k){
-  const l=reportsOf(t);if(!l.length||(S.canWrite&&t.status==='done'))return '';/* editors see it in the box below */
-  return `<div class="wide" style="--k:${k}"><dt>Service Report (${l.length})</dt><dd class="dv-files">${l.map(f=>reportRow(f,false)).join('')}</dd></div>`;
+function reportRow(f,edit){
+  const ext=fileExt(f.name);const when=f.at?new Date(f.at):null;const l=docLabel(f);
+  return `<div class="fchip doc-file"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${when&&!isNaN(when)?` · แนบเมื่อ ${fmtShort(when)} ${when.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`:''}</small></span>
+    ${edit?`<input class="doc-lbl${l?'':' empty'}" list="dl-docKinds" data-rep-lbl="${esc(f.id)}" value="${esc(l)}" maxlength="80" placeholder="ชื่อเอกสาร" aria-label="ชื่อเอกสารของ ${esc(f.name)}" autocomplete="off">`:l?`<span class="doc-tag">${esc(l)}</span>`:''}
+    <button type="button" class="btn sm" data-rep-dl="${esc(f.id)}">ดาวน์โหลด</button>${edit?`<button type="button" class="ph-x2" data-rep-del="${esc(f.id)}" aria-label="ลบ ${esc(f.name)}">×</button>`:''}</div>`;
 }
-/* the box under the status buttons: shown for "เสร็จแล้ว" */
-function reportBoxHtml(t){
-  if(t.status!=='done')return '';const l=reportsOf(t);const full=l.length>=MAX_REPORTS;
-  return `<div class="v-report" id="vReport">
-    <div class="vr-head">${REP_ICON}<b>Service Report / เอกสารยืนยันงานเสร็จ</b><span class="opt">ไม่บังคับ</span></div>
-    ${l.length?`<div class="vr-list">${l.map(f=>reportRow(f,true)).join('')}</div>`:'<p class="hint">แนบใบ Service Report ที่ลูกค้าเซ็น รูปถ่ายใบงาน หรือเอกสารอื่นที่ยืนยันว่างานเสร็จ</p>'}
-    ${full?`<p class="hint">แนบครบ ${MAX_REPORTS} ไฟล์แล้ว</p>`:`<label class="btn sm vr-add${repBusy?' busy':''}"><input type="file" id="vRepFile" multiple accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="sr-only"${repBusy?' disabled':''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></svg> <span id="vRepLbl">${repBusy?'กำลังอัปโหลด…':'แนบไฟล์'}</span></label><small class="hint">PDF รูป Word หรือ Excel · ไม่เกิน 4 MB ต่อไฟล์ · สูงสุด ${MAX_REPORTS} ไฟล์ · บันทึกทันที</small>`}
+function docBox(t,edit){
+  const s=docState(t);const done=docNeeded(t);const ok=s.have>=s.need;const l=reportsOf(t);const na=docNAOf(t);const full=l.length>=MAX_REPORTS;
+  const ck=DOC_KINDS.map(k=>{const n=docsOf(t,k.id).length;const st=n?'ok':na.includes(k.id)?'na':done?'miss':'wait';
+    return `<span class="doc-ck ${st}" title="${esc(k.sub)}"><i>${st==='ok'?'✓':st==='na'?'–':st==='miss'?'✗':'○'}</i>${esc(k.name)}${st==='na'?' <small>ไม่มีสำหรับงานนี้</small>':''}${edit&&!n?`<button type="button" class="lnk" data-rep-na="${k.id}">${st==='na'?'ต้องส่ง':'ไม่มี'}</button>`:''}</span>`}).join('');
+  return `<div class="v-report${done&&!ok?' miss':''}" id="vReport">
+    <div class="vr-head">${REP_ICON}<b>เอกสารหลังจบงาน</b><span class="opt${done?ok?' ok':' bad':''}">ส่งแล้ว ${s.have}/${s.need}</span>${done?'':'<span class="hint">แนบล่วงหน้าได้ · ต้องครบเมื่องานเสร็จ</span>'}</div>
+    <div class="doc-cks">${ck}</div>
+    ${l.length?`<div class="vr-list">${l.map(f=>reportRow(f,edit)).join('')}</div>`:edit?'<p class="hint">ยังไม่มีไฟล์ · แนบได้หลายไฟล์พร้อมกัน แล้วใส่ชื่อเอกสารของแต่ละไฟล์ (ระบบเดาจากชื่อไฟล์ให้ก่อน)</p>':''}
+    ${edit?`<div class="ds-act">${full?`<span class="hint">แนบครบ ${MAX_REPORTS} ไฟล์แล้ว</span>`:`<label class="btn sm vr-add${repBusy?' busy':''}"><input type="file" id="vRepFile" multiple accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="sr-only"${repBusy?' disabled':''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></svg> <span id="vRepLbl">${repBusy?'กำลังอัปโหลด…':'แนบไฟล์'}</span></label>`}<small class="hint">PDF รูป Word หรือ Excel · ไม่เกิน 4 MB ต่อไฟล์ · สูงสุด ${MAX_REPORTS} ไฟล์ · บันทึกทันที · ไฟล์เดียวมีหลายเอกสารได้ เช่น “Service Report, QC”</small></div>
+    <datalist id="dl-docKinds">${DOC_KINDS.map(k=>`<option value="${esc(k.name)}">${esc(k.sub)}</option>`).join('')}<option value="Service Report, QC, ใบรับงาน">รวมทั้ง 3 เอกสารในไฟล์เดียว</option><option value="Service Report, QC">Service Report และ QC ในไฟล์เดียว</option></datalist>`:''}
   </div>`;
 }
+/* read-only list in the plan's details (people who cannot edit); editors get the box under the status buttons */
+function reportViewHtml(t,k){
+  if(S.canWrite||isLeave(t)||(!reportsOf(t).length&&!docNeeded(t)))return '';
+  return `<div class="wide" style="--k:${k}"><dt>เอกสารหลังจบงาน</dt><dd>${docBox(t,false)}</dd></div>`;
+}
+function reportBoxHtml(t){return isLeave(t)?'':docBox(t,true)}
 function redrawReportView(){renderDrawerView(editing);renderPhotos();renderFiles()}
+const docLeftToast=t=>docNeeded(t)?(docMissing(t).length?` · ยังขาด ${docMissing(t).map(k=>DOC_NAME[k]).join(', ')}`:' · เอกสารครบแล้ว'):'';
 async function addReports(files){
   if(!editing||!S.canWrite||repBusy)return;
-  const cur=reportsOf(editing);const room=MAX_REPORTS-cur.length;
+  const room=MAX_REPORTS-reportsOf(editing).length;
   const all=[...(files||[])].filter(Boolean);if(!all.length)return;
   const ok=all.filter(f=>f.size&&f.size<=MAX_FILE_BYTES).slice(0,Math.max(0,room));
   const big=all.filter(f=>!f.size||f.size>MAX_FILE_BYTES).length;
-  if(!ok.length){toast(room<=0?`แนบ Service Report ได้สูงสุด ${MAX_REPORTS} ไฟล์ต่อแผน`:'ไฟล์ใหญ่เกิน 4 MB หรือเป็นไฟล์ว่าง ลดขนาดไฟล์ก่อน');return}
+  if(!ok.length){toast(room<=0?`แนบเอกสารได้สูงสุด ${MAX_REPORTS} ไฟล์ต่อแผน`:'ไฟล์ใหญ่เกิน 4 MB หรือเป็นไฟล์ว่าง ลดขนาดไฟล์ก่อน');return}
   const id=editing.id;const now=new Date().toISOString();const added=[];
   repBusy=true;redrawReportView();
   try{
     for(const [k,file] of ok.entries()){
-      const f={id:newId('f'),name:String(file.name||'service-report').slice(0,120),size:file.size,type:file.type||'',blob:file};
+      const f={id:newId('f'),name:String(file.name||'document').slice(0,120),size:file.size,type:file.type||'',blob:file};
       await putFileChunks(f,(x,i,n)=>{const l=$('#vRepLbl');if(l)l.textContent=`กำลังอัปโหลด ${ok.length>1?`ไฟล์ ${k+1}/${ok.length} · `:''}${Math.round((i+1)/n*100)}%`});
-      added.push({id:f.id,name:f.name,size:f.size,type:f.type,at:now,by:S.me||null});
+      added.push({id:f.id,name:f.name,size:f.size,type:f.type,at:now,by:S.me||null,label:docGuess(f.name)});
     }
     const reports=reportsOf(editing).concat(added);
     await Store.update('tasks',id,Object.assign({reports},meta()));
     if(editing&&editing.id===id)editing=Object.assign({},editing,{reports});
-    toast(`แนบ Service Report ${added.length} ไฟล์แล้ว${big?` · ข้าม ${big} ไฟล์ที่ใหญ่เกิน 4 MB`:''}${all.length-big>ok.length?` · แนบได้สูงสุด ${MAX_REPORTS} ไฟล์`:''}`);
+    const unl=added.filter(f=>!f.label).length;
+    toast(`แนบเอกสาร ${added.length} ไฟล์แล้ว${unl?` · ใส่ชื่อเอกสารให้ ${unl} ไฟล์`:''}${big?` · ข้าม ${big} ไฟล์ที่ใหญ่เกิน 4 MB`:''}${all.length-big>ok.length?` · แนบได้สูงสุด ${MAX_REPORTS} ไฟล์`:''}${docLeftToast(editing)}`);
   }catch(err){toast(errText(err));noteWriteError(err);if(added.length)cleanupFiles(added.map(f=>f.id))}/* nothing half-saved stays behind */
-  finally{repBusy=false;if(editing&&editing.id===id&&dMode==='view')redrawReportView()}
+  finally{repBusy=false;if(editing&&editing.id===id&&dMode==='view'){redrawReportView();const e=document.querySelector('#vReport .doc-lbl.empty');if(e)e.focus()}}
+}
+/* a file's label, typed or picked: saved at once ("qc" → "QC", "sr, qc" → "Service Report, QC") */
+async function setReportLabel(fid,val){
+  if(!editing||!S.canWrite)return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
+  const label=docCanon(String(val||'').replace(/\s+/g,' ').trim().slice(0,80));if(label===docLabel(f))return;
+  const id=editing.id;const reports=reportsOf(editing).map(x=>x.id===fid?Object.assign({},x,{label}):x);
+  try{await Store.update('tasks',id,Object.assign({reports},meta()));
+    if(editing&&editing.id===id){editing=Object.assign({},editing,{reports});redrawReportView()}
+    toast(`${f.name}: ${label||'ไม่ระบุชื่อเอกสาร'}${docLeftToast(editing)}`)}
+  catch(err){toast(errText(err));noteWriteError(err);redrawReportView()}
 }
 async function removeReport(fid){
   if(!editing||!S.canWrite)return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
-  if(!await askConfirm('ลบ Service Report?',`ลบไฟล์ ${f.name} ออกจากแผนนี้\nลบแล้วกู้คืนไม่ได้`,'ลบไฟล์'))return;
+  if(!await askConfirm('ลบไฟล์เอกสาร?',`ลบไฟล์ ${f.name}${docLabel(f)?` (${docLabel(f)})`:''} ออกจากแผนนี้\nลบแล้วกู้คืนไม่ได้`,'ลบไฟล์'))return;
   const id=editing.id;const reports=reportsOf(editing).filter(x=>x.id!==fid);
   try{await Store.update('tasks',id,Object.assign({reports},meta()));
     if(editing&&editing.id===id){editing=Object.assign({},editing,{reports});redrawReportView()}
     cleanupFiles([fid]);toast(`ลบ ${f.name} แล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err)}
 }
-dlg.addEventListener('change',e=>{if(e.target.id==='vRepFile'){addReports(e.target.files);e.target.value=''}});
+/* ไม่มีสำหรับงานนี้: on / off for one document */
+async function toggleDocNA(kind){
+  if(!editing||!S.canWrite||!DOC_NAME[kind])return;const id=editing.id;
+  const cur=docNAOf(editing);const docNA=cur.includes(kind)?cur.filter(x=>x!==kind):cur.concat([kind]);
+  try{await Store.update('tasks',id,Object.assign({docNA},meta()));
+    if(editing&&editing.id===id){editing=Object.assign({},editing,{docNA});redrawReportView()}
+    toast(docNA.includes(kind)?`${DOC_NAME[kind]}: ไม่มีสำหรับงานนี้`:`${DOC_NAME[kind]}: ต้องส่งตามปกติ`)}
+  catch(err){toast(errText(err));noteWriteError(err)}
+}
+dlg.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='vRepFile'){addReports(t.files);t.value='';return}
+  if(t.dataset&&t.dataset.repLbl)setReportLabel(t.dataset.repLbl,t.value);
+});
+dlg.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.repLbl){e.preventDefault();e.target.blur()}});
 dlg.addEventListener('click',e=>{
   const d=e.target.closest('[data-rep-dl]');if(d){const f=reportsOf(editing).find(x=>x.id===d.dataset.repDl);downloadFile(d.dataset.repDl,d,f);return}
-  const r=e.target.closest('[data-rep-del]');if(r)removeReport(r.dataset.repDel);
+  const r=e.target.closest('[data-rep-del]');if(r){removeReport(r.dataset.repDel);return}
+  const n=e.target.closest('[data-rep-na]');if(n)toggleDocNA(n.dataset.repNa);
 });

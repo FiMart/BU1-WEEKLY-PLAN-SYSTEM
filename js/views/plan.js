@@ -38,10 +38,11 @@ function renderActions(){
 const CLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg>';
 const CAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
 function transportChip(v,t){
-  if(t&&gaWaiting(t))return `<span class="tchip gawait" title="ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง">${CAR_ICON}รถ GA · รอทะเบียน</span>`;
+  if(t&&gaInfo(t))return `<span class="tchip gaok" title="${esc(gaInfo(t).map(([k,x])=>k+": "+x).join(" · ")+(gaTimes(t)?" · "+gaTimes(t):""))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
+  if(t&&gaWaiting(t))return `<span class="tchip gawait" title="ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง${gaTimes(t)?' · '+esc(gaTimes(t)):''}">${CAR_ICON}รถ GA · รอทะเบียน${t.gaGo?' · ไป '+esc(t.gaGo):''}</span>`;
   if(!v||v==='ไม่ใช้รถ')return '';
-  const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':'car';
-  return `<span class="tchip ${cls}">${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?'รถลูกค้า':'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
+  const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':v==='ขับรถเอง'?'own':'car';
+  return `<span class="tchip ${cls}">${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'||v==='ขับรถเอง'?v:'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
 }
 function wcard(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
@@ -49,7 +50,7 @@ function wcard(t,conf,i){
   const sub=[t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · ');
   const det=headline(t);const ch=transportChip(t.transport,t);
   return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
-    <span class="wc-top">${lineTag(t)}<span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${reportsOf(t).length?`<span class="pcount sr" title="มี Service Report ${reportsOf(t).length} ไฟล์">${REP_ICON}${reportsOf(t).length}</span>`:''}${calChip(t)}${insChip(t)}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
+    <span class="wc-top">${lineTag(t)}<span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
     <span class="wc-sub"><span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${t.location?`<span class="wc-loc">L : <b>${esc(t.location)}</b></span>`:''}
     ${t.customer&&S.pf.by!=='cust'?`<span class="wc-cust">${esc(t.customer)}</span>`:''}

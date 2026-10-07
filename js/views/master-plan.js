@@ -115,7 +115,7 @@ async function mpDelMany(ids){
   toast(fail?`ลบได้ ${gone.size} จาก ${ids.length} แถว · บางแถวลบไม่สำเร็จ ลองอีกครั้ง`:`ลบแล้ว ${gone.size} แถว`);
 }
 async function mpDelBar(){
-  if(!can('del')||!S.mpRows)return;const all=S.mpRows;const tab=mpTab()==='ins'?'Master Plan Instrument':'Master Plan Flow Meter';
+  if(!can('del')||!S.mpRows)return;const all=S.mpRows;const tab=mpTab()==='ins'?'Instrument':'Flow Meter';
   const [y,m]=mpMonth().split('-').map(Number);const mon=`${TH_MON_FULL[m-1]} ${y+543}`;
   const label=r=>[r.reqNo,r.cust,r.tag].filter(Boolean).join(' · ')||'แถวว่าง';
   if(S.mpSel.size){const pick=mpSorted().filter(r=>S.mpSel.has(r.id));
@@ -132,7 +132,7 @@ function renderMp(){
   const [y,m]=mpMonth().split('-').map(Number);const isNow=mpMonth()===ymd(new Date()).slice(0,7);
   const ed=can('edit');
   const sub={fm:'มิเตอร์ · รหัสงานรายวัน D / C / W / I …',ins:'Request · LAB · จำนวนสอบเทียบรายวัน'};
-  return `<div class="mp-tabs" role="tablist" aria-label="สายงาน">${LINES.map(l=>`<button type="button" role="tab" class="mp-tab${tab===l.id?' on':''}" data-mp-tab="${l.id}" aria-selected="${tab===l.id}" style="--lc:${l.color}"><span class="mp-tab-ico">${l.icon}</span><span class="mp-tab-t"><b>${l.id==='fm'?'Master Plan Flow Meter':'Master Plan Instrument'}</b><small>${sub[l.id]}</small></span></button>`).join('')}</div>
+  return `<div class="mp-tabs" role="tablist" aria-label="สายงาน">${LINES.map(l=>`<button type="button" role="tab" class="mp-tab${tab===l.id?' on':''}" data-mp-tab="${l.id}" aria-selected="${tab===l.id}" style="--lc:${l.color}"><span class="mp-tab-ico">${l.icon}</span><span class="mp-tab-t"><b>${l.id==='fm'?'Flow Meter':'Instrument'}</b><small>${sub[l.id]}</small></span></button>`).join('')}</div>
     <section class="mp-bar" style="--lc:${LINE[tab].color}">
       <div class="mp-nav"><button type="button" class="icon-btn" data-mp-mon="-1" aria-label="เดือนก่อน">‹</button>
         <div class="mp-mon"><b>${EN_MON[m-1].toUpperCase()} ${y}</b><span>${TH_MON_FULL[m-1]} ${y+543} · ${isNow?'เดือนนี้':'<button type="button" class="lnk" data-mp-mon="0">กลับเดือนนี้</button>'}</span></div>
@@ -165,7 +165,7 @@ function fillMp(){
   const per=code=>days.map(d=>all.reduce((a,r)=>a+mpTokens((r.days||{})[d.getDate()]).filter(x=>x===code.toUpperCase()).length,0));
   const wDay=per('W'),cDay=per('C');const sum=a=>a.reduce((x,y)=>x+y,0);
   $('#mpSum').innerHTML=mpTiles([[all.length,'แถว','มิเตอร์ / อุปกรณ์'],[tot.fm,'Flow meter','แถวที่มีหมายเลขมิเตอร์'],[tot.ins,'Ins',tot.fc||tot.co?`Flowcom ${tot.fc} · Clamp-on ${tot.co}`:'รวมคอลัมน์ Ins'],[sum(wDay),'W','Cal &amp; Witness','w'],[sum(cDay),'C','Cal.','c']],list.length!==all.length?list.length:null);
-  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Master Plan Flow Meter ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วพิมพ์ Request No. Customer Tag … และรหัสงานในช่องวันที่ เช่น D, W, I หรือ D/C/I ระบบบันทึกทันทีเมื่อออกจากช่อง · หรือนำเข้าแผ่นงานของทีมจากไฟล์ Excel':'ยังไม่มีใครกรอกแผนของเดือนนี้',ed?'<button type="button" class="btn primary" data-mp-add="">+ เพิ่มแถวแรก</button> <button type="button" class="btn" data-mp-imp-xlsx="">นำเข้าจาก Excel</button>':'',CAL_ICON);return}
+  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Flow Meter ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วพิมพ์ Request No. Customer Tag … และรหัสงานในช่องวันที่ เช่น D, W, I หรือ D/C/I ระบบบันทึกทันทีเมื่อออกจากช่อง · หรือนำเข้าแผ่นงานของทีมจากไฟล์ Excel':'ยังไม่มีใครกรอกแผนของเดือนนี้',ed?'<button type="button" class="btn primary" data-mp-add="">+ เพิ่มแถวแรก</button> <button type="button" class="btn" data-mp-imp-xlsx="">นำเข้าจาก Excel</button>':'',CAL_ICON);return}
   const dayCls=d=>{const k=ymd(d);return [isOffDay(d)?'off':'',holidayOf(k)?'hol':'',k===today?'today':''].filter(Boolean).join(' ')};
   const dayTitle=d=>holidayOf(ymd(d))||'';
   const cell=(r,f,cls,dl)=>mpCell(r,f,cls,dl,ed);
@@ -185,19 +185,19 @@ function fillMp(){
     ||`<tr><td colspan="${13+days.length}" class="hint" style="padding:16px 12px">ไม่พบแถวที่ตรงกับคำค้น</td></tr>`;
   /* the sheet's legend: every code's count per day and in the month */
   const legend=MP_CODES.map(([c,name])=>{const a=per(c);return `<tr><th class="lg">${esc(c)}<span>${esc(name)}</span></th>${a.map((n,i)=>`<td class="d ${dayCls(days[i])}">${n||''}</td>`).join('')}<td class="t">${sum(a)}</td></tr>`}).join('');
-  body.innerHTML=`<section class="mp-card">${mpCardHead('Master Plan Flow Meter',`${list.length} แถว · แถวบน W และ Cal ต่อวัน · ช่อง C เขียวอ่อน W เขียว · เสาร์-อาทิตย์สีเทา วันหยุดสีแดง`)}<div class="mp-scroll main"><table class="mp-tbl${ed?' ed':''}"><thead>${head}</thead><tbody>${rowsHtml}</tbody></table></div></section>
+  body.innerHTML=`<section class="mp-card">${mpCardHead('Flow Meter',`${list.length} แถว · แถวบน W และ Cal ต่อวัน · ช่อง C เขียวอ่อน W เขียว · เสาร์-อาทิตย์สีเทา วันหยุดสีแดง`)}<div class="mp-scroll main"><table class="mp-tbl${ed?' ed':''}"><thead>${head}</thead><tbody>${rowsHtml}</tbody></table></div></section>
     <section class="mp-card">${mpCardHead('สรุปรายวันตามรหัสงาน','จำนวนแต่ละรหัสในช่องวันที่ (D/C/I นับ D, C, I อย่างละครั้ง)')}<div class="mp-scroll"><table class="mp-lg"><thead><tr><th class="lg">รหัส</th>${days.map(d=>`<th class="d ${dayCls(d)}"><small>${EN_DAY[d.getDay()]}</small>${d.getDate()}</th>`).join('')}<th class="t">รวม</th></tr></thead><tbody>${legend}</tbody></table></div>
     <p class="hint mp-note">รหัสในช่องวันที่: ${MP_CODES.map(([c,n])=>`<b>${esc(c)}</b> ${esc(n)}`).join(' · ')} · อื่น ๆ ${MP_OTHER.map(([c,n])=>`<b>${esc(c)}</b> ${esc(n)}`).join(' · ')} · ใส่หลายรหัสในวันเดียวคั่นด้วย / เช่น D/C/I · กด Enter เพื่อลงไปแถวถัดไป</p></section>`;
   mpKeepScroll(body);
   if(S.mpFocus){const f=body.querySelector(`[data-mp="${CSS.escape(S.mpFocus.id)}|${S.mpFocus.f}"]`);S.mpFocus=null;if(f){f.focus();f.scrollIntoView({block:'nearest',inline:'nearest'})}}
 }
 
-/* ---------- Master Plan Instrument (the team's sheet "Plan Lab Ins 2026") ----------
+/* ---------- Instrument (the team's sheet "Plan Lab Ins 2026") ----------
    One row per request: Request No. / PN · LAB · Customer · Plant · Tag · Type · Range / Set Point / Nor.Temp (Unit) ·
    Remove · Cal · install (final) · BU (R / I) · รับ/ส่ง · SALE (Contact) · ชื่อลูกค้า · Total Booking · Total cal ·
    day 1…31 (how many are calibrated that day) · Remark. Total cal = the sum of the day counts. */
 function fillMpIns(body){
-  if(!S.mpRows){body.innerHTML=`<p class="hint mp-wait"><span class="sk-spin" aria-hidden="true"></span> กำลังโหลด Master Plan Instrument ของเดือนนี้…</p>`;$('#mpSum').innerHTML='';return}
+  if(!S.mpRows){body.innerHTML=`<p class="hint mp-wait"><span class="sk-spin" aria-hidden="true"></span> กำลังโหลด Instrument ของเดือนนี้…</p>`;$('#mpSum').innerHTML='';return}
   const days=mpDays();const all=mpSorted();const list=all.filter(mpMatch);const ed=can('edit'),del=can('del');
   const today=ymd(new Date());const sum=a=>a.reduce((x,y)=>x+y,0);
   const perDay=days.map(d=>all.reduce((a,r)=>a+mpNum((r.days||{})[d.getDate()]),0));
@@ -205,7 +205,7 @@ function fillMpIns(body){
   const done=all.filter(r=>/complete/i.test(r.remark||'')).length;
   $('#mpSum').innerHTML=mpTiles([[all.length,'แถว','Request'],[tb,'Total Booking','จำนวนที่จอง'],[tc,'Total cal',tb?`${Math.round(tc/tb*100)}% ของ Booking`:'ผลรวมช่องวันที่','c'],[Math.max(0,tb-tc),'คงเหลือ','Booking − Cal'],[done,'Completed',all.length?`${Math.round(done/all.length*100)}% ของแถว`:'','ok']],list.length!==all.length?list.length:null);
   const imp=ed?'<button type="button" class="btn" data-mp-import="">ดึงจาก Weekly plan instrument</button>':'';
-  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Master Plan Instrument ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วกรอก Request No. LAB Customer … และจำนวนที่สอบเทียบในช่องวันที่ หรือดึงรายการที่ลงไว้ใน Weekly plan instrument ของเดือนนี้มาใส่':'ยังไม่มีใครกรอกแผนของเดือนนี้',
+  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Instrument ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วกรอก Request No. LAB Customer … และจำนวนที่สอบเทียบในช่องวันที่ หรือดึงรายการที่ลงไว้ใน Weekly plan instrument ของเดือนนี้มาใส่':'ยังไม่มีใครกรอกแผนของเดือนนี้',
     ed?`<button type="button" class="btn primary" data-mp-add="">+ เพิ่มแถวแรก</button> <button type="button" class="btn" data-mp-imp-xlsx="">นำเข้าจาก Excel</button> ${imp}`:'',INS_ICON);return}
   const dayCls=d=>{const k=ymd(d);return [isOffDay(d)?'off':'',holidayOf(k)?'hol':'',k===today?'today':''].filter(Boolean).join(' ')};
   const cell=(r,f,cls,dl)=>mpCell(r,f,cls,dl,ed);
@@ -224,7 +224,7 @@ function fillMpIns(body){
           :`<td class="d ${dayCls(d)}${v?' cnt':''}">${esc(v)}</td>`}).join('')}
       ${cell(r,'remark','rm','dl-insRemark')}${del?`<td class="x"><button type="button" class="ph-x2" data-mp-del="${esc(r.id)}" aria-label="ลบแถวที่ ${i+1}">×</button></td>`:''}</tr>`}).join('')
     ||`<tr><td colspan="${21+days.length}" class="hint" style="padding:16px 12px">ไม่พบแถวที่ตรงกับคำค้น</td></tr>`;
-  body.innerHTML=`<section class="mp-card">${mpCardHead('Master Plan Instrument',`${list.length} แถว · แถวบน = จำนวนสอบเทียบต่อวัน · Remove / Cal / install สีเหลือง · Total cal สีเขียว`,imp)}<div class="mp-scroll main"><table class="mp-tbl ins${ed?' ed':''}"><thead>${head}</thead><tbody>${rowsHtml}</tbody></table></div>
+  body.innerHTML=`<section class="mp-card">${mpCardHead('Instrument',`${list.length} แถว · แถวบน = จำนวนสอบเทียบต่อวัน · Remove / Cal / install สีเหลือง · Total cal สีเขียว`,imp)}<div class="mp-scroll main"><table class="mp-tbl ins${ed?' ed':''}"><thead>${head}</thead><tbody>${rowsHtml}</tbody></table></div>
     <p class="hint mp-note">ช่องวันที่ = จำนวนที่สอบเทียบในวันนั้น · Total cal = ผลรวมของช่องวันที่ · Remove / Cal / install พิมพ์ได้ทั้งวันเดียวหรือช่วง เช่น 13-Aug หรือ 14-16 · กด Enter เพื่อลงไปแถวถัดไป</p></section>`;
   mpKeepScroll(body);
   if(S.mpFocus){const f=body.querySelector(`[data-mp="${CSS.escape(S.mpFocus.id)}|${S.mpFocus.f}"]`);S.mpFocus=null;if(f){f.focus();f.scrollIntoView({block:'nearest',inline:'nearest'})}}

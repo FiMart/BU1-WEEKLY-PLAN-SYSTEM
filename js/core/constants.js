@@ -5,7 +5,7 @@
    who-is-free are checked across both. A plan keeps its line in task.line (central DB: data.bu1wp.line); without one
    it takes its job type's line (jobType.line), and a plan with neither shows on every tab marked "ไม่ระบุสาย" */
 const LINES=[
-  {id:'fm',name:'Calibration Flow Meter',short:'Flow Meter',tag:'FM',color:'#0b8fd6',desc:'สอบเทียบมาตรวัดอัตราการไหล',
+  {id:'fm',name:'Flow Meter',short:'Flow Meter',tag:'FM',color:'#0b8fd6',desc:'สอบเทียบมาตรวัดอัตราการไหล',
     icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9h4v6H2M22 9h-4v6h4"/><rect x="6" y="7.5" width="12" height="9" rx="2"/><path d="M9 12h6m-2-2 2 2-2 2"/><path d="M12 7.5V4.5M10 4.5h4"/></svg>'},
   {id:'ins',name:'Instrument',short:'Instrument',tag:'INS',color:'#9a4fd8',desc:'อุปกรณ์ Instrument · Pressure · Temperature · Humidity',
     icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M7.5 13h1M15.5 13h1M12 8.5v1"/><path d="M9 21h6"/></svg>'},
@@ -38,7 +38,8 @@ const DEFAULT_POSITIONS=['Admin','Engineer','Technician','Special Contract','Ass
 /* earlier Thai role names, converted once to the English roles above (and when pasted in bulk) */
 const LEGACY_ROLES={'วิศวกร':'Engineer','ช่างเทคนิค':'Technician','สญจ':'Special Contract','ผชช':'Assistant Technician'};
 const roleName=r=>LEGACY_ROLES[String(r||'').trim()]||String(r||'').trim();
-const FIXED_TRANSPORT=['GA','รถลูกค้า','ไม่ใช้รถ'];
+const FIXED_TRANSPORT=['GA','รถลูกค้า','ขับรถเอง','ไม่ใช้รถ'];/* ขับรถเอง (user, 7 Oct 2026): own car, never a vehicle clash */
+const TRANSPORT_SUB={GA:'รถจาก GA','รถลูกค้า':'ลูกค้ารับ-ส่ง','ขับรถเอง':'ใช้รถส่วนตัว','ไม่ใช้รถ':'งานไม่ใช้รถ'};
 const MAX_CARDS=20;
 const PLAN_RE=/^PN-\d{2}-(0[1-9]|1[0-2])\d{3}$/;
 /* "กำลังดำเนินการ" (progress) was removed on 2026-10-05; plans saved with it are read as วางแผน (normTask in store.js) */

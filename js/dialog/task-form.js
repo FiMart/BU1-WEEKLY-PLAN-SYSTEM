@@ -16,7 +16,7 @@ function openTask(id,preset){
   $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');$('#f-sharedTeam').checked=!!v.sharedTeam;syncSharedArea();
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
-  fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;syncNeedGA();syncTrAdd();renderTrGrid();
+  fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;$('#f-gaGo').value=v.gaGo||'';$('#f-gaBack').value=v.gaBack||'';syncNeedGA();syncTrAdd();renderTrGrid();
   $('#f-contact').value=v.contact||'';$('#f-contactTel').value=v.contactTel||'';
   pickGuests=(v.guests||[]).slice();$('#tpGuest').value='';loadPrep(v);loadCal(v);loadIns(v);
   if(t)renderDrawerView(t);else $('#dView').innerHTML='';
@@ -90,7 +90,7 @@ async function saveViewStatus(val,note){
     editing=Object.assign({},editing,{status:val,statusNote:NEEDS_REASON.has(val)?note:''});
     const r=$('#f-st-'+val);if(r)r.checked=true;$('#f-reason').value=editing.statusNote;syncReason();
     renderDrawerView(editing);renderPhotos();renderFiles();
-    if(val==='done'&&!reportsOf(editing).length){toast('บันทึกสถานะ “เสร็จแล้ว” แล้ว · แนบ Service Report ได้ด้านล่าง (ไม่บังคับ)');const b=$('#vReport');if(b)b.scrollIntoView({block:'nearest',behavior:reduceMotion()?'auto':'smooth'})}
+    if(val==='done'&&docMissing(editing).length){toast(`บันทึกสถานะ “เสร็จแล้ว” แล้ว · ส่งเอกสารหลังจบงานด้านล่าง: ${docMissing(editing).map(k=>DOC_NAME[k]).join(', ')}`);const b=$('#vReport');if(b)b.scrollIntoView({block:'nearest',behavior:reduceMotion()?'auto':'smooth'})}
     else toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err);renderDrawerView(editing);renderPhotos()}
 }
@@ -117,7 +117,7 @@ function renderDrawerView(t){
       ${calViewHtml(t,9)}${insViewHtml(t,9)}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
-      <div style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
+      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
@@ -127,6 +127,8 @@ function renderDrawerView(t){
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}`;
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }
+/* เวลาไป / กลับ for GA: kept only while ต้องการรถส่วนกลาง is ticked */
+const gaForm=()=>{const on=$('#f-needGA').checked;return {gaGo:on?$('#f-gaGo').value:'',gaBack:on?$('#f-gaBack').value:''}};
 function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
@@ -134,7 +136,7 @@ function readForm(){
     planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
-    transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
+    transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,...gaForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
     prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():''};
 }
@@ -202,6 +204,7 @@ function validate(v){
   if(!v.date)return ['เลือกวันที่ของงาน','#f-date'];
   /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
   if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];
+  if(v.needGA&&v.gaGo&&v.gaBack&&v.gaBack<=v.gaGo)return ['เวลากลับต้องหลังเวลาไป (รถส่วนกลาง GA)','#f-gaBack'];
   return null;
 }
 const meta=()=>({updatedAt:new Date().toISOString(),updatedBy:S.me||null});
@@ -209,7 +212,7 @@ form.addEventListener('submit',async e=>{
   e.preventDefault();
   if(gaOnlyEdit()){/* GA saves only the car fields */
     const btn=$('#btnSave');btn.disabled=true;
-    try{await Store.update('tasks',editing.id,Object.assign({transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked},meta()));dlg.close();toast('บันทึกรถของแผนงานแล้ว')}
+    try{await Store.update('tasks',editing.id,Object.assign({transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked},gaForm(),meta()));dlg.close();toast('บันทึกรถของแผนงานแล้ว')}
     catch(err){formError(errText(err))}finally{btn.disabled=false}
     return;
   }
@@ -256,7 +259,7 @@ async function copyTo(dates,typeId){
   const bad=validate(Object.assign({},v,extra,{jobTypeOther:typeId==='other'?(v.jobTypeOther||'อื่นๆ'):v.jobTypeOther}));if(bad){formError(bad[0]);return false}
   const now=new Date().toISOString();
   try{await persistNewPhotos();await persistNewFiles();
-    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
+    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],docNA:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
     dlg.close();const nm=v.planNo||typeLabel(Object.assign({},v,extra));
     toast(dates.length>1?`ก๊อป ${nm} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:`ก๊อป ${nm} ไป${fmtDay(dates[0])}แล้ว`);return true}
   catch(err){formError(errText(err));noteWriteError(err);return false}
