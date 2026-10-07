@@ -33,8 +33,6 @@ function renderTrGrid(){
     return `<button type="button" class="tr-tile${on?' on':''}${hit?' busy':''}" data-tr="${esc(name)}" aria-pressed="${on}"${lock?' aria-disabled="true"':''} title="${esc([name,sub,tip].filter(Boolean).join(' · '))}">${TRUCK_ICON}<b>${esc(name)}</b>${sub?`<small>${esc(sub)}</small>`:''}${hit?`<em>${esc(tip)}</em>`:''}</button>`};
   let i=0;let h='';
   for(const [g,list] of groups)h+=`<div class="tr-grp" style="--gc:${POS_COLORS[i++%POS_COLORS.length]}"><p class="tr-gh"><i></i>${esc(g)}<span>${list.length}</span></p><div class="tr-tiles">${list.map(r=>tile(r.name,r.code)).join('')}</div></div>`;
-  const fixed=['รถลูกค้า','ขับรถเอง','ไม่ใช้รถ'].filter(x=>!q||norm(x).includes(q));
-  if(fixed.length)h+=`<div class="tr-grp" style="--gc:#8a979c"><p class="tr-gh"><i></i>อื่นๆ<span>${fixed.length}</span></p><div class="tr-tiles">${fixed.map(x=>tile(x,TRANSPORT_SUB[x],{fixed:true})).join('')}</div></div>`;
   grid.innerHTML=h||`<div class="tp-empty">${all.length?`ไม่พบรถ “${esc(val)}” ในข้อมูลหลัก กดปุ่มเพิ่มเข้าข้อมูลรถได้`:'ยังไม่มีข้อมูลรถ พิมพ์ชื่อรถหรือทะเบียน แล้วกดเพิ่มเข้าข้อมูลรถ'}</div>`;
   $('#trClear').hidden=!val;
   const r=document.querySelector(`input[name="tr-per"][value="${$('#f-period').value}"]`);if(r)r.checked=true;
@@ -82,16 +80,34 @@ function gaInfoHtml(t){const l=gaInfo(t);if(!l)return '';
   return `<div class="ga-info"><b>${CAR_ICON}ข้อมูลรถจาก GA</b><dl>${l.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></div>`}
 /* the times asked of GA (user, 7 Oct 2026): ไป = leave the office, กลับ = back; both optional */
 const gaTimes=t=>t&&t.needGA&&(t.gaGo||t.gaBack)?[t.gaGo?`ไป ${t.gaGo} น.`:'',t.gaBack?`กลับ ${t.gaBack} น.`:''].filter(Boolean).join(' · '):'';
-const transportText=t=>(gaInfo(t)?`รถส่วนกลาง GA · ${gaSummary(t)}`+(t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!gaSummary(t).includes(t.transport)?' · '+t.transport:''):gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':''))+(gaTimes(t)?' · '+gaTimes(t):'');
+/* รถส่วนตัว: why, and the note */
+const ownCarText=t=>[t.carReason?`เหตุผล: ${t.carReason}`:'',t.carNote||''].filter(Boolean).join(' · ');
+const transportText=t=>OWN_CAR.includes(t.transport)&&!t.needGA?'รถส่วนตัว'+(ownCarText(t)?' · '+ownCarText(t):''):(gaInfo(t)?`รถส่วนกลาง GA · ${gaSummary(t)}`+(t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!gaSummary(t).includes(t.transport)?' · '+t.transport:''):gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':''))+(gaTimes(t)?' · '+gaTimes(t):'');
 /* ใช้ทีมร่วมฯ: the box turns solid when on, and names the area it applies to */
 function syncSharedArea(){
   const box=$('#shareBox');if(!box)return;box.classList.toggle('on',$('#f-sharedTeam').checked);
   const a=($('#f-area')||{}).value;const name=a&&typeof areaName==='function'?areaName(a):$('#f-location').value.trim();
   $('#f-sharedArea').textContent=name?`พื้นที่ ${name} `:'พื้นที่เดียวกัน';
 }
-function syncNeedGA(){
-  const on=$('#f-needGA').checked;$('#gaBox').classList.toggle('on',on);$('#gaTimes').hidden=!on;
-  $('#f-transport').placeholder=on?'รอ GA ระบุรถ · กรอกทะเบียนภายหลังได้':'ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ';
+/* รถ / Car (user, 7 Oct 2026): four choices, each opens its own fields —
+   รถแผนก = the Lab's vehicles (tiles, clash check) · รถส่วนกลาง (GA) = needGA + เวลาไป / กลับ (+ the plate GA tells us) ·
+   รถส่วนตัว = transport 'รถส่วนตัว' + เหตุผล (required) / หมายเหตุ · ไม่ใช้รถ = transport 'ไม่ใช้รถ'. Nothing picked = no car given. */
+const carMode=()=>(document.querySelector('input[name="car-mode"]:checked')||{}).value||'';
+function carModeOf(t){if(!t)return '';if(t.needGA||t.transport==='GA')return 'ga';const v=t.transport||'';if(v==='ไม่ใช้รถ')return 'none';if(OWN_CAR.includes(v))return 'own';return v?'dept':''}
+function setCarMode(m){document.querySelectorAll('input[name="car-mode"]').forEach(r=>{r.checked=r.value===m});syncCarMode()}
+function syncCarMode(){
+  const m=carMode();$('#carDept').hidden=m!=='dept';$('#carGa').hidden=m!=='ga';$('#carOwn').hidden=m!=='own';
+  document.querySelectorAll('.car-mode label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));
+  if(m==='dept'){syncTrAdd();renderTrGrid()}
+}
+/* the plan's car fields as saved, from the open choice (fields of the other choices are cleared) */
+function carForm(){
+  const m=carMode();const blank={needGA:false,gaGo:'',gaBack:'',carReason:'',carNote:''};
+  if(m==='dept')return Object.assign(blank,{transport:normTransport($('#f-transport').value)});
+  if(m==='ga')return Object.assign(blank,{transport:normTransport($('#f-gaPlate').value),needGA:true,gaGo:$('#f-gaGo').value,gaBack:$('#f-gaBack').value});
+  if(m==='own')return Object.assign(blank,{transport:'รถส่วนตัว',carReason:$('#f-carReason').value.trim(),carNote:$('#f-carNote').value.trim()});
+  if(m==='none')return Object.assign(blank,{transport:'ไม่ใช้รถ'});
+  return Object.assign(blank,{transport:''});
 }
 function syncTrAdd(){
   const val=$('#f-transport').value.trim();const b=$('#trAdd');const show=can('master')&&!isKnownTransport(val);

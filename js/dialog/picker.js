@@ -77,7 +77,7 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='tr-per'){$('#f-period').value=t.value;renderPickerList();renderTrGrid();return}
   if(t.id==='f-date'||t.id==='f-period'){renderPickerList();renderTrGrid()}
   if(t.id==='f-type'){syncTypeOther();syncDrawerColor()}
-  if(t.id==='f-needGA')syncNeedGA();
+  if(t.name==='car-mode'){syncCarMode();checkConflicts()}
   if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30)}
   if(t.id==='f-sale')syncSaleTel();
 });

@@ -117,7 +117,7 @@ function insTableHtml(rows,opt){
     if(k==='cust')return `<td data-l="Customer"><b>${esc(t.customer||'–')}</b></td>`;
     if(k==='sale')return `<td data-l="SALE">${esc(t.sale||'–')}</td>`;
     if(k==='contact')return `<td data-l="ชื่อลูกค้า">${esc(t.contact||'–')}</td>`;
-    if(INS_YELLOW.has(k))return `<td class="y c" data-l="${k==='install'?'install':k==='cal'?'Cal':'Remove'}">${ed?edit(r,k,'date'):esc(insDM(x[k])||'–')}</td>`;
+    if(INS_YELLOW.has(k))return `<td class="y c" data-l="${k==='install'?'install':k==='cal'?'Cal':'Remove'}">${ed?`<label class="iw-dt${x[k]?'':' empty'}" title="เลือกวันที่"><span>${esc(insDM(x[k])||'+ วันที่')}</span>${edit(r,k,'date')}</label>`:esc(insDM(x[k])||'–')}</td>`;
     if(k==='actual')return `<td class="c num" data-l="Actual">${ed?edit(r,k,'number'):`<b>${esc(x.actual||'–')}</b>`}</td>`;
     if(k==='plan')return `<td class="c num" data-l="Plan">${esc(x.plan||'–')}</td>`;
     if(k==='remark')return `<td class="rm${insDone(x)?' ok':''}" data-l="Remark">${ed?edit(r,k):esc(x.remark||'')}</td>`;
@@ -138,7 +138,10 @@ function insViewHtml(t,k){
     <dd class="dv-cal">${insTableHtml(l.map((x,i)=>({t,x,no:i+1})),{edit:S.canWrite})}</dd></div>`;
 }
 /* a yellow date, Actual or Remark changed in the card or the week table: saved at once */
+/* the compact date ("5-Oct", as on the sheet) opens the date picker; the native input sits invisible on top */
+document.addEventListener('click',e=>{const i=e.target.closest&&e.target.closest('.iw-dt input');if(i&&i.showPicker)try{i.showPicker()}catch(err){}});
 async function saveViewIns(inp){
+  const dt=inp.closest('.iw-dt');if(dt){dt.querySelector('span').textContent=insDM(inp.value)||'+ วันที่';dt.classList.toggle('empty',!inp.value)}
   const [tid,iid,f]=inp.dataset.vins.split('|');const t=(editing&&editing.id===tid)?editing:findTask(tid);if(!t||!S.canWrite)return;
   const list=insOf(t).map(x=>x.id===iid?Object.assign({},x,{[f]:inp.value.trim()}):x);
   inp.disabled=true;

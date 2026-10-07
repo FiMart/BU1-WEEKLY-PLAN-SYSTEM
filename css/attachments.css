@@ -119,3 +119,28 @@
 .ga-info dl div{display:grid;gap:1px;min-width:0}
 .ga-info dt{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .ga-info dd{margin:0;font-size:13.5px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+/* รถ / Car: four choices, each opens its own fields (user, 7 Oct 2026) */
+.car-mode{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.car-mode label{position:relative;cursor:pointer}
+.car-mode input{position:absolute;opacity:0;pointer-events:none}
+.car-mode label>span{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;height:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s,background .15s,box-shadow .15s}
+.car-mode svg{grid-row:1/3;width:22px;height:22px;fill:none;stroke:var(--cm);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.car-mode b{font-size:13.5px;line-height:1.25;color:var(--ink)}
+.car-mode small{font-size:11.5px;color:var(--muted)}
+.car-mode label:hover>span{border-color:color-mix(in srgb,var(--cm) 55%,var(--line))}
+.car-mode label.on>span,.car-mode input:checked+span{border-color:var(--cm);background:color-mix(in srgb,var(--cm) 10%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--cm) 15%,transparent)}
+.car-mode input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.car-mode input:disabled+span{cursor:not-allowed;opacity:.6}
+.car-pane{display:grid;gap:10px;margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2,var(--surface));animation:rise .2s var(--ease) both}
+.car-pane[hidden]{display:none}
+.car-ga{border-color:color-mix(in srgb,#1baf7a 45%,var(--line));background:color-mix(in srgb,#1baf7a 6%,var(--surface))}
+.car-own{border-color:color-mix(in srgb,#c27c0e 45%,var(--line));background:color-mix(in srgb,#c27c0e 6%,var(--surface))}
+.car-note{margin:0;font-size:12.5px;color:var(--ink-2)}
+.car-ga .ga-times{max-width:none;margin:0;padding:0;border:0;background:none;border-radius:0}
+.car-field{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.car-field small{font-weight:400;color:var(--muted)}
+.car-field input,.car-field textarea{font:inherit;font-size:14px;font-weight:400}
+.car-ga #gaFromApp:empty{display:none}
+.car-why{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-2);white-space:normal}
+.tchip.own{color:#9a6200;border-color:color-mix(in srgb,#c27c0e 45%,var(--line))}
+@media (max-width:760px){.car-mode{grid-template-columns:repeat(2,minmax(0,1fr))}}

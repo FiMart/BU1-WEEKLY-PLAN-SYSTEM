@@ -196,16 +196,32 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
           <button type="button" class="lnk prep-last" id="prepLast" hidden></button>
         </div>
 
-        <div class="fl fl-full" id="lblTr"><b>รถ / Car (ขนส่ง)</b><small>ห้ามซ้ำในวัน · ระบุครึ่งวันแล้วคันเดียวกันใช้ได้เช้า-บ่ายคนละงาน</small></div>
+        <div class="fl fl-full" id="lblTr"><b>รถ / Car (ขนส่ง)</b><small>เลือกประเภทรถของงานนี้</small></div>
         <div class="fv fv-full tr-pick" role="group" aria-labelledby="lblTr">
-          <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
-          <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
-          <div class="tr-grid" id="trGrid"></div>
-          <label class="ga-box" id="gaBox" for="f-needGA"><input type="checkbox" id="f-needGA"><span><b>ต้องการรถส่วนกลาง</b><small>GA จะระบุรถและทะเบียนให้ภายหลัง · ระบุเวลาไป-กลับ ให้ GA จัดรถได้ตรงเวลา</small></span></label>
-          <div class="ga-times" id="gaTimes" hidden><label><span>เวลาไป <small>ออกจากบริษัท</small></span><input type="time" id="f-gaGo" aria-label="เวลาไป (ออกจากบริษัท)"></label><label><span>เวลากลับ <small>ออกจากหน้างาน</small></span><input type="time" id="f-gaBack" aria-label="เวลากลับ (ออกจากหน้างาน)"></label></div>
-          <span class="hint">กดเลือกรถจากรายการ สีเทา = ถูกใช้แล้วในช่วงเวลาที่ทับกัน · ถ้าไม่มีให้พิมพ์ชื่อรถหรือทะเบียน แล้วกดปุ่มเพิ่มเข้าข้อมูลรถ ครั้งหน้าจะเลือกได้เลย</span>
+          <div class="car-mode" role="radiogroup" aria-label="ประเภทรถ">
+            <label style="--cm:#2a78d6"><input type="radio" name="car-mode" value="dept"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg><b>รถแผนก</b><small>รถของ Lab</small></span></label>
+            <label style="--cm:#1baf7a"><input type="radio" name="car-mode" value="ga"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg><b>รถส่วนกลาง (GA)</b><small>ขอรถจาก GA</small></span></label>
+            <label style="--cm:#c27c0e"><input type="radio" name="car-mode" value="own"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg><b>รถส่วนตัว</b><small>ขับรถตัวเอง</small></span></label>
+            <label style="--cm:#8a979c"><input type="radio" name="car-mode" value="none"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><b>ไม่ใช้รถ</b><small>งานไม่ใช้รถ</small></span></label>
+          </div>
+          <div class="car-pane" id="carDept" hidden>
+            <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
+            <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถแผนกที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
+            <div class="tr-grid" id="trGrid"></div>
+            <span class="hint">ห้ามซ้ำในวัน · ระบุครึ่งวันแล้วคันเดียวกันใช้ได้เช้า-บ่ายคนละงาน · สีเทา = ถูกใช้แล้วในช่วงเวลาที่ทับกัน · ถ้าไม่มีในรายการให้พิมพ์ชื่อรถหรือทะเบียน แล้วกดปุ่มเพิ่มเข้าข้อมูลรถ</span>
+          </div>
+          <div class="car-pane car-ga" id="carGa" hidden>
+            <p class="car-note">บันทึกแผนแล้ว คำขอรถจะส่งไปที่ GA ทันที · GA จะระบุรถและทะเบียนให้ภายหลัง</p>
+            <div class="ga-times" id="gaTimes"><label><span>เวลาไป <small>ออกจากบริษัท</small></span><input type="time" id="f-gaGo" aria-label="เวลาไป (ออกจากบริษัท)"></label><label><span>เวลากลับ <small>ออกจากหน้างาน</small></span><input type="time" id="f-gaBack" aria-label="เวลากลับ (ออกจากหน้างาน)"></label></div>
+            <label class="car-field"><span>ทะเบียนรถที่ GA แจ้ง <small>ไม่บังคับ · กรอกเมื่อได้รับแจ้ง</small></span><input id="f-gaPlate" maxlength="60" autocomplete="off" placeholder="เช่น 1กข-1234"></label>
+            <div id="gaFromApp"></div>
+          </div>
+          <div class="car-pane car-own" id="carOwn" hidden>
+            <label class="car-field"><span>เหตุผลที่ใช้รถส่วนตัว <small>จำเป็น</small></span><input id="f-carReason" list="dl-carReason" maxlength="120" autocomplete="off" placeholder="เลือก หรือพิมพ์เหตุผล"></label>
+            <label class="car-field"><span>หมายเหตุ <small>ไม่บังคับ</small></span><textarea id="f-carNote" rows="2" maxlength="300" placeholder="เช่น ระยะทางไป-กลับ 120 กม. · เบิกค่าน้ำมัน · ใครขับ"></textarea></label>
+            <datalist id="dl-carReason"><option value="รถแผนกไม่ว่าง"><option value="GA ไม่มีรถว่าง"><option value="เดินทางจากบ้านไปหน้างานโดยตรง"><option value="งานด่วน"><option value="หน้างานใกล้ / ไปคนเดียว"></datalist>
+          </div>
         </div>
-
         <label class="fl" for="f-contact"><b>Contact</b><small>ผู้ติดต่อหน้างาน</small></label>
         <div class="fv"><div class="pair"><input id="f-contact" list="dl-contacts" maxlength="120" autocomplete="off" placeholder="ชื่อผู้ติดต่อ"><input id="f-contactTel" maxlength="80" autocomplete="off" placeholder="เบอร์โทร" aria-label="เบอร์โทรผู้ติดต่อ"></div></div>
 

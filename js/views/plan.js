@@ -41,8 +41,8 @@ function transportChip(v,t){
   if(t&&gaInfo(t))return `<span class="tchip gaok" title="${esc(gaInfo(t).map(([k,x])=>k+": "+x).join(" · ")+(gaTimes(t)?" · "+gaTimes(t):""))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
   if(t&&gaWaiting(t))return `<span class="tchip gawait" title="ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง${gaTimes(t)?' · '+esc(gaTimes(t)):''}">${CAR_ICON}รถ GA · รอทะเบียน${t.gaGo?' · ไป '+esc(t.gaGo):''}</span>`;
   if(!v||v==='ไม่ใช้รถ')return '';
-  const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':v==='ขับรถเอง'?'own':'car';
-  return `<span class="tchip ${cls}">${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'||v==='ขับรถเอง'?v:'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
+  const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':OWN_CAR.includes(v)?'own':'car';
+  return `<span class="tchip ${cls}"${cls==='own'&&t&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?v:cls==='own'?'รถส่วนตัว':'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
 }
 function wcard(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);

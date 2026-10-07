@@ -38,8 +38,9 @@ const DEFAULT_POSITIONS=['Admin','Engineer','Technician','Special Contract','Ass
 /* earlier Thai role names, converted once to the English roles above (and when pasted in bulk) */
 const LEGACY_ROLES={'วิศวกร':'Engineer','ช่างเทคนิค':'Technician','สญจ':'Special Contract','ผชช':'Assistant Technician'};
 const roleName=r=>LEGACY_ROLES[String(r||'').trim()]||String(r||'').trim();
-const FIXED_TRANSPORT=['GA','รถลูกค้า','ขับรถเอง','ไม่ใช้รถ'];/* ขับรถเอง (user, 7 Oct 2026): own car, never a vehicle clash */
-const TRANSPORT_SUB={GA:'รถจาก GA','รถลูกค้า':'ลูกค้ารับ-ส่ง','ขับรถเอง':'ใช้รถส่วนตัว','ไม่ใช้รถ':'งานไม่ใช้รถ'};
+const FIXED_TRANSPORT=['GA','รถลูกค้า','รถส่วนตัว','ขับรถเอง','ไม่ใช้รถ'];/* รถส่วนตัว (user, 7 Oct 2026; ขับรถเอง = the same, from one day before): own car, never a vehicle clash */
+const OWN_CAR=['รถส่วนตัว','ขับรถเอง'];
+const TRANSPORT_SUB={GA:'รถจาก GA','รถลูกค้า':'ลูกค้ารับ-ส่ง','รถส่วนตัว':'ขับรถตัวเอง','ขับรถเอง':'ขับรถตัวเอง','ไม่ใช้รถ':'งานไม่ใช้รถ'};
 const MAX_CARDS=20;
 const PLAN_RE=/^PN-\d{2}-(0[1-9]|1[0-2])\d{3}$/;
 /* "กำลังดำเนินการ" (progress) was removed on 2026-10-05; plans saved with it are read as วางแผน (normTask in store.js) */

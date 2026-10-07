@@ -16,7 +16,8 @@ function openTask(id,preset){
   $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');$('#f-sharedTeam').checked=!!v.sharedTeam;syncSharedArea();
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
-  fillTransportList();$('#f-transport').value=v.transport||'';$('#f-needGA').checked=!!v.needGA;$('#f-gaGo').value=v.gaGo||'';$('#f-gaBack').value=v.gaBack||'';syncNeedGA();syncTrAdd();renderTrGrid();
+  fillTransportList();{const cm=carModeOf(t?v:null);$('#f-transport').value=cm==='dept'?v.transport||'':'';$('#f-gaPlate').value=cm==='ga'&&v.transport&&v.transport!=='GA'&&v.transport!=='ไม่ใช้รถ'?v.transport:'';
+    $('#f-gaGo').value=v.gaGo||'';$('#f-gaBack').value=v.gaBack||'';$('#f-carReason').value=v.carReason||'';$('#f-carNote').value=v.carNote||'';$('#gaFromApp').innerHTML=t?gaInfoHtml(t):'';setCarMode(cm)}syncTrAdd();renderTrGrid();
   $('#f-contact').value=v.contact||'';$('#f-contactTel').value=v.contactTel||'';
   pickGuests=(v.guests||[]).slice();$('#tpGuest').value='';loadPrep(v);loadCal(v);loadIns(v);
   if(t)renderDrawerView(t);else $('#dView').innerHTML='';
@@ -65,14 +66,16 @@ const gaOnlyEdit=()=>!S.canWrite&&!!editing&&can('ga');
 function lockForGa(on){
   form.classList.toggle('ga-only',on);
   $('#formFields').querySelectorAll('input,select,textarea,button').forEach(el=>{
-    if(el.closest('.tr-pick')&&!el.closest('.tr-per'))return;/* the period tabs belong to the plan's time */
+    if(el.closest('#carGa'))return;/* GA fills the plate and the times; the other car choices stay locked */
     if(on){if(!el.disabled){el.disabled=true;el.dataset.gaLock='1'}}else if(el.dataset.gaLock){el.disabled=false;delete el.dataset.gaLock}
   });
 }
 function setMode(m){
   dMode=m;const view=m==='view';const t=editing;const w=S.canWrite;const ga=gaOnlyEdit();
   syncDrawerColor();lockForGa(!view&&ga);
-  $('#dView').hidden=!view;$('#formFields').hidden=view;dlg.classList.toggle('wide',!view);
+  /* a plan with Weekly plan calibration / instrument rows opens wide enough for its sheet (user, 7 Oct 2026) */
+  const sheets=!!t&&(calOf(t).length>0||insOf(t).length>0);
+  $('#dView').hidden=!view;$('#formFields').hidden=view;dlg.classList.toggle('wide',!view||sheets);dlg.classList.toggle('sheets',sheets);
   $('#btnEdit').hidden=!view||!(w||ga);$('#btnEditTxt').textContent=ga?'ระบุรถ / ทะเบียน':'แก้ไข';$('#btnSave').hidden=view||!(w||ga);
   $('#btnDel').hidden=view||!t||!can('del');$('#btnDup').hidden=!t||!w;$('#copyBox').hidden=!t||!w;
   $('#f-err').hidden=true;
@@ -117,7 +120,7 @@ function renderDrawerView(t){
       ${calViewHtml(t,9)}${insViewHtml(t,9)}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
-      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
+      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${OWN_CAR.includes(t.transport)&&!t.needGA&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
@@ -128,7 +131,6 @@ function renderDrawerView(t){
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }
 /* เวลาไป / กลับ for GA: kept only while ต้องการรถส่วนกลาง is ticked */
-const gaForm=()=>{const on=$('#f-needGA').checked;return {gaGo:on?$('#f-gaGo').value:'',gaBack:on?$('#f-gaBack').value:''}};
 function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
@@ -136,7 +138,7 @@ function readForm(){
     planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
-    transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked,...gaForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
+    ...carForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
     prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():''};
 }
@@ -205,6 +207,7 @@ function validate(v){
   /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
   if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];
   if(v.needGA&&v.gaGo&&v.gaBack&&v.gaBack<=v.gaGo)return ['เวลากลับต้องหลังเวลาไป (รถส่วนกลาง GA)','#f-gaBack'];
+  if(OWN_CAR.includes(v.transport)&&!v.needGA&&!v.carReason)return ['ใส่เหตุผลที่ใช้รถส่วนตัว','#f-carReason'];
   return null;
 }
 const meta=()=>({updatedAt:new Date().toISOString(),updatedBy:S.me||null});
@@ -212,7 +215,7 @@ form.addEventListener('submit',async e=>{
   e.preventDefault();
   if(gaOnlyEdit()){/* GA saves only the car fields */
     const btn=$('#btnSave');btn.disabled=true;
-    try{await Store.update('tasks',editing.id,Object.assign({transport:normTransport($('#f-transport').value),needGA:$('#f-needGA').checked},gaForm(),meta()));dlg.close();toast('บันทึกรถของแผนงานแล้ว')}
+    try{await Store.update('tasks',editing.id,Object.assign(carForm(),meta()));dlg.close();toast('บันทึกรถของแผนงานแล้ว')}
     catch(err){formError(errText(err))}finally{btn.disabled=false}
     return;
   }

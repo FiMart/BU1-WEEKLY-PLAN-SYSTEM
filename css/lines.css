@@ -256,3 +256,83 @@
   .cal-tbl td.mono,.cal-tbl td[data-l]{white-space:normal;overflow-wrap:anywhere}
   .cal-tbl tr.day-first td{border-top:0}
 }
+
+/* ---------- fit the page (user, 7 Oct 2026: "ปรับ layout ของ Weekly plan ทั้ง Flow Meter และ Instrument ให้พอดี") ----------
+   Desktop / tablet: the two week sheets use the page width instead of a fixed 1240 / 1320 px (columns size to their content,
+   long headers and text wrap, the selects and date inputs are as wide as their value); below ~1000 px they still scroll.
+   Phones keep the card layout above. */
+@media (min-width:761px){
+  .cal-tbl,.iw-tbl{font-size:12px}
+  .cal-tbl.week{min-width:940px}
+  .iw-tbl.week{min-width:980px}
+  .cal-tbl th,.iw-tbl th{white-space:normal;padding:6px 5px;line-height:1.25;vertical-align:middle}
+  .cal-tbl td{padding:6px 6px}
+  .iw-tbl td{padding:5px 6px}
+  .cal-tbl td[data-l="Type"],.cal-tbl td[data-l="Range"],.cal-tbl td[data-l="Process Fluid"]{white-space:normal;overflow-wrap:normal}
+  .cal-tbl td[data-l="Point cal"]{min-width:92px}
+  .cal-tbl .det{min-width:100px}
+  .cal-tbl td[data-l="Customer"],.iw-tbl td[data-l="Customer"]{min-width:88px}
+  .cal-tbl td.y{padding:4px 5px;vertical-align:middle}
+  .cal-sel{width:auto;min-width:0;max-width:100%;height:30px;min-height:0;padding:2px 22px 2px 6px;font-size:12px;background-position:right 5px center}
+  .iw-tbl td.y{padding:4px}
+  .iw-in{min-width:0;height:30px;min-height:0;padding:2px 5px;font-size:12px}
+  .iw-tbl input[type=date].iw-in{width:118px}
+  .iw-tbl input[type=date].iw-in::-webkit-calendar-picker-indicator{margin-left:0;padding:0}
+  .iw-tbl td.num .iw-in{min-width:0;width:54px}
+  .iw-tbl td.rm .iw-in{min-width:96px}
+  .iw-tbl tr.iw-date td{font-size:13px;padding:6px 10px}
+  .iw-tbl tr.iw-cert>td{padding:5px 8px 7px 24px}
+  .ic-tbl{min-width:560px;font-size:12px}
+  .cw-head{gap:8px 12px}
+}@media (min-width:761px){
+  /* short names stay on one line ("Rungnapa", "K.Suphamit") */
+  .iw-tbl td[data-l="SALE"],.iw-tbl td[data-l="ชื่อลูกค้า"],.cal-tbl td[data-l="Sale"]{min-width:72px}
+  .cal-tbl td[data-l="Lab"] .cal-sel{width:64px}
+  .cal-tbl td[data-l="Status"] .cal-sel{width:88px}
+  .cal-tbl td[data-l="Pass/Fail"] .cal-sel{width:74px}
+  .cal-tbl td[data-l="Point cal"]{min-width:80px}
+  .iw-tbl td[data-l="Range / Set Point / Nor.Temp (Unit)"]{min-width:120px}
+  .iw-tbl td.num .iw-in{width:50px}
+}
+@media (min-width:761px) and (max-width:1366px){
+  .iw-tbl input[type=date].iw-in{width:104px;padding:2px 3px;font-size:11px}
+  .iw-tbl td[data-l="Range / Set Point / Nor.Temp (Unit)"]{min-width:96px}
+  .cal-tbl td,.iw-tbl td{padding-left:5px;padding-right:5px}
+}/* Remove / Cal / install in the sheets: a compact "5-Oct" button; the date input lies invisible on top and opens the picker */
+.iw-dt{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:62px;height:30px;padding:0 8px;border:1px solid color-mix(in srgb,#b8a800 45%,var(--line));border-radius:7px;background:var(--surface);font:600 12px/1 var(--f-mono);color:var(--ink);cursor:pointer;white-space:nowrap}
+.iw-dt:hover{border-color:#b8a800}.iw-dt:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.iw-dt.empty{color:var(--muted);font-family:var(--f-body);font-weight:400;border-style:dashed}
+#view .iw-dt input.iw-in,.dv-cal .iw-dt input.iw-in{position:absolute;inset:0;width:100%!important;height:100%;min-width:0;margin:0;padding:0;opacity:0;cursor:pointer;border:0}
+@media (min-width:761px){
+  .iw-tbl td.y{padding:4px 3px}
+}@media (min-width:761px) and (max-width:1366px){
+  .cal-tbl{font-size:11.5px}
+  .cal-tbl td{padding:5px 4px}
+  .cal-tbl th{padding:5px 3px;font-size:11.5px}
+  .cal-tbl td[data-l="Lab"] .cal-sel{width:56px}
+  .cal-tbl td[data-l="Status"] .cal-sel{width:80px}
+  .cal-tbl td[data-l="Pass/Fail"] .cal-sel{width:66px}
+  .cal-sel{padding:2px 18px 2px 5px;font-size:11.5px;background-position:right 3px center}
+  .cal-tbl td[data-l="Round"]{white-space:normal}
+  .cal-tbl td[data-l="Sale"]{min-width:58px}
+  .cal-tbl td[data-l="Point cal"]{min-width:70px}
+  .cal-tbl .det{min-width:80px}
+  .cal-tbl td[data-l="Customer"]{min-width:76px}
+}/* selects wide enough for their value + the arrow; names in SALE / ชื่อลูกค้า on one line */
+@media (min-width:761px){
+  .cal-tbl td[data-l="Lab"] .cal-sel{width:68px}
+  .cal-tbl td[data-l="Status"] .cal-sel{width:92px}
+  .cal-tbl td[data-l="Pass/Fail"] .cal-sel{width:82px}
+  .iw-tbl td[data-l="SALE"],.iw-tbl td[data-l="ชื่อลูกค้า"],.cal-tbl td[data-l="Sale"]{min-width:84px}
+}
+@media (min-width:761px) and (max-width:1366px){
+  .cal-tbl td[data-l="Lab"] .cal-sel{width:62px}
+  .cal-tbl td[data-l="Status"] .cal-sel{width:84px}
+  .cal-tbl td[data-l="Pass/Fail"] .cal-sel{width:74px}
+  .iw-tbl td[data-l="SALE"],.iw-tbl td[data-l="ชื่อลูกค้า"]{min-width:80px}
+  .cal-tbl td[data-l="Sale"]{min-width:62px}
+}@media (min-width:761px){.cal-tbl td[data-l="Sale"]{min-width:64px}.cal-tbl .det{min-width:88px}}
+@media (min-width:761px) and (max-width:1366px){.iw-tbl td[data-l="SALE"],.iw-tbl td[data-l="ชื่อลูกค้า"]{min-width:76px}.cal-tbl td[data-l="Sale"]{min-width:58px}.cal-tbl .det{min-width:76px}}
+/* the plan drawer of a plan with Weekly plan calibration / instrument rows: wide enough for the sheet (user, 7 Oct 2026) */
+#dlg.wide.sheets{width:min(1240px,100vw);width:min(1240px,calc(100 * var(--vw,1vw)))}
+#dlg.sheets .dv-cal .cal-scroll,#dlg.sheets .dv-cal .iw-scroll{max-width:100%}
