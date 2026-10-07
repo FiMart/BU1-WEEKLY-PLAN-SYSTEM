@@ -148,7 +148,7 @@ function renderMp(){
       </div>
     </section>
     <div id="mpSum" class="mp-sum" style="--lc:${LINE[tab].color}"></div>
-    <div id="mpBody"></div>
+    <div id="mpBody" style="--lc:${LINE[tab].color}"></div>
     <datalist id="dl-mpSale">${[...new Set(DEFAULT_SALES.concat(sales().map(s=>s.name)))].map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
 }
 /* the month's figures above the sheet: [value, name, note, tone] */
@@ -165,7 +165,7 @@ function fillMp(){
   const per=code=>days.map(d=>all.reduce((a,r)=>a+mpTokens((r.days||{})[d.getDate()]).filter(x=>x===code.toUpperCase()).length,0));
   const wDay=per('W'),cDay=per('C');const sum=a=>a.reduce((x,y)=>x+y,0);
   $('#mpSum').innerHTML=mpTiles([[all.length,'แถว','มิเตอร์ / อุปกรณ์'],[tot.fm,'Flow meter','แถวที่มีหมายเลขมิเตอร์'],[tot.ins,'Ins',tot.fc||tot.co?`Flowcom ${tot.fc} · Clamp-on ${tot.co}`:'รวมคอลัมน์ Ins'],[sum(wDay),'W','Cal &amp; Witness','w'],[sum(cDay),'C','Cal.','c']],list.length!==all.length?list.length:null);
-  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Master Plan ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วพิมพ์ Request No. Customer Tag … และรหัสงานในช่องวันที่ เช่น D, W, I หรือ D/C/I ระบบบันทึกทันทีเมื่อออกจากช่อง · หรือนำเข้าแผ่นงานของทีมจากไฟล์ Excel':'ยังไม่มีใครกรอกแผนของเดือนนี้',ed?'<button type="button" class="btn primary" data-mp-add="">+ เพิ่มแถวแรก</button> <button type="button" class="btn" data-mp-imp-xlsx="">นำเข้าจาก Excel</button>':'');return}
+  if(!all.length){body.innerHTML=emptyState('ยังไม่มี Master Plan Flow Meter ของเดือนนี้',ed?'กด "+ เพิ่มแถว" แล้วพิมพ์ Request No. Customer Tag … และรหัสงานในช่องวันที่ เช่น D, W, I หรือ D/C/I ระบบบันทึกทันทีเมื่อออกจากช่อง · หรือนำเข้าแผ่นงานของทีมจากไฟล์ Excel':'ยังไม่มีใครกรอกแผนของเดือนนี้',ed?'<button type="button" class="btn primary" data-mp-add="">+ เพิ่มแถวแรก</button> <button type="button" class="btn" data-mp-imp-xlsx="">นำเข้าจาก Excel</button>':'',CAL_ICON);return}
   const dayCls=d=>{const k=ymd(d);return [isOffDay(d)?'off':'',holidayOf(k)?'hol':'',k===today?'today':''].filter(Boolean).join(' ')};
   const dayTitle=d=>holidayOf(ymd(d))||'';
   const cell=(r,f,cls,dl)=>mpCell(r,f,cls,dl,ed);

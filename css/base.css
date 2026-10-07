@@ -184,6 +184,7 @@ textarea{resize:vertical;line-height:1.55}
 .panel>header p{margin:0;font-size:12.5px;color:var(--muted);max-width:70ch}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:40px 20px;text-align:center;display:grid;gap:10px;justify-items:center}
 .empty-ico{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 20px/1 var(--f-disp)}
+.empty-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .empty h3{margin:0;font:600 18px var(--f-disp)}
 .empty p{margin:0;color:var(--muted);max-width:52ch}
 /* loading placeholders (loading() in js/ui/render.js): the shape of the page that is coming, with a moving shine */

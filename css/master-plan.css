@@ -204,3 +204,5 @@
 .mp-delbtn.on{background:var(--crit);border-color:var(--crit);color:#fff}
 .mp-delbtn.on:hover:not(:disabled){background:color-mix(in srgb,var(--crit) 85%,#000);color:#fff}
 .mp-delbtn:disabled{opacity:.5;cursor:not-allowed}
+/* empty month: the icon in the open tab's colour */
+#mpBody .empty-ico{background:color-mix(in srgb,var(--lc) 12%,var(--surface));color:var(--lc)}
