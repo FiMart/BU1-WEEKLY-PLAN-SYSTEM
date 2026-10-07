@@ -11,7 +11,7 @@
      downloads fetch a blob and name it here (never ?download=, Thai names break)
    Writes (requests, people, certificates, files) go to the production database: they are refused while BU1_CONFIG.readOnly is on. */
 S.sf={tab:'dash',area:'',filter:'all',q:'',dq:'',dtype:''};
-const SF={emps:null,reqs:null,docs:null,at:{},busy:{},err:{}};
+const SF={emps:null,reqs:null,docs:null,at:{},busy:{},err:{},again:{}};
 const sfDb=()=>sb.schema('safety'),coreDb=()=>sb.schema('core');
 const sfCanWrite=()=>S.backend==='supabase'&&!isReadOnly()&&!!S.perm.edit;
 const SF_RO_MSG='ตอนนี้เป็นโหมดอ่านอย่างเดียว ยังส่งหรือแก้ข้อมูล Safety ไม่ได้ (รออนุมัติเปิดการบันทึก)';
@@ -44,15 +44,20 @@ const rqPill=s=>{const x=RQ_STATUS[s]||['none',s||'—'];return sfPill(x[0],x[1]
 
 /* cached loads: drawn at once from cache, refreshed when older than ~1 minute (other apps change these tables) */
 async function sfLoad(key,fn,force){
-  if(SF.busy[key])return;if(!force&&SF[key]&&Date.now()-(SF.at[key]||0)<55000)return;
+  if(SF.busy[key]){if(force)SF.again[key]=fn;return}
+  /* a failed read waits too: the redraw after a failure used to start the same read again at once, which failed again —
+     an endless loop that froze the page and hammered the database (user, 7 Oct 2026: "โหลดข้อมูลค้าง") */
+  if(!force&&(SF[key]||SF.err[key])&&Date.now()-(SF.at[key]||0)<55000)return;
   SF.busy[key]=true;
-  try{SF[key]=await fn();SF.err[key]=''}catch(e){SF.err[key]=String((e&&e.message)||e||'โหลดไม่สำเร็จ');if(!SF[key])SF[key]=null}
-  finally{SF.busy[key]=false;SF.at[key]=Date.now();if(S.view==='safety')fillSafety()}
+  try{SF[key]=await sfTimeout(fn());SF.err[key]=''}catch(e){SF.err[key]=String((e&&e.message)||e||'โหลดไม่สำเร็จ');if(!SF[key])SF[key]=null}
+  finally{SF.busy[key]=false;SF.at[key]=Date.now();sfRedraw();const again=SF.again[key];if(again){delete SF.again[key];setTimeout(()=>sfLoad(key,again,true),0)}}
 }
+/* "ลองใหม่" on an error: everything is read again */
+function sfRetry(){SF.err={};SF.at={};SAFE.err='';SAFE.at=0;loadSafety(true);fillSafety()}
 const loadEmps=()=>safePages(()=>coreDb().from('employees').select('emp_code,full_name,email,dept_code,position_code,status').eq('dept_code',DEPT()).eq('status','active'),'emp_code')
   .then(l=>l.sort((a,b)=>a.full_name.localeCompare(b.full_name,'th')));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.view==='safety')fillSafety()});
-setInterval(()=>{if(!document.hidden&&S.view==='safety')fillSafety()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.view==='safety')sfRedraw()});
+setInterval(()=>{if(!document.hidden&&S.view==='safety')sfRedraw()},60000);
 
 /* ---------- page shell ---------- */
 const SF_TABS=[['dash','Dashboard พื้นที่'],['link','จับคู่พนักงาน'],['req','คำขอของฉัน'],['back','บันทึกย้อนหลัง'],['docs','เอกสาร / ใบรับรอง']];
@@ -66,7 +71,8 @@ function fillSafety(){
   if(!$('#sfBody'))return;
   ({dash:drawDash,link:drawLink,req:drawReqs,back:drawBacklog,docs:drawDocs}[S.sf.tab]||drawDash)();
 }
-const sfError=msg=>`<div class="banner err"><b>โหลดข้อมูล Safety ไม่สำเร็จ</b> ${esc(msg)} · การจัดแผนงานยังใช้ได้ตามปกติ</div>`;
+const sfError=msg=>`<div class="banner err"><b>โหลดข้อมูล Safety ไม่สำเร็จ</b> ${esc(msg)} · การจัดแผนงานยังใช้ได้ตามปกติ <button type="button" class="btn sm" data-sf-retry>ลองใหม่</button></div>`;
+document.addEventListener('click',e=>{if(e.target.closest('[data-sf-retry]'))sfRetry()});
 
 /* ---------- Dashboard พื้นที่: card status of the whole team for one area ---------- */
 /* layout: area list (with how many can enter) · area header with progress · status tiles that filter · people table */
@@ -140,9 +146,9 @@ async function openPerson(code){
   const e=(SF.emps||[]).find(x=>x.emp_code===code)||{emp_code:code,full_name:code};
   sfOpen(e.full_name,`${e.emp_code} · ${e.position_code||'—'}`,loading());
   try{
-    const [cr,ph]=await Promise.all([
+    const [cr,ph]=await sfTimeout(Promise.all([
       sfDb().from('certificates').select('*, cert_types(name), areas(name)').eq('emp_code',code).order('issued_date',{ascending:false}),
-      sfDb().from('attachments').select('*').eq('emp_code',code).eq('kind','id_card_photo').order('uploaded_at',{ascending:false})]);
+      sfDb().from('attachments').select('*').eq('emp_code',code).eq('kind','id_card_photo').order('uploaded_at',{ascending:false})]));
     if(cr.error||ph.error)throw cr.error||ph.error;
     const warn=new Map(SAFE.rules.map(r=>[`${r.area_id}|${r.cert_type_id}`,r.warn_days_before]));
     const photos=await Promise.all((ph.data||[]).map(async a=>{const s=await sb.storage.from('safety-docs').createSignedUrl(a.storage_path,3600);return Object.assign({},a,{url:(s.data||{}).signedUrl||null})}));
@@ -196,8 +202,8 @@ const rqOf=id=>(SF.reqs||[]).find(x=>x.id===id)||null;
 async function openRequest(id){
   RQ.id=id;RQ.people=null;RQ.events=[];RQ.editing=false;RQ.q='';drawRequest();
   try{
-    const [p,ev]=await Promise.all([sfDb().from('request_people').select('emp_code,result,note').eq('request_id',id),
-      sfDb().from('training_request_events').select('*').eq('request_id',id).order('created_at',{ascending:false})]);
+    const [p,ev]=await sfTimeout(Promise.all([sfDb().from('request_people').select('emp_code,result,note').eq('request_id',id),
+      sfDb().from('training_request_events').select('*').eq('request_id',id).order('created_at',{ascending:false})]));
     if(p.error)throw p.error;
     const codes=(p.data||[]).map(x=>x.emp_code);const known=new Set((SF.emps||[]).map(e=>e.emp_code));
     const missing=codes.filter(c=>!known.has(c));let extra=[];

@@ -33,6 +33,7 @@ function drawLink(){
   const empBy=new Map(SF.emps.map(e=>[e.emp_code,e]));
   const q=norm(S.sfl.q);
   const list=people.filter(p=>(S.sfl.filter==='all'||(S.sfl.filter==='todo'?!linkedEmp(p.id):!!linkedEmp(p.id)))&&(!q||norm(p.name+' '+p.role+' '+linkedEmp(p.id)).includes(q)));
+  /* the full HR list goes into a row's dropdown only when it is opened (dozens of rows × the whole HR list made every redraw slow) */
   const opt=(e,cur,pid)=>{const o=owner.get(e.emp_code);return `<option value="${esc(e.emp_code)}"${e.emp_code===cur?' selected':''}>${esc(e.full_name)} · ${esc(e.emp_code)}${o&&o!==pid?` (จับคู่กับ ${esc(staffName(o))} แล้ว)`:''}</option>`};
   b.innerHTML=`<section class="panel sf-hero sf-link-hero">
       <div class="sf-hero-t"><small>Team Service ↔ ทะเบียนพนักงาน HR</small><h3>จับคู่พนักงานกับ Safety</h3>
@@ -51,9 +52,9 @@ function drawLink(){
         const sug=s&&s.list.filter(x=>!owner.has(x.emp_code));
         const others=SF.emps.filter(x=>!(sug||[]).includes(x));
         return `<tr><td><b>${esc(p.name)}</b><span class="sub">${esc(p.role||'—')}${p.active===false?' · ปิดใช้งาน':''}</span></td>
-          <td>${can?`<select data-link-pid="${esc(p.id)}" aria-label="รหัสพนักงาน HR ของ ${esc(p.name)}"><option value="">— ยังไม่จับคู่ —</option>
+          <td>${can?`<select data-link-pid="${esc(p.id)}" data-lazy="1" aria-label="รหัสพนักงาน HR ของ ${esc(p.name)}"><option value="">— ยังไม่จับคู่ —</option>
               ${sug&&sug.length?`<optgroup label="${s.kind==='exact'?'ชื่อตรงกัน':'ชื่อต้นตรงกัน — ตรวจนามสกุล'}">${sug.map(x=>opt(x,cur,p.id)).join('')}</optgroup><optgroup label="พนักงานทั้งหมด">`:''}
-              ${others.map(x=>opt(x,cur,p.id)).join('')}${sug&&sug.length?'</optgroup>':''}${cur&&!e?`<option value="${esc(cur)}" selected>${esc(cur)} (ไม่อยู่ในรายชื่อ HR ที่ใช้งาน)</option>`:''}</select>`
+              ${others.filter(x=>x.emp_code===cur).map(x=>opt(x,cur,p.id)).join('')}<option value="" disabled data-more="1">… เปิดเพื่อดูพนักงานทั้งหมด (${others.length} คน)</option>${sug&&sug.length?'</optgroup>':''}${cur&&!e?`<option value="${esc(cur)}" selected>${esc(cur)} (ไม่อยู่ในรายชื่อ HR ที่ใช้งาน)</option>`:''}</select>`
             :e?`${esc(e.full_name)} <span class="mono hint">${esc(cur)}</span>`:cur?`<span class="mono">${esc(cur)}</span>`:'<span class="hint">—</span>'}
             ${!cur&&sug&&sug.length===1&&can?`<button type="button" class="lnk sf-use" data-link-use="${esc(p.id)}|${esc(sug[0].emp_code)}">ใช้ ${esc(sug[0].full_name)} (${esc(sug[0].emp_code)})</button>`:''}</td>
           <td>${cur?`${sfPill('ok','จับคู่แล้ว')}${row&&row.verified_by?`<span class="sub">โดย ${esc(String(row.verified_by).split('@')[0])}${row.verified_at?' · '+esc(sfDate(row.verified_at)):''}</span>`:''}`
@@ -78,20 +79,32 @@ async function saveLink(pid,emp){
     return true;
   }catch(err){toast('บันทึกการจับคู่ไม่สำเร็จ: '+((err&&err.message)||err));return false}
 }
+/* a save already updates the screen; the full Safety read (every certificate) runs once, a few seconds after the last save */
+let linkSyncT=0;function linkSyncSoon(){clearTimeout(linkSyncT);linkSyncT=setTimeout(()=>loadSafety(true),4000)}
+/* fill a row's dropdown with the whole HR list the first time it is opened */
+function linkFill(sel){
+  if(!sel||sel.dataset.lazy!=='1'||!SF.emps)return;sel.dataset.lazy='';
+  const pid=sel.dataset.linkPid,cur=sel.value;const owner=new Map();SAFE.empOf.forEach((e,p)=>owner.set(e,p));
+  const have=new Set([...sel.options].map(o=>o.value).filter(Boolean));const more=sel.querySelector('[data-more]');
+  const html=SF.emps.filter(e=>!have.has(e.emp_code)).map(e=>{const o=owner.get(e.emp_code);return `<option value="${esc(e.emp_code)}">${esc(e.full_name)} · ${esc(e.emp_code)}${o&&o!==pid?` (จับคู่กับ ${esc(staffName(o))} แล้ว)`:''}</option>`}).join('');
+  if(more){more.insertAdjacentHTML('beforebegin',html);more.remove()}else sel.insertAdjacentHTML('beforeend',html);
+  sel.value=cur;
+}
+['mousedown','focusin','keydown'].forEach(ev=>document.addEventListener(ev,e=>{const s=e.target.closest&&e.target.closest('select[data-link-pid]');if(s)linkFill(s)},true));
 async function linkBulk(){
   const list=exactPending();if(!list.length)return;
   if(!confirm(`ยืนยันการจับคู่ ${list.length} คนที่ชื่อตรงกับทะเบียน HR ทุกตัวอักษร:\n\n${list.slice(0,30).map(x=>`• ${x.p.name} → ${x.e.emp_code}`).join('\n')}${list.length>30?`\n… และอีก ${list.length-30} คน`:''}\n\nตรวจแล้วว่าเป็นคนเดียวกัน กด OK`))return;
   let n=0;for(const x of list){if(await saveLink(x.p.id,x.e.emp_code))n++}
-  toast(`จับคู่แล้ว ${n} คน`);loadSafety(true);fillSafety();
+  toast(`จับคู่แล้ว ${n} คน`);linkSyncSoon();fillSafety();
 }
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.name==='sfl-filter'){S.sfl.filter=t.value;fillSafety();return}
   if(t.dataset&&t.dataset.linkPid!==undefined){t.disabled=true;const ok=await saveLink(t.dataset.linkPid,t.value);
-    if(ok){toast(t.value?`จับคู่ ${staffName(t.dataset.linkPid)} กับ ${t.value} แล้ว`:`ยกเลิกการจับคู่ ${staffName(t.dataset.linkPid)} แล้ว`);loadSafety(true)}fillSafety()}
+    if(ok){toast(t.value?`จับคู่ ${staffName(t.dataset.linkPid)} กับ ${t.value} แล้ว`:`ยกเลิกการจับคู่ ${staffName(t.dataset.linkPid)} แล้ว`);linkSyncSoon()}fillSafety()}
 });
 document.addEventListener('input',e=>{if(e.target.id==='sfl-q'){S.sfl.q=e.target.value;const pos=e.target.selectionStart;fillSafety();const i=$('#sfl-q');if(i){i.focus();i.setSelectionRange(pos,pos)}}});
 document.addEventListener('click',async e=>{
   if(e.target.closest('[data-sf-golink]')){if(dlg.open)dlg.close();S.sf.tab='link';S.sfl.filter='todo';goView('safety');window.scrollTo(0,0);return}
-  const u=e.target.closest('[data-link-use]');if(u){const [pid,emp]=u.dataset.linkUse.split('|');if(await saveLink(pid,emp)){toast(`จับคู่ ${staffName(pid)} กับ ${emp} แล้ว`);loadSafety(true)}fillSafety();return}
+  const u=e.target.closest('[data-link-use]');if(u){const [pid,emp]=u.dataset.linkUse.split('|');if(await saveLink(pid,emp)){toast(`จับคู่ ${staffName(pid)} กับ ${emp} แล้ว`);linkSyncSoon()}fillSafety();return}
   if(e.target.closest('[data-sf="link-bulk"]'))linkBulk();
 });

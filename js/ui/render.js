@@ -83,7 +83,8 @@ function updateSelbar(){
   $('#selN').textContent=ids.length;$('#selNames').textContent=ids.map(staffName).join(', ');
 }
 function syncRowPicks(){
-  document.querySelectorAll('#view [data-row-pick]').forEach(cb=>{const on=S.sel.has(cb.dataset.rowPick);cb.checked=on;cb.closest('tr').classList.toggle('picked',on)});
+  /* the week table has a row per person; the daily list (phone / tablet) a .pp-row card */
+  document.querySelectorAll('#view [data-row-pick]').forEach(cb=>{const on=S.sel.has(cb.dataset.rowPick);cb.checked=on;const r=cb.closest('tr,.pp-row');if(r)r.classList.toggle('picked',on)});
   document.querySelectorAll('#view [data-team-pick]').forEach(cb=>{const ids=cb.dataset.teamPick.split(',').filter(Boolean);const n=ids.filter(i=>S.sel.has(i)).length;cb.checked=n>0&&n===ids.length;cb.indeterminate=n>0&&n<ids.length});
   updateSelbar();
 }

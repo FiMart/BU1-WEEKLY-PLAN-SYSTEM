@@ -37,7 +37,7 @@ function renderPeople(){
   for(const d of days)h+=dayHead(d,today,`<span class="dfree">ว่าง ${freeOn(d)} คน</span>`);
   h+=`</tr></thead><tbody>`;
   for(const [team,members] of groups){
-    if(showGroups){const nb=members.filter(s=>busy.has(s.id)).length;h+=`<tr class="team-row"><th scope="rowgroup">${S.canWrite?`<input type="checkbox" class="row-pick" data-team-pick="${esc(members.map(s=>s.id).join(','))}" aria-label="เลือกทุกคนในตำแหน่ง ${esc(team)}" title="เลือกทุกคนในตำแหน่งนี้">`:''}<b>${esc(team)}</b>${members.length} คน · มีงาน ${nb}</th><td colspan="${days.length}"></td></tr>`}
+    if(showGroups){const nb=members.filter(s=>busy.has(s.id)).length;h+=`<tr class="team-row"><th scope="rowgroup" colspan="${days.length+1}">${S.canWrite?`<input type="checkbox" class="row-pick" data-team-pick="${esc(members.map(s=>s.id).join(','))}" aria-label="เลือกทุกคนในตำแหน่ง ${esc(team)}" title="เลือกทุกคนในตำแหน่งนี้">`:''}<b>${esc(team)}</b>${members.length} คน · มีงาน ${nb}</th></tr>`}
     for(const s of members){
       const mine=tasks.filter(t=>(t.staffIds||[]).includes(s.id));
       const jobsN=mine.filter(t=>!isLeave(t)).length;const freeDays=days.filter(d=>!mine.some(t=>t.date===ymd(d))).length;
@@ -51,7 +51,7 @@ function renderPeople(){
   if(!staff.length)h+=`<tr class="no-match"><td colspan="${days.length+1}">ไม่พบคนที่ตรงกับตัวกรอง ลองล้างคำค้น หรือปิด "เฉพาะคนที่มีงาน"</td></tr>`;
   const vs=vehicles().filter(v=>v.active!==false||tasks.some(t=>vehKey(t)===norm(v.name)));
   if(vs.length&&!q){
-    h+=`<tr class="team-row"><th scope="rowgroup"><b>รถ</b>${vs.length} คัน</th><td colspan="${days.length}"></td></tr>`;
+    h+=`<tr class="team-row"><th scope="rowgroup" colspan="${days.length+1}"><b>รถ</b>${vs.length} คัน</th></tr>`;
     for(const v of vs){const mine=tasks.filter(t=>vehKey(t)===norm(v.name));
       h+=`<tr><th scope="row"><div class="who"><span class="avatar sq" aria-hidden="true">รถ</span><div class="who-text"><span class="who-name">${esc(v.name)}</span>${v.code?`<span class="who-role">${esc(v.code)}</span>`:''}<span class="who-role">ใช้ ${mine.length} งาน</span></div></div></th>`;
       for(const d of days){const k=ymd(d);const list=mine.filter(t=>t.date===k).sort(byTime);

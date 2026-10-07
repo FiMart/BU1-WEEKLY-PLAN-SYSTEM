@@ -7,7 +7,19 @@
    From the hand-off: badges are warnings only (picking is never blocked); if Safety data cannot load, planning carries
    on without badges; other apps change these tables, so they are re-read when the tab comes back and every 60 s.
    A plan keeps its area in task.areaId (= Booking.areaId in public.bookings). */
-const SAFE={ready:false,loading:false,at:0,err:'',areas:[],rules:[],types:new Map(),empOf:new Map(),certsByEmp:new Map()};
+const SAFE={ready:false,loading:false,again:false,at:0,err:'',areas:[],rules:[],types:new Map(),empOf:new Map(),certsByEmp:new Map()};
+/* every Safety / HR read gives up after a while (user, 7 Oct 2026: "โหลดข้อมูลค้าง"): a request that never answers (tab asleep,
+   network dropped) used to leave its busy flag on, so every later reload was skipped and the page stayed on "loading" */
+const SF_TIMEOUT=40000;
+function sfTimeout(p,ms){let t;return Promise.race([p,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error('หมดเวลารอข้อมูล (เครือข่ายช้าหรือขาดการเชื่อมต่อ) กดลองใหม่')),ms||SF_TIMEOUT)})]).finally(()=>clearTimeout(t))}
+/* redraw the Safety page after a load, unless someone is typing or choosing in it (then once they leave the field) */
+let sfRedrawLater=false;
+function sfRedraw(){
+  if(S.view!=='safety'||typeof fillSafety!=='function'||!$('#sfBody'))return;
+  const a=document.activeElement;if(a&&a!==document.body&&$('#sfBody').contains(a)&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)){sfRedrawLater=true;return}
+  sfRedrawLater=false;fillSafety();
+}
+document.addEventListener('focusout',e=>{if(sfRedrawLater&&e.target.closest&&e.target.closest('#sfBody'))setTimeout(()=>{if(sfRedrawLater)sfRedraw()},150)});
 
 async function safePages(mk,order){
   const out=[];
@@ -19,26 +31,27 @@ async function safePages(mk,order){
   return out;
 }
 async function loadSafety(force){
-  if(S.backend!=='supabase'||!sb||!S.auth.user||SAFE.loading)return;
+  if(S.backend!=='supabase'||!sb||!S.auth.user)return;
+  if(SAFE.loading){if(force)SAFE.again=true;return}/* a forced read asked during a read runs right after it */
   if(!force&&Date.now()-SAFE.at<55000)return;
   SAFE.loading=true;
   try{
     const sf=sb.schema('safety'),core=sb.schema('core');
     const track=p=>SAFE.ready?p:netTrack(p);/* first load shows the loading bar; the refresh every minute is quiet */
-    const [areas,rules,types,certs,map]=await track(Promise.all([
+    const [areas,rules,types,certs,map]=await track(sfTimeout(Promise.all([
       safePages(()=>sf.from('areas').select('id,name,client,parent_id,match_terms,active'),'id'),
       safePages(()=>sf.from('area_cert_rules').select('area_id,cert_type_id,validity_months,requires_health_check,warn_days_before,active'),'area_id'),
       safePages(()=>sf.from('cert_types').select('id,name,scope,validity_months,active'),'id'),
       safePages(()=>sf.from('certificates').select('id,emp_code,cert_type_id,area_id,issued_date,expiry_date,card_issued,cert_number'),'id'),
       safePages(()=>core.from('person_id_map').select('people_id,emp_code,verified_by,verified_at').eq('dept_id',DEPT()),'people_id'),
-    ]));
+    ])));
     SAFE.mapRows=map;
     SAFE.areas=areas;SAFE.rules=rules;SAFE.types=new Map(types.map(t=>[t.id,t.name]));SAFE.typeRows=types;SAFE.certs=certs;
     SAFE.empOf=new Map(map.map(m=>[m.people_id,m.emp_code]));
     SAFE.certsByEmp=new Map();certs.forEach(c=>{if(!SAFE.certsByEmp.has(c.emp_code))SAFE.certsByEmp.set(c.emp_code,[]);SAFE.certsByEmp.get(c.emp_code).push(c)});
     SAFE.ready=true;SAFE.err='';SAFE.at=Date.now();
   }catch(e){SAFE.err=String((e&&e.message)||e||'');SAFE.at=Date.now()}/* keeps the last good data; the plan works without it */
-  finally{SAFE.loading=false;safetyRefreshUi()}
+  finally{SAFE.loading=false;safetyRefreshUi();sfRedraw();if(SAFE.again){SAFE.again=false;setTimeout(()=>loadSafety(true),0)}}
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadSafety()});
 setInterval(()=>{if(!document.hidden)loadSafety()},60000);

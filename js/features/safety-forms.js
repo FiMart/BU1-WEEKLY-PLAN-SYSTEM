@@ -47,10 +47,10 @@ async function rfLoadArea(){
   const tok=++RF.tok;RF.docs=[];RF.prev=[];RF.cert='';
   if(!RF.area||rfIsNew()){drawRF();return}
   try{
-    const [docs,types,prev]=await Promise.all([
+    const [docs,types,prev]=await sfTimeout(Promise.all([
       sfDb().from('area_documents').select('*').eq('area_id',RF.area).eq('active',true).order('sort_order'),
       sfDb().from('doc_types').select('*').order('sort_order').order('name'),
-      sfDb().from('training_requests').select('id,request_no,status,training_date,course_name,requested_at').eq('area_id',RF.area).eq('dept_id',DEPT()).order('requested_at',{ascending:false}).limit(5)]);
+      sfDb().from('training_requests').select('id,request_no,status,training_date,course_name,requested_at').eq('area_id',RF.area).eq('dept_id',DEPT()).order('requested_at',{ascending:false}).limit(5)]));
     if(tok!==RF.tok)return;
     RF.docs=docs.data||[];RF.docTypes=new Map((types.data||[]).map(t=>[t.id,t]));RF.prev=prev.data||[];
   }catch(e){}
@@ -65,7 +65,13 @@ async function rfLoadStored(){
 }
 function openRequestForm(){
   sfLoad('emps',loadEmps);loadSafety();rfReset(S.sf.area||'');
-  if(!SAFE.ready||!SF.emps){sfOpen('ขออบรม','',loading(),'',true);const wait=setInterval(()=>{if(SAFE.ready&&SF.emps){clearInterval(wait);if($('#sfDlg').open)rfLoadArea()}},300);setTimeout(()=>clearInterval(wait),20000);return}
+  /* waits for the HR list and the Safety data; a failed or timed-out read shows why, with ลองใหม่, instead of loading forever */
+  if(!SAFE.ready||!SF.emps){sfOpen('ขออบรม','',loading(),'',true);const t0=Date.now();
+    const wait=setInterval(()=>{const dlgOpen=$('#sfDlg').open;const err=(!SAFE.ready&&SAFE.err)||(!SF.emps&&SF.err.emps);
+      if(SAFE.ready&&SF.emps){clearInterval(wait);if(dlgOpen)rfLoadArea();return}
+      if(!dlgOpen){clearInterval(wait);return}
+      if(err||Date.now()-t0>SF_TIMEOUT+5000){clearInterval(wait);$('#sfDlgBody').innerHTML=sfError(err||'หมดเวลารอข้อมูล');
+        const b=$('#sfDlgBody [data-sf-retry]');if(b)b.addEventListener('click',()=>{$('#sfDlg').close();setTimeout(openRequestForm,50)},{once:true})}},300);return}
   rfLoadArea();
 }
 function drawRF(){

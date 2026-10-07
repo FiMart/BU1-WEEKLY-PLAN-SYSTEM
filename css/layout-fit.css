@@ -1,0 +1,26 @@
+/* BU1 Weekly Plan · page proportions (user, 7 Oct 2026: "ปรับ layout ของทุกหน้าให้เหมาะสมกับสัดส่วน")
+   Loaded last so these win over the older page rules. */
+
+/* search boxes: theme.css resets every input's background, which wiped the search icon but kept its 34 px gap */
+#view .toolbar input[type=search],#view .md-tools input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23687D86' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:11px 50%;background-size:16px 16px}
+#view .md-tools input{padding-left:36px}
+
+/* tables that scroll inside their box (สรุปรายคน, กำลังคนโปรเจกต์): as tall as their rows, no empty block under a short table */
+.scroll-x.tall{min-height:0}
+
+/* KPI tiles: seven tiles in one row on a desktop (no single tile left alone on a second row), 4 + 3 on smaller screens */
+@media (min-width:1200px){#view .tiles:has(>:nth-child(7):last-child){grid-template-columns:repeat(7,minmax(0,1fr))}}
+@media (min-width:761px) and (max-width:1199px){#view .tiles:has(>:nth-child(7):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}}
+#view .tiles:has(>:nth-child(7):last-child) .tile{min-width:0}
+
+/* วิธีใช้: the article uses the width next to the contents list */
+.help-body{max-width:none}
+
+/* สรุปรายคน: the position / vehicle headers span the whole row instead of wrapping inside the first column */
+.grid tr.team-row th[colspan]{white-space:nowrap}
+/* Weekly Plan cards: team / guest names and chips stay inside the card (user, 7 Oct 2026 — long names of other departments'
+   people ran past the card into the next day). One line each, "…" when too long, the full name on hover and in the plan view. */
+.wc-pp,.wc-chips{min-width:0;max-width:100%}
+.wc-pp .pp,.wc-chips .tchip{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:top}
+.wc-chips .tchip{display:inline-flex}
+.wc .chip-flag{max-width:100%;overflow-wrap:anywhere}
