@@ -31,7 +31,7 @@ async function safePages(mk,order){
   return out;
 }
 async function loadSafety(force){
-  if(S.backend!=='supabase'||!sb||!S.auth.user)return;
+  if(S.backend!=='supabase'||!sb||!S.auth.user||S.mode!=='live')return;
   if(SAFE.loading){if(force)SAFE.again=true;return}/* a forced read asked during a read runs right after it */
   if(!force&&Date.now()-SAFE.at<55000)return;
   SAFE.loading=true;

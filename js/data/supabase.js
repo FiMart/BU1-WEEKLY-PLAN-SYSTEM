@@ -191,6 +191,7 @@ async function afterLogin(user){
   if(S.view==='projects')S.view='plan';
   $('#btnLogout').hidden=false;
   showMe();wireData();loadSafety(true);/* Safety cards for the team picker (read only, never blocks planning) */
+  if(typeof sfOnline==='function')sfOnline();/* the Safety pages: drop errors from before the login and read again */
 }
 
 /* the account's display prefs go to its user_metadata.bu1wp_prefs (merged with the other metadata keys), a moment after the last change */

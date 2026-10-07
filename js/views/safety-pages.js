@@ -43,7 +43,13 @@ const RQ_SESSION={morning:'รอบเช้า',afternoon:'รอบบ่า�
 const rqPill=s=>{const x=RQ_STATUS[s]||['none',s||'—'];return sfPill(x[0],x[1])};
 
 /* cached loads: drawn at once from cache, refreshed when older than ~1 minute (other apps change these tables) */
+/* the central database is usable only once connected and logged in: before that (library loading, login screen) a read
+   would fail with "Cannot read properties of null (reading 'schema')" — and that error used to stay on the page after login */
+const sfReady=()=>S.backend==='supabase'&&!!sb&&!!(S.auth&&S.auth.user)&&S.mode==='live';
+/* called once the login is done: forget errors from before and read everything */
+function sfOnline(){SF.err={};SF.at={};SAFE.err='';if(S.view==='safety')fillSafety()}
 async function sfLoad(key,fn,force){
+  if(!sfReady())return;/* drawn as "loading" until sfOnline() */
   if(SF.busy[key]){if(force)SF.again[key]=fn;return}
   /* a failed read waits too: the redraw after a failure used to start the same read again at once, which failed again —
      an endless loop that froze the page and hammered the database (user, 7 Oct 2026: "โหลดข้อมูลค้าง") */
@@ -53,7 +59,7 @@ async function sfLoad(key,fn,force){
   finally{SF.busy[key]=false;SF.at[key]=Date.now();sfRedraw();const again=SF.again[key];if(again){delete SF.again[key];setTimeout(()=>sfLoad(key,again,true),0)}}
 }
 /* "ลองใหม่" on an error: everything is read again */
-function sfRetry(){SF.err={};SF.at={};SAFE.err='';SAFE.at=0;loadSafety(true);fillSafety()}
+function sfRetry(){if(!sfReady()){toast('ยังเชื่อมต่อฐานข้อมูลกลางไม่สำเร็จ รอสักครู่ หรือโหลดหน้าใหม่');return}SF.err={};SF.at={};SAFE.err='';SAFE.at=0;loadSafety(true);fillSafety()}
 const loadEmps=()=>safePages(()=>coreDb().from('employees').select('emp_code,full_name,email,dept_code,position_code,status').eq('dept_code',DEPT()).eq('status','active'),'emp_code')
   .then(l=>l.sort((a,b)=>a.full_name.localeCompare(b.full_name,'th')));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.view==='safety')sfRedraw()});
