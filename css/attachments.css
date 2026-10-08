@@ -190,4 +190,17 @@
 .car-why{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-2);white-space:normal}
 .tchip.own{color:#9a6200;border-color:color-mix(in srgb,#c27c0e 45%,var(--line))}
 .tchip.gawait.urgent{color:var(--crit-ink,#c0262d)}
+/* วิธีเดินทาง motion (user, 8 Oct 2026): only what explains a change — press, the pane that opens, the error; short, no overshoot */
+.car-mode label>span{transition:border-color .15s,background .15s,box-shadow .15s,transform .12s var(--ease)}
+.car-mode label:active>span,.car-chips label:active span{transform:scale(.97)}
+.car-mode svg{transition:transform .2s var(--ease)}
+.car-mode input:checked+span svg{transform:translateY(-1px) scale(1.08)}
+.car-chips span{transition:border-color .15s,background .15s,color .15s,transform .12s var(--ease)}
+.car-ganote:not([hidden]),.car-cargo:not([hidden]){animation:rise .2s var(--ease) both}
+.car-more[open]>:not(summary){animation:rise .18s var(--ease) both}
+.car-err:not([hidden]){animation:carShake .32s var(--ease) both}
+@keyframes carShake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}}
+.tr-pick:has(#carErr:not([hidden])) .car-mode label>span{border-color:color-mix(in srgb,var(--crit,#d63c3c) 55%,var(--line))}
+@media (prefers-reduced-motion:reduce){.car-mode label>span,.car-chips span,.car-mode svg{transition:none}.car-mode label:active>span,.car-chips label:active span,.car-mode input:checked+span svg{transform:none}
+  .car-pane,.car-ganote,.car-cargo,.car-more[open]>:not(summary),.car-err{animation:none!important}}
 @media (max-width:520px){.car-mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.car-mode label>span{width:100%;padding:8px 10px}}

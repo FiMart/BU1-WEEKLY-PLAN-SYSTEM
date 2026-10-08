@@ -99,7 +99,7 @@ function syncSharedArea(){
   $('#f-sharedArea').textContent=name?`พื้นที่ ${name} `:'พื้นที่เดียวกัน';
 }
 /* วิธีเดินทาง (user, 7–8 Oct 2026): four choices, one required, each opens its own fields —
-   รถกระบะแผนก = the Lab's vehicles (tiles, clash check) · รถ GA = needGA + รูปแบบ / เวลารถออก / งานด่วน / ของต้องขน
+   รถแผนก = the Lab's vehicles (tiles, clash check) · รถ GA = needGA + รูปแบบ / เวลารถออก / งานด่วน / ของต้องขน
    (+ the plate GA tells us) · ขอรถไปเอง = needGA + selfDrive + เวลารับรถ + เหตุผล (required) / รายละเอียด ·
    ไม่ใช้รถ = transport 'ไม่ใช้รถ'. รถ GA and ขอรถไปเอง share หมายเหตุถึง GA. */
 const carMode=()=>(document.querySelector('input[name="car-mode"]:checked')||{}).value||'';

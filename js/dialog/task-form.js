@@ -207,7 +207,8 @@ function validate(v,copy){
   /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
   if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];
   /* วิธีเดินทาง: one choice required on work plans (user, 8 Oct 2026) */
-  if(!copy&&v.jobType!=='leave'&&!carMode()){/* copies keep the plan's own car, even an older plan with none */$('#carErr').hidden=false;return ['เลือกวิธีเดินทางก่อน','.car-mode input']}
+  if(!copy&&v.jobType!=='leave'&&!carMode()){/* copies keep the plan's own car, even an older plan with none */
+    const e=$('#carErr');e.hidden=true;void e.offsetWidth;e.hidden=false;/* shown (and shaken) again on every try */return ['เลือกวิธีเดินทางก่อน','.car-mode input']}
   if(v.selfDrive){if(!v.gaGo)return ['ใส่เวลารับรถ (ขอรถไปเอง)','#f-ownGo'];if(!v.carReason)return ['เลือกเหตุผลที่ขอรถไปเอง','#selfWhy input'];
     if(v.carReason==='อื่นๆ'&&!v.carNote)return ['ใส่รายละเอียดเมื่อเลือกเหตุผล "อื่นๆ"','#f-carNote']}
   if(v.needGA&&!v.selfDrive&&v.gaCargo&&!v.gaCargo.size)return ['ใส่ของที่ขน / ขนาด (มีของต้องขน)','#f-gaCargoSize'];

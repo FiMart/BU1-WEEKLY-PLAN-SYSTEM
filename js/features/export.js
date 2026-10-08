@@ -6,8 +6,8 @@ function loadXLSX(){
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>res(window.XLSX);s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)});
 }
 const stTh=s=>(STATUS[s]||STATUS.planned).th;
-const fileWeek=()=>`BU1-Weekly-Plan_${S.line?LINE[S.line].short.replace(/\s+/g,'-')+'_':''}${weekName(S.week).replace(/\s+/g,'-')}`;
-const lineTitle=()=>S.line?` · ${lineName()}`:'';
+const fileWeek=()=>`BU1-Weekly-Plan_${S.line?LINE[S.line].short.replace(/\s+/g,'-')+'_':''}${S.team?TEAM[S.team].short+'_':''}${weekName(S.week).replace(/\s+/g,'-')}`;
+const lineTitle=()=>scopeName()?` · ${scopeName()}`:'';
 async function saveFile(filename,data,msg){
   try{await downloads.save({filename,data});toast(msg||'ส่งไฟล์ให้ดาวน์โหลดแล้ว')}
   catch(e){const c=e&&e.code;if(c==='declined')return;toast(c==='rate_limited'?'มีหน้าต่างดาวน์โหลดเปิดอยู่ รอสักครู่แล้วลองใหม่':'ดาวน์โหลดไม่สำเร็จในมุมมองนี้')}
@@ -17,16 +17,18 @@ async function exportXlsx(btn){
   try{
     const X=await loadXLSX();const wb=X.utils.book_new();const days=weekDays();const all=shownTasks().slice().sort(byTime);const tasks=all.filter(lineMatch);
     const title=[`BU1 Lab · Weekly Plan${lineTitle()} ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`];
-    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','Transport','Contact','เบอร์ติดต่อ','Team Service','สถานะ','จัดชน'];
+    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','จัดชน'];
+    /* ทีม of the plan's people: "Lab On-Site, Lab" when both */
+    const planTeams=t=>TEAMS.filter(tm=>(t.staffIds||[]).some(id=>teamOf(S.staff.find(s=>s.id===id))===tm.id)).map(tm=>tm.name).join(', ');
     const conf=allConflicts();
-    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
-    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,14,20,14,32,12,26].map(w=>({wch:w}));
+    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
+    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,14,20,14,32,16,12,26].map(w=>({wch:w}));
     X.utils.book_append_sheet(wb,ws1,'แผนงาน');
     /* per person: every line (one shared team), so "ว่าง" is true */
     const staff=visibleStaff(all.filter(isWorking));
-    const grid=[title,isoXlsxRow('plan'),['พนักงาน','ตำแหน่ง',...days.map(d=>`${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}`)]];
-    for(const s of staff)grid.push([s.name,s.role||'',...days.map(d=>{const l=all.filter(t=>t.date===ymd(d)&&isWorking(t)&&(t.staffIds||[]).includes(s.id)).sort(byTime);return daySummary(l).text+(l.length?'\n'+l.map(t=>`${pName(t)} ${typeLabel(t)}${t.planNo?' '+t.planNo:''}${t.customer?' ('+t.customer+')':''}`).join('\n'):'')})]);
-    const ws2=X.utils.aoa_to_sheet(grid);ws2['!cols']=[{wch:22},{wch:14},...days.map(()=>({wch:30}))];
+    const grid=[title,isoXlsxRow('plan'),['พนักงาน','ทีม','ตำแหน่ง',...days.map(d=>`${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}`)]];
+    for(const s of staff.sort((a,b)=>teamRank(a)-teamRank(b)||roleRank(a)-roleRank(b)||sortPeople(a,b)))grid.push([s.name,teamOf(s)?teamName(teamOf(s)):'',s.role||'',...days.map(d=>{const l=all.filter(t=>t.date===ymd(d)&&isWorking(t)&&(t.staffIds||[]).includes(s.id)).sort(byTime);return daySummary(l).text+(l.length?'\n'+l.map(t=>`${pName(t)} ${typeLabel(t)}${t.planNo?' '+t.planNo:''}${t.customer?' ('+t.customer+')':''}`).join('\n'):'')})]);
+    const ws2=X.utils.aoa_to_sheet(grid);ws2['!cols']=[{wch:22},{wch:14},{wch:14},...days.map(()=>({wch:30}))];
     X.utils.book_append_sheet(wb,ws2,'สรุปรายคน');
     /* the team's "Weekly plan calibration" sheet, same columns (Flow Meter plans of the week) */
     const cr=S.line==='ins'?[]:calWeekRows(tasks);
@@ -45,7 +47,8 @@ async function exportXlsx(btn){
   }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
   finally{btn.disabled=false;btn.textContent=old}
 }
-const LOGO_MARK='<svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="rp-drop" x1="12" y1="3" x2="36" y2="46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8BE0FF"/><stop offset=".5" stop-color="#2E8BF5"/><stop offset="1" stop-color="#1747C4"/></linearGradient></defs><path d="M24 2.5C23.1 2.5 8.5 18.8 8.5 30.3a15.5 15.5 0 0 0 31 0C39.5 18.8 24.9 2.5 24 2.5Z" fill="url(#rp-drop)"/><path d="M13 30c2.4-2.7 4.9-2.7 7.3 0s4.9 2.7 7.3 0 4.9-2.7 7.3 0" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/><path d="M15 37c2-2.1 4-2.1 6 0s4 2.1 6 0 4-2.1 6 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.4" stroke-linecap="round"/></svg>';
+/* the app's own mark (the blue "BU1" square of the sidebar), drawn as SVG so it prints in colour (user, 8 Oct 2026) */
+const LOGO_MARK='<svg width="40" height="40" viewBox="0 0 48 48" role="img" aria-label="BU1"><defs><linearGradient id="rp-bu1" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7FE0FF"/><stop offset=".5" stop-color="#2F8BFF"/><stop offset="1" stop-color="#1D5BE0"/></linearGradient></defs><rect x="1" y="1" width="46" height="46" rx="13" fill="url(#rp-bu1)"/><rect x="1.5" y="1.5" width="45" height="45" rx="12.5" fill="none" stroke="#fff" stroke-opacity=".35"/><text x="24" y="29.6" text-anchor="middle" font-family="IBM Plex Sans Thai,Segoe UI,Arial,sans-serif" font-weight="700" font-size="16" letter-spacing=".3" fill="#fff">BU1</text></svg>';
 /* Print / PDF: the Weekly Plan of the open week as the board shows it — rows = หัวข้องาน (or ลูกค้า, as on screen; ลา last),
    columns = days — on A3 landscape; page 2 = สรุปรายคนรายวัน with signature lines. Opens a print window at once
    (the page prints itself when its fonts are ready); if the browser blocks the window, the same page is downloaded instead. */

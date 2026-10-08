@@ -20,7 +20,7 @@ const rememberView=v=>{try{sessionStorage.setItem('bu1wp.view',v)}catch(e){}};
    One JSON object per account in this browser ('bu1wp.prefs.<account>'). At start-up the last account's prefs are shown
    (no flash of the wrong theme), then usePrefsOf() swaps in the signed-in account's. With Supabase the same object is
    kept in the account's user_metadata.bu1wp_prefs, so it follows the person to other devices (prefSync, js/data/supabase.js). */
-const PREF_KEYS=['theme','mini','by','avail','sun7','pfbusy','dash','pmode','md','line'];
+const PREF_KEYS=['theme','mini','by','avail','sun7','pfbusy','dash','pmode','md','line','team'];
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}};
 const cleanPrefs=o=>{const out={};if(o&&typeof o==='object')PREF_KEYS.forEach(k=>{if(o[k]!=null)out[k]=String(o[k])});return out};
@@ -39,6 +39,7 @@ function applyPrefs(){
   S.dash.mode=['month','quarter','year'].includes(pref('dash'))?pref('dash'):'week';
   S.pf.by=pref('by')==='cust'?'cust':'type';S.pf.groups=[];
   S.line=LINE[pref('line')]?pref('line'):'';/* สายงาน tab: '' = ทั้งหมด */
+  S.team=TEAM[pref('team')]?pref('team'):'';/* ทีม filter: '' = ทุกทีม */
   S.md=pref('md')||'staff';S.pmode=pref('pmode')==='day'||pref('pmode')==='week'?pref('pmode'):null;
   document.body.classList.toggle('mini',wasTablet||pref('mini')==='1');
   const th=pref('theme');if(th==='dark'||th==='light')document.documentElement.setAttribute('data-theme',th);else document.documentElement.removeAttribute('data-theme');

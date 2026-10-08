@@ -34,6 +34,11 @@ const LEGACY={cal:'calonsite',ins:'installation',trn:'training',lv:'leave'};
 const LEGACY_NAME={svc:'ซ่อม / Service',pm:'บำรุงรักษา (PM)',tst:'ทดสอบ / ตรวจสอบ',off:'งานเอกสาร / รายงาน'};
 const PERIODS=[{id:'am',name:'เช้า',a:0,b:0},{id:'pm',name:'บ่าย',a:1,b:1},{id:'full',name:'เช้า,บ่าย',a:0,b:1}];
 const PERIOD=Object.fromEntries(PERIODS.map(p=>[p.id,p]));
+/* ทีม (user, 8 Oct 2026): every person is in one team (staff.team ↔ people.data.bu1wp.team; '' = not set yet).
+   Separate from สายงาน: a Flow Meter or Instrument plan may use people of either team. */
+const TEAMS=[{id:'onsite',name:'Lab On-Site',short:'On-Site',color:'#d9761c',desc:'ทีมออกหน้างาน'},{id:'lab',name:'Lab',short:'Lab',color:'#2a78d6',desc:'ทีมใน Lab'}];
+const TEAM=Object.fromEntries(TEAMS.map(t=>[t.id,t]));
+const NO_TEAM='ยังไม่ระบุทีม';
 const DEFAULT_POSITIONS=['Admin','Engineer','Technician','Special Contract','Assistant Technician'];
 /* earlier Thai role names, converted once to the English roles above (and when pasted in bulk) */
 const LEGACY_ROLES={'วิศวกร':'Engineer','ช่างเทคนิค':'Technician','สญจ':'Special Contract','ผชช':'Assistant Technician'};

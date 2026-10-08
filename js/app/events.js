@@ -16,6 +16,7 @@ document.addEventListener('click',e=>{
   if(!t.closest('#copyMenu'))$('#copyMenu').open=false;
   const md=t.closest('[data-md]');if(md){if(S.md!==md.dataset.md){S.md=md.dataset.md;S.mdq='';remember('bu1wp.md',S.md);S.anim='view';render();const b=$('#view .md-body');if(b&&window.innerWidth<=900)b.scrollIntoView({block:'start'})}return}
   const ln=t.closest('[data-line-tab]');if(ln){const v=ln.dataset.lineTab;if(S.line!==v){S.line=v;S.pf.groups=[];remember('bu1wp.line',v);S.anim='view';render()}return}
+  const tm=t.closest('[data-team-tab]');if(tm){const v=tm.dataset.teamTab;if(S.team!==v){S.team=v;S.pf.groups=[];remember('bu1wp.team',v);S.anim='view';render()}return}
   const gc=t.closest('[data-gchip]');if(gc){const k=gc.dataset.gchip;S.pf.groups=!k?[]:S.pf.groups.includes(k)?S.pf.groups.filter(x=>x!==k):S.pf.groups.concat(k);S.anim='view';render();return}
   const gw=t.closest('[data-goweek]');if(gw){S.week=mondayOf(parseD(gw.dataset.goweek));S.view='plan';rememberView('plan');S.anim='view';subscribeWeek();window.scrollTo(0,0);return}
   const pe=t.closest('[data-proj-edit]');if(pe){S.projEdit=pe.dataset.projEdit;render();setTimeout(()=>{const f=$('#pj-name');if(f){f.focus();f.scrollIntoView({block:'center'})}},30);return}
@@ -138,7 +139,9 @@ document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)retu
   if(f.dataset.bulk!==undefined){e.preventDefault();
     const have=new Set(S.staff.map(s=>norm(s.name)));let order=Math.max(0,...S.staff.map(x=>Number(x.order)||0));
     const rowsIn=String(new FormData(f).get('rows')||'').split(/\r?\n/).map(l=>l.split(/\t|,/).map(x=>x.trim())).filter(r=>r[0]);
-    const todo=[];for(const [name,role] of rowsIn){const k=norm(name);if(have.has(k))continue;have.add(k);todo.push({name:name.slice(0,80),role:roleName(role).slice(0,80)})}
+    /* third column = ทีม: "Lab On-Site" / "On-Site" / "onsite" or "Lab" (anything else = not set) */
+    const teamIn=v=>{const k=norm(v).replace(/[\s_-]/g,'');return !k?'':/onsite/.test(k)?'onsite':k==='lab'?'lab':''};
+    const todo=[];for(const [name,role,team] of rowsIn){const k=norm(name);if(have.has(k))continue;have.add(k);todo.push({name:name.slice(0,80),role:roleName(role).slice(0,80),team:teamIn(team)})}
     if(!todo.length){toast(rowsIn.length?'ทุกชื่อมีอยู่ในระบบแล้ว':'วางรายชื่อก่อน หนึ่งคนต่อหนึ่งบรรทัด');return}
     const btn=f.querySelector('button[type=submit]');btn.disabled=true;let n=0;
     try{for(const p of todo){toast(`กำลังเพิ่มรายชื่อ ${n+1}/${todo.length}…`);await Store.set('staff',newId('s'),Object.assign(p,{order:++order,active:true,createdAt:new Date().toISOString()}));n++}
@@ -150,7 +153,7 @@ document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)retu
     const c=f.dataset.add;const fd=new FormData(f);const name=String(fd.get('name')||'').trim();if(!name)return;
     const isV=c==='vehicle';const coll=isV?'resources':'staff';const list=isV?vehicles():S.staff;const order=Math.max(0,...list.map(x=>Number(x.order)||0))+1;
     if(isV&&list.some(v=>norm(v.name)===norm(name))){toast(`มีรถ ${name} อยู่แล้ว`);return}
-    const data=isV?{name,code:String(fd.get('code')||'').trim(),group:String(fd.get('group')||'').trim().slice(0,60),kind:'vehicle',order,active:true}:{name,role:String(fd.get('role')||'').trim(),order,active:true};
+    const data=isV?{name,code:String(fd.get('code')||'').trim(),group:String(fd.get('group')||'').trim().slice(0,60),kind:'vehicle',order,active:true}:{name,role:String(fd.get('role')||'').trim(),team:TEAM[fd.get('team')]?String(fd.get('team')):'',order,active:true};
     try{await Store.set(coll,newId(isV?'r':'s'),Object.assign(data,{createdAt:new Date().toISOString()}));f.reset();toast(`เพิ่ม “${name}” แล้ว`)}catch(err){toast(errText(err));noteWriteError(err)}
   }
 });

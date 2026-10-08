@@ -27,7 +27,7 @@ function renderPeople(){
   const all=visibleStaff(tasks);
   if(!all.length)return emptyState('ยังไม่มีรายชื่อพนักงาน','เพิ่มรายชื่อวิศวกร ช่างเทคนิค และพนักงานเสริมก่อน แต่ละคนจะเป็นหนึ่งแถวในตารางนี้',`<button type="button" class="btn primary" data-go="settings">เพิ่มรายชื่อ</button>`);
   const busy=new Set(tasks.flatMap(t=>t.staffIds||[]));const q=norm(S.pf.q);
-  const staff=all.filter(s=>(!S.pf.busy||busy.has(s.id))&&(!q||norm([s.name,s.role].join(' ')).includes(q)));
+  const staff=all.filter(s=>(!S.pf.busy||busy.has(s.id))&&(!q||norm([s.name,s.role,teamOf(s)?teamName(teamOf(s)):''].join(' ')).includes(q)));
   $('#pf-count').textContent=staff.length!==all.length?`แสดง ${staff.length} จาก ${all.length} คน`:`${all.length} คน`;
   const groups=roleGroups(staff);const showGroups=groups.size>1||(groups.size===1&&!groups.has('ไม่ระบุตำแหน่ง'));
   const freeOn=d=>{const k=ymd(d);return all.filter(s=>s.active!==false&&!tasks.some(t=>t.date===k&&(t.staffIds||[]).includes(s.id))).length};

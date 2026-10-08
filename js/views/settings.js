@@ -26,27 +26,31 @@ const MD_ICONS={
 function renderSettings(){
   if(notReady())return loading();
   const dis=can('master')?'':' disabled';
-  const staff=S.staff.slice().sort((a,b)=>roleRank(a)-roleRank(b)||sortPeople(a,b));
+  const teamRank=s=>{const i=TEAMS.findIndex(t=>t.id===teamOf(s));return i<0?TEAMS.length:i};
+  const staff=S.staff.slice().sort((a,b)=>teamRank(a)-teamRank(b)||roleRank(a)-roleRank(b)||sortPeople(a,b));
+  const teamOpts=cur=>`<option value="">— ${NO_TEAM} —</option>`+TEAMS.map(t=>`<option value="${t.id}"${t.id===cur?' selected':''}>${esc(t.name)}</option>`).join('');
+  const teamCount=TEAMS.map(t=>`${t.short} ${staff.filter(s=>s.active!==false&&teamOf(s)===t.id).length}`).join(' · ');
   const vs=vehicles();const types=jobTypes();const pos=positions();
   const sampleN=S.staff.filter(x=>x.sample).length+S.resources.filter(x=>x.sample).length+S.projects.filter(x=>x.sample).length;
   const hasSample=sampleN>0||S.tasks.some(t=>t.sample);
   const posOpts=(cur)=>{const l=pos.slice();if(cur&&!l.includes(cur))l.push(cur);return `<option value="">— ไม่ระบุ —</option>`+l.map(p=>`<option value="${esc(p)}"${p===cur?' selected':''}>${esc(p)}</option>`).join('')};
   const activeStaff=staff.filter(s=>s.active!==false).length;
   const secs=[
-    {id:'staff',title:'พนักงาน',sub:`ใช้งาน ${activeStaff} คน`,count:staff.length,
-     desc:'รายชื่อสำหรับ Team Service เรียงตามตำแหน่ง คนที่ปิดใช้งานจะไม่แสดงในตัวเลือก แต่แผนเก่ายังอยู่ครบ',
-     body:`<div class="md-tools"><input type="search" id="md-q" placeholder="ค้นหาชื่อ หรือตำแหน่ง" aria-label="ค้นหาพนักงาน" autocomplete="off"><span class="hint" id="md-qn">${staff.length} คน</span></div>
-      <div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>ลำดับ</th><th>ชื่อ</th><th>ตำแหน่ง</th><th>ใช้งาน</th><th></th></tr></thead><tbody>
-      ${staff.map(s=>`<tr class="${s.active===false?'inactive':''}" data-q="${esc(norm([s.name,s.role].join(' ')))}"><td><input class="w-num" type="number" min="0" id="st-o-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="order" value="${esc(s.order??'')}"${dis} aria-label="ลำดับ"></td>
+    {id:'staff',title:'พนักงาน',sub:`ใช้งาน ${activeStaff} คน · ${teamCount}`,count:staff.length,
+     desc:'รายชื่อสำหรับ Team Service แบ่งเป็น 2 ทีม (Lab On-Site · Lab) แล้วเรียงตามตำแหน่ง ทีมใช้จัดกลุ่มรายชื่อ ตัวกรองทีมบน Weekly Plan และรายงาน คนที่ปิดใช้งานจะไม่แสดงในตัวเลือก แต่แผนเก่ายังอยู่ครบ',
+     body:`<div class="md-tools"><input type="search" id="md-q" placeholder="ค้นหาชื่อ ตำแหน่ง หรือทีม" aria-label="ค้นหาพนักงาน" autocomplete="off"><span class="hint" id="md-qn">${staff.length} คน</span></div>
+      <div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>ลำดับ</th><th>ชื่อ</th><th>ทีม</th><th>ตำแหน่ง</th><th>ใช้งาน</th><th></th></tr></thead><tbody>
+      ${staff.map((s,i)=>`<tr class="${s.active===false?'inactive':''}${i&&teamOf(staff[i-1])!==teamOf(s)?' team-break':''}" data-q="${esc(norm([s.name,s.role,teamName(teamOf(s))].join(' ')))}"><td><input class="w-num" type="number" min="0" id="st-o-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="order" value="${esc(s.order??'')}"${dis} aria-label="ลำดับ"></td>
         <td><input id="st-n-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="name" value="${esc(s.name)}" maxlength="80"${dis} aria-label="ชื่อ"></td>
+        <td><select class="team-sel t-${teamOf(s)||'none'}" id="st-t-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="team"${dis} aria-label="ทีม">${teamOpts(teamOf(s))}</select></td>
         <td><select id="st-r-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="role"${dis} aria-label="ตำแหน่ง">${posOpts(s.role||'')}</select></td>
         <td><input type="checkbox" id="st-a-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="active"${s.active!==false?' checked':''}${dis} aria-label="ใช้งาน"></td>
-        <td>${can('master')?`<button type="button" class="btn sm danger" data-action="del-row" data-coll="staff" data-id="${esc(s.id)}">ลบ</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="hint">ยังไม่มีรายชื่อ</td></tr>'}
+        <td>${can('master')?`<button type="button" class="btn sm danger" data-action="del-row" data-coll="staff" data-id="${esc(s.id)}">ลบ</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="hint">ยังไม่มีรายชื่อ</td></tr>'}
       </tbody></table></div>
-      ${can('master')?`<form class="add-row" data-add="staff"><input name="name" id="add-st-name" placeholder="ชื่อ-นามสกุล" maxlength="80" required aria-label="ชื่อ"><select name="role" id="add-st-role" aria-label="ตำแหน่ง">${posOpts('')}</select><button class="btn primary" type="submit">เพิ่มคน</button></form>
+      ${can('master')?`<form class="add-row" data-add="staff"><input name="name" id="add-st-name" placeholder="ชื่อ-นามสกุล" maxlength="80" required aria-label="ชื่อ"><select name="team" id="add-st-team" aria-label="ทีม">${teamOpts(S.team)}</select><select name="role" id="add-st-role" aria-label="ตำแหน่ง">${posOpts('')}</select><button class="btn primary" type="submit">เพิ่มคน</button></form>
       <details class="bulk"><summary>เพิ่มหลายคนพร้อมกัน (วางจาก Excel)</summary><form data-bulk>
-        <p class="hint" style="margin:0">หนึ่งคนต่อหนึ่งบรรทัด เรียงคอลัมน์ ชื่อ · ตำแหน่ง คัดลอกจาก Excel มาวางได้เลย ระบบจะข้ามชื่อที่มีอยู่แล้ว</p>
-        <textarea name="rows" id="bulk-rows" rows="6" placeholder="สมชาย ใจดี&#9;Engineer&#10;สมหญิง รักงาน&#9;Technician"></textarea>
+        <p class="hint" style="margin:0">หนึ่งคนต่อหนึ่งบรรทัด เรียงคอลัมน์ ชื่อ · ตำแหน่ง · ทีม (Lab On-Site หรือ Lab ไม่ใส่ก็ได้) คัดลอกจาก Excel มาวางได้เลย ระบบจะข้ามชื่อที่มีอยู่แล้ว</p>
+        <textarea name="rows" id="bulk-rows" rows="6" placeholder="สมชาย ใจดี&#9;Engineer&#9;Lab On-Site&#10;สมหญิง รักงาน&#9;Technician&#9;Lab"></textarea>
         <div><button class="btn primary" type="submit">เพิ่มทั้งหมด</button></div></form></details>`:''}`},
     {id:'vehicle',title:'รถ',sub:'ประเภทรถ · ชื่อรถ / ทะเบียน',count:vs.length,
      desc:'รถที่ใช้เลือกในช่อง รถ / Car ของแผนงาน จัดกลุ่มตามประเภทรถ (เช่น MOBILE CRANE, HIAB เช่าเพิ่ม, รถกระบะ) ระบบเตือนเมื่อรถคันเดียวกันถูกใช้ 2 งานในช่วงเวลาที่ทับกัน รถที่พิมพ์ใหม่ในแผนเพิ่มเข้ามาที่นี่ได้ด้วยปุ่ม "+ เพิ่ม … เข้าข้อมูลรถ"',

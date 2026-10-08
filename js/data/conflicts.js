@@ -5,13 +5,18 @@ const staffById=id=>S.staff.find(s=>s.id===id);
 const staffName=id=>(staffById(id)||{}).name||'(ไม่พบรายชื่อ)';
 function visibleStaff(tasks){
   const used=new Set(tasks.flatMap(t=>t.staffIds||[]));
-  return S.staff.filter(s=>s.active!==false||used.has(s.id)).sort(sortPeople);
+  return S.staff.filter(s=>(s.active!==false||used.has(s.id))&&inTeam(s)).sort(sortPeople);/* the open ทีม only */
 }
 const teamNames=t=>[...(t.staffIds||[]).map(staffName),...(t.guests||[]).map(g=>g+' (แผนกอื่น)')];
-/* people are grouped by ตำแหน่ง (role) in the order of the positions list; the old staff "team" field is no longer used (2026-10-05) */
+/* people are grouped by ทีม (user, 8 Oct 2026; once anyone has one, and no team filter is on) then ตำแหน่ง (role) in the order of
+   the positions list: group key "Lab On-Site · Engineer". (The old free-text staff "team" was dropped 5 Oct 2026; ทีม is TEAMS.) */
 const roleOf=s=>String((s&&s.role)||'').trim()||'ไม่ระบุตำแหน่ง';
 const roleRank=s=>(positions().indexOf(roleOf(s))+1)||999;
-function roleGroups(list){const m=new Map();[...list].sort((a,b)=>roleRank(a)-roleRank(b)||sortPeople(a,b)).forEach(s=>{const k=roleOf(s);if(!m.has(k))m.set(k,[]);m.get(k).push(s)});return m}
+const teamsUsed=()=>S.staff.some(s=>teamOf(s));
+const teamRank=s=>{const i=TEAMS.findIndex(t=>t.id===teamOf(s));return i<0?TEAMS.length:i};
+const groupKey=(s,split)=>(split??(teamsUsed()&&!S.team))?`${teamName(teamOf(s))} · ${roleOf(s)}`:roleOf(s);
+const roleOfKey=k=>String(k).split(' · ').pop();
+function roleGroups(list){const m=new Map();const split=teamsUsed()&&!S.team;[...list].sort((a,b)=>(split?teamRank(a)-teamRank(b):0)||roleRank(a)-roleRank(b)||sortPeople(a,b)).forEach(s=>{const k=groupKey(s,split);if(!m.has(k))m.set(k,[]);m.get(k).push(s)});return m}
 
 /* "ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน" (BU2 Booking.allowSharedTeam): the same people may work two plans on the same day and
    period without a clash when BOTH plans have it on and are in the same area — the Safety area when both have one, otherwise

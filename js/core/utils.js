@@ -34,9 +34,19 @@ function typeLabel(t){const ty=typeOf(t);if(ty.id==='other')return String(t.jobT
 const isLeave=t=>typeIdOf(t)==='leave';
 /* สายงาน of a plan: its own, else its job type's; '' = not set (leave never has one) */
 const lineOf=t=>isLeave(t)?'':LINE[t.line]?t.line:LINE[typeOf(t).line]?typeOf(t).line:'';
-/* the open tab (S.line) shows its own plans, plans without a line, and leave (people are shared) */
-const lineMatch=t=>!S.line||!lineOf(t)||lineOf(t)===S.line;
+/* ทีม of a person ('' = not set) and the team filter (S.team): a plan shows when one of its people is in the open team;
+   a work plan nobody is on yet shows in every team (it still needs people) */
+const teamOf=s=>s&&TEAM[s.team]?s.team:'';
+const teamName=id=>TEAM[id]?TEAM[id].name:NO_TEAM;
+const inTeam=s=>!S.team||teamOf(s)===S.team;
+const teamMatch=t=>{if(!S.team)return true;const ids=t.staffIds||[];if(!ids.length)return !isLeave(t);return ids.some(id=>teamOf(S.staff.find(s=>s.id===id))===S.team)};
+/* the open tab (S.line) shows its own plans, plans without a line, and leave (people are shared); then the team filter */
+const lineMatch=t=>(!S.line||!lineOf(t)||lineOf(t)===S.line)&&teamMatch(t);
 const lineName=()=>S.line&&LINE[S.line]?LINE[S.line].name:'';
+/* the open สายงาน and ทีม for titles: "Flow Meter · Lab On-Site" */
+const scopeName=()=>[lineName(),S.team?teamName(S.team):''].filter(Boolean).join(' · ');
+/* people grouped by team (fixed order, then "ยังไม่ระบุทีม"); only the open team when the filter is on */
+const teamGroups=list=>TEAMS.map(t=>t.id).concat(['']).filter(id=>!S.team||id===S.team).map(id=>({id,name:teamName(id),team:TEAM[id]||null,people:list.filter(s=>teamOf(s)===id)})).filter(g=>g.people.length);
 function periodOf(t){
   if(PERIOD[t.period])return t.period;
   if(t.start&&t.end){const a=toMin(t.start)<720,b=toMin(t.end)>780;return a&&b?'full':a?'am':'pm'}

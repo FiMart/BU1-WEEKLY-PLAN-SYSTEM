@@ -113,7 +113,7 @@ function supabaseBackend(client,{dept}){
     return {id:LEAVE_PREFIX+r.id,date:weekDate(d.week||r.week,d.day),period:x.period||'full',jobType:'leave',
       staffIds:d.personId?[d.personId]:[],detail:x.detail!=null?x.detail:d.kind||'ลา',status:x.status||'planned',statusNote:x.statusNote||'',history:asList(x.history),
       createdBy:x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,src:'leaves'}};
-  const staffOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:d.name||r.id,role:d.position||'',order:x.order??i,active:!d.archived}};
+  const staffOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:d.name||r.id,role:d.position||'',team:x.team||'',order:x.order??i,active:!d.archived}};/* ทีม: this app's own field */
   const resourceOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:craneName(d)||r.id,code:d.plate?d.name||'':'',group:d.type||'',vendor:d.vendor||'',
     kind:'vehicle',order:x.order??i,active:!d.archived}};
 
@@ -242,7 +242,7 @@ function supabaseBackend(client,{dept}){
   async function writePeople(rows){
     const old=await byIds('people',rows.map(r=>String(r.id)));
     await put('people',rows.map(s=>{const id=String(s.id);const d=Object.assign({},(old.get(id)||{}).data||{});
-      Object.assign(d,{id,name:s.name||'',position:s.role||d.position||'',archived:s.active===false,bu1wp:stripped(Object.assign({},d.bu1wp||{},{order:s.order,sample:s.sample||undefined}))});
+      Object.assign(d,{id,name:s.name||'',position:s.role||d.position||'',archived:s.active===false,bu1wp:stripped(Object.assign({},d.bu1wp||{},{order:s.order,team:s.team||undefined,sample:s.sample||undefined}))});
       return {id,dept_id:dept,data:d}}));
   }
   async function writeCranes(rows){

@@ -170,12 +170,19 @@ function lineTabs(counts,note){
         <span class="lt-bar" title="เสร็จ ${c.done} จาก ${c.n} แผน"><i style="width:${c.n?Math.round(c.done/c.n*100):0}%"></i></span>`:''}</span>
       ${c?`<b class="lt-n">${c.n}</b>`:''}</button>`}).join('')}</div>${note?`<p class="lt-note">${note}</p>`:''}`;
 }
-/* the สายงาน switch sits above the filters on Weekly Plan (with the week's counts), Dashboard and Booking */
+/* ทีม switch (user, 8 Oct 2026): ทุกทีม · Lab On-Site · Lab, with the number of active people in each */
+function teamTabs(){
+  const n=id=>S.staff.filter(s=>s.active!==false&&(!id||teamOf(s)===id)).length;
+  return `<div class="team-tabs" role="tablist" aria-label="ทีม"><span class="tt-k">ทีม</span>${[{id:'',name:'ทุกทีม',color:'var(--accent)'}].concat(TEAMS).map(t=>{const on=S.team===t.id;
+    return `<button type="button" role="tab" class="tt${on?' on':''}" data-team-tab="${t.id}" aria-selected="${on}" style="--tc:${t.color}"><i aria-hidden="true"></i>${esc(t.name)}<b>${n(t.id)}</b></button>`}).join('')}</div>`;
+}
+/* the สายงาน switch sits above the filters on Weekly Plan (with the week's counts), Dashboard and Booking; the ทีม switch with it
+   (and alone on สรุปรายคน) */
 let lineBarHtml='';
 function renderLineBar(){
-  const el=$('#lineBar');const show=['plan','dash','booking'].includes(S.view)&&S.mode!=='connecting';el.hidden=!show;
-  const html=!show?'':S.view==='plan'?(notReady()?lineTabs(null):lineTabs(lineCounts(S.tasks.filter(isWorking)))):
-    lineTabs(null,S.view==='dash'&&S.line?'คนที่ว่างและการจัดชนยังนับรวมทั้งสองสาย เพราะใช้ทีมเดียวกัน':'');
+  const el=$('#lineBar');const show=['plan','dash','booking','people'].includes(S.view)&&S.mode!=='connecting';el.hidden=!show;
+  const html=!show?'':S.view==='people'?teamTabs():(S.view==='plan'?(notReady()?lineTabs(null):lineTabs(lineCounts(S.tasks.filter(t=>isWorking(t)&&teamMatch(t))))):
+    lineTabs(null,S.view==='dash'&&S.line?'คนที่ว่างและการจัดชนยังนับรวมทั้งสองสาย เพราะใช้ทีมเดียวกัน':''))+teamTabs();
   if(html!==lineBarHtml){el.innerHTML=html;lineBarHtml=html}
 }
 /* on a card: the line tag in "ทั้งหมด"; "ไม่ระบุสาย" on a line tab when the plan has none */

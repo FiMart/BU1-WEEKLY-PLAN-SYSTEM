@@ -1,0 +1,107 @@
+/* BU1 Weekly Plan · compact layout for planners (user, 8 Oct 2026: "ดูง่ายและกระชับ ต่อ Planner ที่ต้องดูแผนงาน")
+   Loaded last. Less chrome above the board, smaller page head, สายงาน + ทีม on one row, denser plan cards,
+   so the week board starts near the top of the screen. Colours and the rest of the look stay. */
+
+/* ---------- page frame (every page) ---------- */
+.app{gap:10px;padding-block:14px 40px}
+@media (min-width:761px){.app{padding-inline:20px}}
+.page-head{align-items:center;gap:6px 14px}
+.crumb{display:none}
+.page-head h2{font-size:22px;line-height:1.25;margin-top:0}
+.page-head p{margin-top:1px;font-size:12.5px;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.ph-actions{gap:6px}
+.ph-actions .btn,.ph-actions .menu>summary.btn{min-height:34px;padding:0 12px;font-size:13px;border-radius:9px;box-shadow:none}
+.ph-actions .btn svg{width:15px;height:15px}
+.gchips{margin-top:8px;gap:6px}
+.gchips .gchip{padding:3px 10px 3px 9px;font-size:12.5px;box-shadow:none}
+.banner{padding:7px 12px;font-size:12.5px;border-radius:10px}
+.planbar{gap:6px 10px}
+.planbar input[type=search],.planbar select{min-height:34px;font-size:13px}
+.planbar .seg label span{padding-block:5px;font-size:12.5px}
+
+/* ---------- สายงาน + ทีม: one compact row ---------- */
+#lineBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0}
+#lineBar .line-tabs{flex:1 1 560px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#lineBar .lt,#lineBar .line-tabs.slim .lt{min-height:0;padding:7px 12px;gap:10px;border-radius:12px;box-shadow:none}
+#lineBar .lt:hover{transform:none}
+#lineBar .lt-wm,#lineBar .lt-desc{display:none}
+#lineBar .lt-ico,#lineBar .line-tabs.slim .lt-ico{width:30px;height:30px;border-radius:9px;box-shadow:none}
+#lineBar .lt-ico svg,#lineBar .line-tabs.slim .lt-ico svg{width:17px;height:17px}
+#lineBar .lt-body{gap:1px}
+#lineBar .lt-name{font-size:14px}
+#lineBar .lt-chip{font-size:10px;padding:0 6px}
+#lineBar .lt-meta{margin-top:1px;gap:2px 10px;font-size:11.5px}
+#lineBar .lt-meta b{font-size:12px}
+#lineBar .lt-bar{height:3px;margin-top:3px}
+#lineBar .lt-n{min-width:0;font-size:20px}
+#lineBar .lt.on{box-shadow:0 4px 12px color-mix(in srgb,var(--lc) 30%,transparent)}
+#lineBar .lt.on::after{display:none}
+#lineBar .lt-note{flex-basis:100%;margin:0}
+#lineBar .team-tabs{margin:0;flex:0 1 auto}
+@media (max-width:760px){
+  #lineBar{gap:6px}
+  #lineBar .line-tabs{flex-basis:100%;gap:6px}
+  #lineBar .lt{flex-direction:row;justify-content:center;gap:6px;padding:7px 6px;border-radius:11px}
+  #lineBar .lt-ico{width:24px;height:24px;border-radius:7px}#lineBar .lt-ico svg{width:14px;height:14px}
+  #lineBar .lt-body{width:auto}#lineBar .lt-name{font-size:12.5px}
+  #lineBar .lt-meta,#lineBar .lt-bar{display:none}
+  #lineBar .team-tabs{flex-basis:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  #lineBar .team-tabs .tt-k{display:none}
+  #lineBar .team-tabs .tt{justify-content:center;min-height:32px;padding:4px 6px;font-size:12px;white-space:nowrap}
+}
+
+/* ---------- Weekly Plan board ---------- */
+.wp-panel{border-radius:14px;box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.wp-head{padding:8px 14px;gap:8px 14px}
+.wp-head::after{height:1px}
+.wp-brand{font-size:11px}
+.wp-wk b{font-size:17px}
+.wp-wk span{font-size:11.5px}
+.wp-nav .icon-btn{width:32px;height:32px;min-height:32px}
+.wp-legend span{padding:2px 9px;font-size:12px}
+.wp col.c-g{width:118px}
+.wp thead th{padding:6px 6px 6px}
+.wp thead th b{font-size:12px}
+.wp thead th span{margin-top:1px;font-size:11.5px}
+.wp thead th .cap{margin-top:3px}
+.wp thead th .dfree{display:inline-block;margin:3px 0 0 4px;font-size:11px;padding:0 7px;vertical-align:top}
+.wp thead th .hol{margin-top:2px;font-size:10.5px}
+.wp tbody th.gh{padding:10px 8px 10px 14px}
+.wp tbody th.gh::before{top:8px;bottom:8px}
+.gh-name{font-size:13px}
+.gh-sub{margin-top:4px;font-size:11px;padding:0 7px}
+.wp td{padding:5px}
+.wcell{gap:5px;min-height:64px}
+.wadd{padding:3px;font-size:12px}
+
+/* plan card: title, period · type, customer · location, one line of detail, chips, people */
+.wc{padding:6px 8px 7px;gap:2px;border-radius:9px;border-left-width:3px}
+.wc:hover{transform:translateY(-1px);box-shadow:0 4px 12px color-mix(in srgb,var(--c) 18%,transparent)}
+.wc-top{gap:4px}
+.wc-title{font-size:12.5px}
+.wc-per{font-size:10px;padding:0 6px;margin-right:3px;line-height:1.6}
+.wc-sub{font-size:11.5px;line-height:1.35}
+.wc-where{display:block;font-size:12px;color:var(--ink-2);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-where b{color:var(--ink);font-weight:600}
+.wc-det{font-size:11.5px;font-weight:500;color:var(--ink-2);-webkit-line-clamp:1;line-clamp:1}
+.wc-chips,.wc-pp{gap:3px;margin-top:1px}
+.wc-pp .pp{font-size:11px;padding:0 6px;line-height:1.6}
+.wc-chips .tchip,.wc .pcount{font-size:10.5px}
+.wc .chip-flag{margin-top:1px;font-size:11px;padding:1px 6px}
+.wc-dot{width:8px;height:8px}
+
+/* Dashboard: smaller report header and KPI tiles */
+.rpt-hd{padding:12px 16px;gap:8px 16px}
+.rpt-hd h2{font-size:19px}
+.tile{padding:12px 14px}
+.tile .val{font-size:26px}
+.panel>header{padding-bottom:6px}
+
+/* below the board */
+.avp-top{padding-block:8px}
+.avp-top h2{font-size:15px}
+.avp-top p{font-size:12px}
+
+/* daily view (tablet / phone) */
+.pd-grp h3{font-size:13.5px}
+.pd-cards{gap:6px}

@@ -44,3 +44,23 @@
 .sb-nav .nav-ext span{display:inline-flex;align-items:center;gap:7px}
 .sb-nav .nav-ext svg.ext{width:13px;height:13px;opacity:.55}
 .sb-nav .nav-ext:hover svg.ext{opacity:.9}
+
+/* ทีม (Lab On-Site · Lab): the switch under the สายงาน tabs, picker headers, settings rows */
+.team-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+.team-tabs .tt-k{font-size:12.5px;font-weight:700;color:var(--muted);margin-right:2px}
+.team-tabs .tt{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font:600 13px/1.2 var(--f-body);cursor:pointer;transition:border-color .15s,background .15s,transform .12s var(--ease)}
+.team-tabs .tt i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--tc)}
+.team-tabs .tt b{font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--surface-2,var(--line));color:var(--muted)}
+.team-tabs .tt:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--line))}
+.team-tabs .tt:active{transform:scale(.97)}
+.team-tabs .tt.on{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 12%,var(--surface));color:var(--ink);box-shadow:0 0 0 1px var(--tc)}
+.team-tabs .tt.on b{background:var(--tc);color:#fff}
+#lineBar>.team-tabs:first-child{margin-top:0}
+.tp-team{display:flex;align-items:center;gap:8px;margin:10px 0 2px;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--tc) 12%,var(--surface));border-left:4px solid var(--tc)}
+.tp-team:first-child{margin-top:0}
+.tp-team i{display:none}
+.edit-table tr.team-break td{border-top:2px solid var(--line)}
+.team-sel.t-onsite{border-color:color-mix(in srgb,#d9761c 55%,var(--line));background:color-mix(in srgb,#d9761c 8%,var(--surface))}
+.team-sel.t-lab{border-color:color-mix(in srgb,#2a78d6 55%,var(--line));background:color-mix(in srgb,#2a78d6 8%,var(--surface))}
+.dl-teams .dl-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8}
+@media (prefers-reduced-motion:reduce){.team-tabs .tt{transition:none}.team-tabs .tt:active{transform:none}}

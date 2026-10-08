@@ -32,7 +32,7 @@ function cardText(t){
 function dayText(k){
   const d=parseD(k);const list=S.tasks.filter(t=>t.date===k&&isWorking(t)&&lineMatch(t)).sort(byTime);
   const jobs=list.filter(t=>!isLeave(t));const lv=list.filter(isLeave);
-  const out=[`📅 แผนงาน BU1 Lab${S.line?' · '+lineName():''}`,`วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} · ${jobs.length} งาน`];
+  const out=[`📅 แผนงาน BU1 Lab${scopeName()?' · '+scopeName():''}`,`วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} · ${jobs.length} งาน`];
   jobs.forEach((t,i)=>{
     out.push('',`${i+1}) ${LINE_PERIOD[periodOf(t)]||pName(t)} · ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}${!S.line&&lineOf(t)?` [${LINE[lineOf(t)].short}]`:''}`);
     out.push(...jobLines(t,false));
@@ -47,7 +47,7 @@ function copyText(txt,msg){
 }
 $('#copyMenu').addEventListener('toggle',e=>{
   if(!e.target.open)return;const days=Array.from({length:7},(_,i)=>addDays(S.week,i));
-  $('#copyPop').innerHTML=`<p>เลือกวัน แล้ววางข้อความใน LINE${S.line?` · เฉพาะ ${esc(lineName())}`:''}</p>`+days.map(d=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k&&isWorking(t)&&!isLeave(t)&&lineMatch(t)).length;
+  $('#copyPop').innerHTML=`<p>เลือกวัน แล้ววางข้อความใน LINE${scopeName()?` · เฉพาะ ${esc(scopeName())}`:''}</p>`+days.map(d=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k&&isWorking(t)&&!isLeave(t)&&lineMatch(t)).length;
     return `<button type="button" data-action="copy-day" data-date="${k}">${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}<span>${n} งาน</span></button>`}).join('');
 });
 function loadLib(src,glob){

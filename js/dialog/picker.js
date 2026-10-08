@@ -52,9 +52,12 @@ function renderPickerList(){
   const cardOk=id=>{const s=personCardStatus(SAFE,id,area);return !!s&&(s.k==='ok'||s.k==='warn')};
   const people=pickPeople().filter(s=>!cardOnly||pickSel.has(s.id)||cardOk(s.id));
   let html='';
-  for(const {key:team,list:members,color} of posGroups(people)){
+  /* ทีม first (the open team on top; every team stays pickable), then ตำแหน่ง inside it; no team headers until teams are set */
+  const useTeams=S.staff.some(s=>teamOf(s));const tOrder=useTeams?TEAMS.map(t=>t.id).concat(['']).sort((a,b)=>(b===S.team)-(a===S.team)):[null];
+  for(const tid of tOrder){const inT=tid==null?people:people.filter(s=>teamOf(s)===tid);if(!inT.length)continue;const at=html.length;
+  for(const {key:team,list:members,color} of posGroups(inT)){
     const rows=members.map(s=>{const a=availOf(s.id);const un=!!a&&(a.cls==='busy'||a.cls==='leave');return {s,a,un,lock:un&&!allowBusy&&!pickSel.has(s.id)}})
-      .filter(({s,un})=>(!q||norm([s.name,s.role].join(' ')).includes(q))&&(!freeOnly||pickSel.has(s.id)||!un))
+      .filter(({s,un})=>(!q||norm([s.name,s.role,teamOf(s)?teamName(teamOf(s)):''].join(' ')).includes(q))&&(!freeOnly||pickSel.has(s.id)||!un))
       .sort((x,y)=>x.un-y.un);
     if(!rows.length)continue;
     const pickable=rows.filter(r=>!r.lock);const nUn=rows.filter(r=>r.un).length;
@@ -63,6 +66,8 @@ function renderPickerList(){
     html+=rows.map(({s,a,un,lock})=>{const on=pickSel.has(s.id);
       const tip=[s.name,s.role].filter(Boolean).join(' · ')+(un?` · ไม่ว่าง: ${a.txt}`:'');
       return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b>${un?`<small class="why">${esc(a.txt)}</small>`:a&&a.cls==='part'?`<small>${esc(a.txt)}</small>`:''}${cardBadge(formCard(s.id))}</span></label>`}).join('');
+  }
+  if(tid!=null&&html.length>at)html=html.slice(0,at)+`<div class="tp-team" style="--tc:${TEAM[tid]?TEAM[tid].color:'#8a979c'}"><i aria-hidden="true"></i>${esc(teamName(tid))}</div>`+html.slice(at);
   }
   const top=list.scrollTop;
   list.innerHTML=html||`<div class="tp-empty">${cardOnly&&!people.length?'ยังไม่มีใครมีบัตรพื้นที่นี้ (หรือยังไม่ได้จับคู่พนักงานกับ HR)':people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'}</div>`;

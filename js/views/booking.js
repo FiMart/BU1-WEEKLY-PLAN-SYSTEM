@@ -59,7 +59,7 @@ function fillBooking(){
       <td class="booker" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
       <td><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
     ||`<tr><td colspan="9" class="hint" style="padding:20px 12px">ไม่พบงานที่ตรงกับตัวกรอง</td></tr>`;
-  $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)&&lineMatch(t)).length.toLocaleString('th-TH')} แผน${S.line?` ${lineName()}`:''}ในระบบ · กดแถวเพื่อเปิดแผน`;
+  $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)&&lineMatch(t)).length.toLocaleString('th-TH')} แผน${scopeName()?` ${scopeName()}`:''}ในระบบ · กดแถวเพื่อเปิดแผน`;
 }
 document.addEventListener('input',e=>{if(e.target.id==='bk-q'){S.bk.q=e.target.value;fillBooking()}});
 document.addEventListener('change',e=>{const t=e.target;

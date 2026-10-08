@@ -81,6 +81,13 @@ function dashCompute(){
       md:lj.reduce((a,t)=>a+((t.staffIds||[]).length+(t.guests||[]).length)*(periodOf(t)==='full'?1:.5),0),cust:new Set(lj.map(custKeyOf)).size,
       share:pct(lj.length,totalJ)}});
   const noLineN=jobs.filter(t=>!lineOf(t)).length;
+  /* ทีม (user, 8 Oct 2026): plans with someone of the team on them, completion, and the team's own man-days */
+  const tOf=id=>teamOf(S.staff.find(s=>s.id===id));
+  const teamRows=TEAMS.map(tm=>{const tj=jobs.filter(t=>(t.staffIds||[]).some(id=>tOf(id)===tm.id));const td=tj.filter(t=>t.date<=today);
+    return {tm,n:tj.length,done:tj.filter(t=>t.status==='done').length,doneRate:td.length?pct(td.filter(t=>t.status==='done').length,td.length):null,
+      md:tj.reduce((a,t)=>a+(t.staffIds||[]).filter(id=>tOf(id)===tm.id).length*(periodOf(t)==='full'?1:.5),0),
+      people:S.staff.filter(s=>s.active!==false&&teamOf(s)===tm.id).length,share:pct(tj.length,totalJ)}});
+  const noTeamN=jobs.filter(t=>!(t.staffIds||[]).some(id=>tOf(id))).length;
   const calR=calWeekRows(jobs);const cal=calStats(calR.map(r=>r.x));const judged=cal.pass+cal.fail;const passRate=judged?pct(cal.pass,judged):null;
   const countBy=f=>{const m=new Map();calR.forEach(r=>{const k=String(f(r)||'').trim()||'(ไม่ระบุ)';m.set(k,(m.get(k)||0)+1)});return [...m].sort((a,b)=>b[1]-a[1])};
   const calTypes=countBy(r=>r.x.type),calLabs=countBy(r=>r.x.lab),calSizes=countBy(r=>r.x.size),calCust=countBy(r=>r.t.customer),
@@ -160,7 +167,7 @@ function dashCompute(){
 
   return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,docN,ncrIn,ncrOpen,ncrLate,
     people,manDays,capDays,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
-    pairs,follow,buckets,heat,kpis,findings,custKeyOf,lineRows,noLineN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
+    pairs,follow,buckets,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
 }
 
 function renderDash(){
@@ -174,7 +181,7 @@ function renderDash(){
   const sec=(n,th,en,id)=>`<h3 class="dsec"${id?` id="${id}"`:''}><span>${n}</span>${th}<small>${en}</small></h3>`;
 
   /* ---- report header ---- */
-  h+=`<div class="sum"><header class="rpt-hd span-12"><div><p class="rpt-org">${DASH_ORG}</p><h2>รายงานผลการปฏิบัติงาน${S.line?' · '+esc(lineName()):''} · ${esc(P.label)}</h2>
+  h+=`<div class="sum"><header class="rpt-hd span-12"><div><p class="rpt-org">${DASH_ORG}</p><h2>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h2>
       <p class="rpt-meta">ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))} · เปรียบเทียบกับ${esc(P.pLabel)} · ข้อมูล ณ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>
     ${downloads?`<div class="rpt-actions"><button type="button" class="btn" data-action="dash-print" title="ดาวน์โหลดรายงาน A4 สำหรับพิมพ์หรือบันทึกเป็น PDF">${PRINT_ICON} พิมพ์รายงาน / PDF</button><button type="button" class="btn" data-action="dash-xlsx" title="ดาวน์โหลดตัวเลขทุกตารางเป็นไฟล์ Excel">Excel รายงาน</button></div>`:''}</header>`;
 
@@ -200,6 +207,12 @@ function renderDash(){
       <div class="dl-split" role="img" aria-label="${esc(R.map(r=>`${r.l.name} ${r.n} แผน`).join(', '))}">${R.filter(r=>r.n).map(r=>`<span style="flex:${r.n};background:${r.l.color}" data-tip="${esc(r.l.name)} ${r.n} แผน (${pct(r.n,tot)}%)"></span>`).join('')}${D.noLineN?`<span style="flex:${D.noLineN};background:var(--line)" data-tip="ยังไม่ระบุสาย ${D.noLineN} แผน"></span>`:''}</div>
       <div class="dl-cards">${R.map(r=>`<button type="button" class="dl-card" data-line-tab="${r.l.id}" style="--lc:${r.l.color}"><span class="dl-ico">${r.l.icon}</span><span class="dl-b"><b>${esc(r.l.name)}</b>
         <span class="dl-k"><span><em>${num(r.n)}</em>แผน · ${r.share}%</span><span><em>${r.doneRate==null?'–':r.doneRate+'%'}</em>ปิดงาน</span><span><em>${f1(r.md)}</em>คน-วัน</span><span><em>${r.cust}</em>ลูกค้า</span></span>
+        <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}
+  /* ทีม side by side (ทุกทีม, once anyone has a team); a card opens that team */
+  if(!S.team&&teamsUsed()){const R=D.teamRows;
+    h+=`<section class="panel span-12 dl-lines dl-teams" style="--d:2"><header><h2>แยกตามทีม</h2><p>แผนที่มีคนของทีมนั้น (แผนเดียวอาจมีทั้งสองทีม) · คน-วัน นับเฉพาะคนของทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด${D.noTeamN?` · แผนที่ยังไม่มีคนของทีมใด ${D.noTeamN} แผน`:''}</p></header>
+      <div class="dl-cards">${R.map(r=>`<button type="button" class="dl-card" data-team-tab="${r.tm.id}" style="--lc:${r.tm.color}"><span class="dl-ico">${PERSON_ICON}</span><span class="dl-b"><b>${esc(r.tm.name)}</b>
+        <span class="dl-k"><span><em>${num(r.n)}</em>แผน</span><span><em>${r.doneRate==null?'–':r.doneRate+'%'}</em>ปิดงาน</span><span><em>${f1(r.md)}</em>คน-วัน</span><span><em>${r.people}</em>คน</span></span>
         <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}
   if(S.line!=='ins'&&(D.cal.n||S.line==='fm')){const C=D.cal;const toB=l=>l.slice(0,8).map(([k,n])=>({label:k,n,extra:pct(n,C.n)+'%'}));
     h+=`<section class="panel span-12 dl-cal" style="--d:3"><header><h2>${CAL_ICON} Flow Meter · Weekly plan calibration</h2><p>เครื่องที่สอบเทียบในช่วงนี้จากแผนงาน (ไม่รวมแผนที่ยกเลิก) · Status: ADD เลื่อน ยกเลิก Problem · PASS / FAIL ตามที่ Lab บันทึก</p></header>
@@ -320,6 +333,8 @@ function dashRows(D){
     follow:{sheet:'ติดตาม',title:'งานที่ต้องติดตาม',head:['วันที่','หัวข้องาน','Plan No.','ลูกค้า','สถานะ','เหตุผล / สิ่งที่ต้องทำ','ทีม'],rows:D.follow.map(t=>[fmtDay(t.date),typeLabel(t),t.planNo||'',t.customer||'',followStat(t),followWhy(t),teamNames(t).join(', ')])},
     lines:{sheet:'สายงาน',title:'แยกตามสายงาน',head:['สายงาน','แผน','%','เสร็จ','ปิดงาน (%)','คน-วัน','ลูกค้า (ราย)'],num:[1,2,3,4,5,6],
       rows:D.lineRows.map(r=>[r.l.name,r.n,r.share,r.done,r.doneRate==null?'–':r.doneRate,Math.round(r.md*10)/10,r.cust]).concat(D.noLineN?[['ยังไม่ระบุสาย',D.noLineN,pct(D.noLineN,D.totalJ),'','','','']]:[])},
+    teams:{sheet:'ทีม',title:'แยกตามทีม',head:['ทีม','แผน','%','เสร็จ','ปิดงาน (%)','คน-วัน','คน'],num:[1,2,3,4,5,6],
+      rows:D.teamRows.map(r=>[r.tm.name,r.n,r.share,r.done,r.doneRate==null?'–':r.doneRate,Math.round(r.md*10)/10,r.people]).concat(D.noTeamN?[['ยังไม่มีคนของทีมใด',D.noTeamN,pct(D.noTeamN,D.totalJ),'','','','']]:[])},
     cal:{sheet:'Weekly plan calibration',title:'Weekly plan calibration (Flow Meter)',head:CAL_HEAD,num:[1],rows:D.calR.map(calRowCells)},
     ins:{sheet:'Weekly plan instrument',title:'Weekly plan instrument (Instrument)',head:INS_HEAD,num:[14,15],rows:D.insR.map(insRowCells)},
     insCert:{sheet:'Certificates',title:'Certificates (Instrument)',head:INS_CERT_HEAD,num:[1],rows:D.insR.flatMap(insCertCells)},
@@ -333,6 +348,9 @@ async function dashPrint(){
   const P=D.P;const T=dashRows(D);const now=new Date();
   const tbl=t=>`<h3>${esc(t.title)}</h3>${t.rows.length?`<table class="t"><thead><tr>${t.head.map((x,i)=>`<th${(t.num||[]).includes(i)?' class="n"':''}>${esc(x)}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r=>`<tr>${r.map((v,i)=>`<td${(t.num||[]).includes(i)?' class="n"':''}>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'<p class="e">ไม่มีข้อมูลในช่วงนี้</p>'}`;
   const sec=(n,th,en)=>`<h2><span>${n}</span>${th} <small>${en}</small></h2>`;
+  /* section 8 (user, 8 Oct 2026: "ให้โชว์แผนด้วย"): every plan of the period, columns that fit A4 portrait (Excel keeps the full sheet) */
+  const planList={title:`แผนงานทั้งหมด ${D.all.length} แผน`,head:['วันที่','ช่วง','งาน / Plan No.','ลูกค้า · สถานที่','Team Service','รถ','สถานะ'],
+    rows:D.all.slice().sort(byTime).map(t=>[`${TH_DAY[parseD(t.date).getDay()]} ${fmtShort(parseD(t.date))}`,pName(t),[typeLabel(t),t.planNo].filter(Boolean).join(' · '),[t.customer,t.location].filter(Boolean).join(' · '),teamNames(t).join(', '),transportText(t),statusText(t)])};
   const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>รายงานผลการปฏิบัติงาน ${esc(P.label)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
 <style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:10.5px/1.5 "IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#0b1b33;margin:16px;max-width:190mm}
@@ -347,18 +365,19 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 .sig{display:flex;gap:30px;margin-top:34px;break-inside:avoid}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:34px 10px 4px}
 @media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${S.line?' · '+esc(lineName()):''} · ${esc(P.label)}</h1></div></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h1></div></div>
 <p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml('dash')}
 ${sec(1,'สรุปภาพรวม','Summary')}
 <div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>
 <ul class="f">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul>
-${!S.line?tbl(T.lines):''}${D.calR.length?tbl(Object.assign({},T.cal,{head:T.cal.head.filter((x,i)=>i!==CAL_HEAD.length-1),rows:T.cal.rows.map(r=>r.filter((x,i)=>i!==CAL_HEAD.length-1))})):''}${D.insR.length?tbl(Object.assign({},T.ins,{head:T.ins.head.filter((x,i)=>![7,13].includes(i)),num:[12,13],rows:T.ins.rows.map(r=>r.filter((x,i)=>![7,13].includes(i)))})):''}
+${!S.line?tbl(T.lines):''}${!S.team&&teamsUsed()?tbl(T.teams):''}${D.calR.length?tbl(Object.assign({},T.cal,{head:T.cal.head.filter((x,i)=>i!==CAL_HEAD.length-1),rows:T.cal.rows.map(r=>r.filter((x,i)=>i!==CAL_HEAD.length-1))})):''}${D.insR.length?tbl(Object.assign({},T.ins,{head:T.ins.head.filter((x,i)=>![7,13].includes(i)),num:[12,13],rows:T.ins.rows.map(r=>r.filter((x,i)=>![7,13].includes(i)))})):''}
 ${D.mp?`${sec(2,'แผนเทียบผล · Master Plan','Plan vs Actual')}${tbl(Object.assign({},T.mpTrend,S.line==='fm'?{head:T.mpTrend.head.slice(0,4),num:[1,2,3],rows:T.mpTrend.rows.map(r=>r.slice(0,4))}:S.line==='ins'?{head:[T.mpTrend.head[0],T.mpTrend.head[4]],num:[1],rows:T.mpTrend.rows.map(r=>[r[0],r[4]])}:{}))}<div class="two">${S.line!=='ins'?`<div>${tbl(T.mpCodes)}</div>`:''}${S.line!=='fm'?`<div>${tbl(Object.assign({},T.mpInsLab,{rows:T.mpInsLab.rows.slice(0,25)}))}</div>`:''}</div>`:''}
 ${sec(3,'ผลการดำเนินงาน','Performance')}<div class="two"><div>${tbl(T.trend)}</div><div>${tbl(T.status)}</div></div>
 ${sec(4,'กำลังคน','Manpower')}${tbl(T.role)}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,12),rows:T.person.rows.map(r=>r.slice(0,12))}))}
 ${sec(5,'ลูกค้าและประเภทงาน','Customers & Job Types')}<div class="two"><div>${tbl(T.types)}</div><div>${tbl(Object.assign({},T.cust,{title:T.cust.rows.length>15?'งานตามลูกค้า (15 อันดับแรก)':T.cust.title,rows:T.cust.rows.slice(0,15)}))}</div></div>
 ${sec(6,'ทรัพยากรและผู้ประสานงาน','Resources & Sales')}<div class="two"><div>${tbl(T.veh)}</div><div>${tbl(T.sale)}</div></div>
 ${sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up')}${tbl(Object.assign({},T.ncr,{head:T.ncr.head.filter((x,i)=>![2,7,8].includes(i)),rows:T.ncr.rows.map(r=>r.filter((x,i)=>![2,7,8].includes(i)))}))}${tbl(T.conf)}${tbl(T.follow)}
+${sec(8,'แผนงานในช่วงนี้','Plans')}${tbl(planList)}
 <div class="sig"><div><span></span>ผู้จัดทำ</div><div><span></span>หัวหน้า Lab / ผู้ตรวจสอบ</div><div><span></span>ผู้อนุมัติ</div></div></body></html>`;
   await saveFile(dashFile(P)+'.html',html,'ดาวน์โหลดแล้ว เปิดไฟล์แล้วกด "พิมพ์ / บันทึกเป็น PDF" เลือก A4 แนวตั้ง');
 }
@@ -372,7 +391,7 @@ async function dashXlsx(btn){
     const widths=aoa=>{const w=[];aoa.forEach(r=>r.forEach((v,i)=>{w[i]=Math.max(w[i]||8,Math.min(50,String(v==null?'':v).length+2))}));return w.map(wch=>({wch}))};
     const add=(name,head,body)=>{const ws=X.utils.aoa_to_sheet([title,stamp,isoXlsxRow('dash'),...head,...body]);ws['!cols']=widths([...head,...body]);X.utils.book_append_sheet(wb,ws,name)};
     add('สรุป',[[T.kpi.title],T.kpi.head],[...T.kpi.rows,[],['ประเด็นสำคัญ'],...D.findings.map(f=>['• '+f.s])]);
-    for(const k of ['lines','cal','ins','insCert',...(D.mp?['mpTrend','mpCodes','mpFm','mpIns','mpInsLab']:[]),'trend','status','role','person','types','cust','veh','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
+    for(const k of ['lines','teams','cal','ins','insCert',...(D.mp?['mpTrend','mpCodes','mpFm','mpIns','mpInsLab']:[]),'trend','status','role','person','types','cust','veh','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
     await saveFile(dashFile(P)+'.xlsx',X.write(wb,{type:'array',bookType:'xlsx'}));
   }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
   finally{btn.disabled=false;btn.textContent=old}
