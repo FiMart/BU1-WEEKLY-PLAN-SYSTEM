@@ -39,3 +39,8 @@
 .iso-h{margin:14px 0 6px;font-size:14px}
 .iso-arch{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .iso-arch select{min-width:120px}
+
+/* GA Fleet: link to GA's car app (opens a new tab), sidebar and the phone "เพิ่มเติม" sheet */
+.sb-nav .nav-ext span{display:inline-flex;align-items:center;gap:7px}
+.sb-nav .nav-ext svg.ext{width:13px;height:13px;opacity:.55}
+.sb-nav .nav-ext:hover svg.ext{opacity:.9}

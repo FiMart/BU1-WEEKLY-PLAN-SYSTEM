@@ -30,17 +30,17 @@ function openAccount(){
   /* sign-in details of the central account (Supabase mode) */
   const u=S.backend==='supabase'&&S.auth&&S.auth.user||null;
   const when=v=>{const d=v?new Date(v):null;return d&&!isNaN(d)?`${thDate(ymd(d))} ${pad(d.getHours())}:${pad(d.getMinutes())} น.`:'—'};
-  const login=u?`<div><dt>เข้าสู่ระบบล่าสุด</dt><dd>${esc(when(u.last_sign_in_at))}</dd></div><div><dt>สร้างบัญชีเมื่อ</dt><dd>${esc(when(u.created_at))}</dd></div>
-      <div><dt>ยืนยันอีเมล</dt><dd>${u.email_confirmed_at||u.confirmed_at?'ยืนยันแล้ว':'ยังไม่ยืนยัน'}</dd></div><div><dt>แผนกที่เข้าถึงได้</dt><dd>${esc((S.auth.depts||[DEPT()]).join(', '))}</dd></div>`:'';
+  /* basic view (user, 8 Oct 2026): who, level, department, last sign-in; technical details stay in จัดการข้อมูล › การตั้งค่า */
+  const L=S.backend==='supabase'?levelOf(S.level)||levelOf('viewer'):null;
+  const rows=[
+    myStaff?['ตำแหน่ง',esc(myStaff.role||'—')]:null,
+    ['สิทธิ์',`${esc(r.label)}<small>${esc(L?L.desc:r.desc)}</small>`],
+    u?['แผนก',esc(DEPT())]:['เข้าใช้งานด้วย',esc(accountSource())],/* other departments the account reaches: not shown (user, 8 Oct 2026) */
+    u?['เข้าสู่ระบบล่าสุด',esc(when(u.last_sign_in_at))]:null,
+  ].filter(Boolean);
   $('#acctBody').innerHTML=`
-    <div class="acct-hero"><img src="${esc(av)}" alt=""><div><h2 id="acctTitle">${esc(name)}</h2>${email?`<p>${esc(email)}</p>`:''}<span class="acct-role ${esc(r.level)}">${esc(r.label)}</span></div></div>
-    <dl class="acct-info">
-      ${myStaff?`<div class="wide"><dt>ตำแหน่ง</dt><dd>${esc(myStaff.role||'—')}</dd></div>`:''}
-      <div><dt>เข้าใช้งานด้วย</dt><dd>${esc(accountSource())}</dd></div>
-      <div><dt>ข้อมูลเก็บที่</dt><dd>${esc(accountStore())}</dd></div>
-      ${login}
-      <div class="wide"><dt>สิทธิ์</dt><dd>${esc(r.label)}${r.desc?`<small>${esc(r.desc)}</small>`:''}</dd></div>
-    </dl>
+    <div class="acct-basic"><img src="${esc(av)}" alt=""><div><h2 id="acctTitle">${esc(name)}</h2>${email&&norm(email)!==norm(name)?`<p>${esc(email)}</p>`:''}<span class="acct-role ${esc(r.level)}">${esc(r.label)}</span></div></div>
+    <dl class="acct-rows">${rows.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>
     <p class="acct-more"><button type="button" class="lnk" data-action="goto-prefs">ไปที่การตั้งค่า</button></p>`;
   $('#acctLogout').hidden=S.backend!=='supabase';
   $('#acctNote').textContent=S.mode==='live'&&S.backend!=='supabase'?'ชื่อและรูปมาจากบัญชี claude.ai':'';

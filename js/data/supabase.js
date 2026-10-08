@@ -189,6 +189,8 @@ async function afterLogin(user){
   db=supaDb(backend);users=supaUsers();downloads=browserDownloads;S.mode='live';
   document.body.classList.add('central');/* photos, files and projects have no central storage yet (closed until BU2 adds it) */
   if(S.view==='projects')S.view='plan';
+  document.body.classList.toggle('no-safety',!safetyOk());/* Viewer: no Safety Training page (user, 8 Oct 2026) */
+  if(S.view==='safety'&&!safetyOk())S.view='plan';
   $('#btnLogout').hidden=false;
   showMe();wireData();loadSafety(true);/* Safety cards for the team picker (read only, never blocks planning) */
   if(typeof sfOnline==='function')sfOnline();/* the Safety pages: drop errors from before the login and read again */

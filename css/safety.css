@@ -1,5 +1,5 @@
 /* BU1 Weekly Plan · Safety Training pages and forms (js/views/safety-pages.js, js/features/safety-forms.js) */
-body:not(.central) [data-view="safety"]{display:none!important}
+body:not(.central) [data-view="safety"],body.no-safety [data-view="safety"]{display:none!important}/* no-safety = level ดูอย่างเดียว (Viewer) */
 #sfBody,.sf-top{min-width:0;max-width:100%}/* grid children: never let a no-wrap row widen the page */
 .sf-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .sf-top .grow{flex:1}

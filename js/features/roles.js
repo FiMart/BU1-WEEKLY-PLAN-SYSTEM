@@ -22,6 +22,8 @@ function applyLevel(level){
 }
 /* can('master') etc.: edit-type permissions also need S.canWrite, which turns off when the database refuses a write */
 const can=k=>S.backend==='supabase'&&isReadOnly()?false:k==='ga'?!!S.perm.ga&&(S.canWrite||S.backend==='supabase'):S.canWrite&&!!S.perm[k];
+/* Safety Training page: every level except ดูอย่างเดียว (user, 8 Oct 2026); the plan's area-card badges stay */
+const safetyOk=()=>!(S.backend==='supabase'&&S.level==='viewer');
 const levelLabel=id=>{const L=levelOf(id);return L?`${L.th} (${L.en})`:String(id||'—')};
 
 /* signed-in person's level for this department (RLS returns only their own rows) and HR flag */
