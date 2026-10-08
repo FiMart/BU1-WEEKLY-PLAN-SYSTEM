@@ -210,7 +210,7 @@ async function mpExportXlsx(btn){
     const blank=k=>Array(k).fill('');
     const wk=['','',...blank(D.first-2),...D.days.map(d=>EN_DAY[d.getDay()]),''];
     const tops=D.top.map(([l,a])=>['',l,...blank(D.first-2),...a.map(v=>v||''),'']);
-    const aoa=[[D.title],[`ส่งออกเมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น. · ${D.rows.length} แถว`],[],...tops,wk,D.head,...D.rows,D.total];
+    const aoa=[[D.title],[`ส่งออกเมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น. · ${D.rows.length} แถว`],isoXlsxRow(D.tab==='ins'?'mpins':'mpfm'),...tops,wk,D.head,...D.rows,D.total];
     const ws=X.utils.aoa_to_sheet(aoa);
     const wFix=D.tab==='ins'?[5,18,7,26,12,18,14,30,9,9,11,6,16,14,14,9,9]:[5,16,26,18,8,14,14,9,6,8,8];
     ws['!cols']=[...wFix,...D.days.map(()=>D.tab==='ins'?5:7),36].map(w=>({wch:w}));
@@ -253,9 +253,9 @@ table.mp{border-collapse:collapse;width:100%}.mp th,.mp td{border:1px solid #9fb
 .mp tr.tot td{background:#eef3fa;font-weight:700}.mp tr{break-inside:avoid}.mp td.empty{text-align:center;padding:8mm;color:#62738f}
 h2{font-size:12px;margin:10px 0 4px}.lg .lgh{text-align:left;width:120px;background:#f5f8fd}.note{color:#34496b;font-size:9px;margin:6px 0 0}
 .sig{display:flex;gap:40px;margin-top:24px;break-inside:avoid}.sig div{flex:1;text-align:center;font-size:10px}.sig span{display:block;border-top:1px solid #0b1b33;margin:26px 16px 4px}
-@media print{.bar{display:none}body{margin:0}}</style></head><body>
+@media print{.bar{display:none}body{margin:0}}${isoPageCss(ins?'mpins':'mpfm')}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics · เลือกเครื่องพิมพ์ "Save as PDF" เพื่อได้ไฟล์ PDF</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Master Plan</p><h1>${esc(D.title.replace(/^BU1 Lab · Master Plan · /,''))}</h1></div></div><p>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้พิมพ์ ${esc(S.account.name)}`:''}</p></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Master Plan</p><h1>${esc(D.title.replace(/^BU1 Lab · Master Plan · /,''))}</h1></div></div><p>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้พิมพ์ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml(ins?'mpins':'mpfm')}
 <div class="st">${D.stats.map(([v,l])=>`<span><b>${esc(v)}</b>${esc(l)}</span>`).join('')}</div>
 <table class="mp"><thead>${tops}<tr>${th}</tr></thead><tbody>${body}${D.rows.length?foot:''}</tbody></table>
 ${legend}

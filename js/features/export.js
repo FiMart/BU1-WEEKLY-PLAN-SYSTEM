@@ -19,27 +19,27 @@ async function exportXlsx(btn){
     const title=[`BU1 Lab · Weekly Plan${lineTitle()} ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`];
     const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','Transport','Contact','เบอร์ติดต่อ','Team Service','สถานะ','จัดชน'];
     const conf=allConflicts();
-    const ws1=X.utils.aoa_to_sheet([title,[],head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
+    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
     ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,14,20,14,32,12,26].map(w=>({wch:w}));
     X.utils.book_append_sheet(wb,ws1,'แผนงาน');
     /* per person: every line (one shared team), so "ว่าง" is true */
     const staff=visibleStaff(all.filter(isWorking));
-    const grid=[title,[],['พนักงาน','ตำแหน่ง',...days.map(d=>`${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}`)]];
+    const grid=[title,isoXlsxRow('plan'),['พนักงาน','ตำแหน่ง',...days.map(d=>`${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}`)]];
     for(const s of staff)grid.push([s.name,s.role||'',...days.map(d=>{const l=all.filter(t=>t.date===ymd(d)&&isWorking(t)&&(t.staffIds||[]).includes(s.id)).sort(byTime);return daySummary(l).text+(l.length?'\n'+l.map(t=>`${pName(t)} ${typeLabel(t)}${t.planNo?' '+t.planNo:''}${t.customer?' ('+t.customer+')':''}`).join('\n'):'')})]);
     const ws2=X.utils.aoa_to_sheet(grid);ws2['!cols']=[{wch:22},{wch:14},...days.map(()=>({wch:30}))];
     X.utils.book_append_sheet(wb,ws2,'สรุปรายคน');
     /* the team's "Weekly plan calibration" sheet, same columns (Flow Meter plans of the week) */
     const cr=S.line==='ins'?[]:calWeekRows(tasks);
-    if(cr.length){const ws3=X.utils.aoa_to_sheet([['Weekly plan calibration'],[`${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))}`],CAL_HEAD,...cr.map(calRowCells)]);
+    if(cr.length){const ws3=X.utils.aoa_to_sheet([['Weekly plan calibration'],isoXlsxRow('plan'),[`${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))}`],CAL_HEAD,...cr.map(calRowCells)]);
       ws3['!cols']=[12,5,14,26,20,8,20,14,18,24,16,14,9,14,9,30].map(w=>({wch:w}));ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:CAL_HEAD.length-1}}];
       X.utils.book_append_sheet(wb,ws3,'Weekly plan calibration')}
     /* "Weekly plan instrument": the rows, then their certificates */
     const ir=S.line==='fm'?[]:insWeekRows(tasks);
     if(ir.length){const span=`${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))}`;
-      const ws4=X.utils.aoa_to_sheet([['Weekly plan instrument'],[span],INS_HEAD,...ir.map(insRowCells)]);
+      const ws4=X.utils.aoa_to_sheet([['Weekly plan instrument'],isoXlsxRow('plan'),[span],INS_HEAD,...ir.map(insRowCells)]);
       ws4['!cols']=[12,16,9,24,10,22,12,30,9,9,9,6,16,16,6,7,16].map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws4,'Weekly plan instrument');
       const cr2=ir.flatMap(insCertCells);
-      if(cr2.length){const ws5=X.utils.aoa_to_sheet([['Certificates · Weekly plan instrument'],[span],INS_CERT_HEAD,...cr2]);ws5['!cols']=[20,6,18,16,18,30,24,10,14,24].map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws5,'Certificates')}}
+      if(cr2.length){const ws5=X.utils.aoa_to_sheet([['Certificates · Weekly plan instrument'],isoXlsxRow('plan'),[span],INS_CERT_HEAD,...cr2]);ws5['!cols']=[20,6,18,16,18,30,24,10,14,24].map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws5,'Certificates')}}
     const buf=X.write(wb,{type:'array',bookType:'xlsx'});
     await saveFile(fileWeek()+'.xlsx',buf);
   }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
@@ -101,9 +101,9 @@ table.wp{border-collapse:collapse;width:100%;table-layout:fixed}
 .empty{text-align:center;padding:10mm;color:#62738f}.pb{break-before:page;page-break-before:always}
 .sm{border-collapse:collapse;width:100%}.sm th,.sm td{border:1px solid #c6d9f1;padding:3px 5px;text-align:left;vertical-align:top;font-size:10px}.sm thead th{background:#e6f1fd}.fr{color:#006300;font-weight:600}.lv{color:#875800;font-weight:600}
 .sig{display:flex;gap:40px;margin-top:30px}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:30px 16px 4px}
-@media print{.bar{display:none}body{margin:0}}</style></head><body>
+@media print{.bar{display:none}body{margin:0}}${isoPageCss('plan')}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Weekly Planning${esc(lineTitle())}</p><h1>${esc(`${fmtShort(S.week)} – ${fmtShort(last)} ${be(last)}`)}</h1></div></div><p>${esc(`สัปดาห์ที่ ${isoWeek(S.week)} · ${wn}`)}<br>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p>BU1 Lab · Weekly Planning${esc(lineTitle())}</p><h1>${esc(`${fmtShort(S.week)} – ${fmtShort(last)} ${be(last)}`)}</h1></div></div><p>${esc(`สัปดาห์ที่ ${isoWeek(S.week)} · ${wn}`)}<br>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>${isoHeadHtml('plan')}
 <div class="lg">${legend}</div>
 <table class="wp"><colgroup><col class="g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>${head}</tr></thead><tbody>${body}</tbody></table>
 ${(()=>{const cr=S.line==='ins'?[]:calWeekRows(tasks);if(!cr.length)return '';

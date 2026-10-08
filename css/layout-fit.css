@@ -24,3 +24,18 @@
 .wc-pp .pp,.wc-chips .tchip{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:top}
 .wc-chips .tchip{display:inline-flex}
 .wc .chip-flag{max-width:100%;overflow-wrap:anywhere}
+/* ISO 9001 records (js/features/iso.js): change history in the plan / NCR view, the register in ข้อมูลหลัก */
+.iso-hist{margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:12.5px}
+.iso-hist>summary{cursor:pointer;padding:9px 12px;font-weight:600;color:var(--ink-2);list-style:none;display:flex;align-items:center;gap:6px}
+.iso-hist>summary::before{content:"▸";color:var(--muted);transition:transform .15s}.iso-hist[open]>summary::before{transform:rotate(90deg)}
+.iso-hist>summary::-webkit-details-marker{display:none}
+.iso-hist ol{list-style:none;margin:0;padding:0 12px 10px;display:grid;gap:8px;max-height:320px;overflow:auto}
+.iso-hist ol>li{padding:7px 10px;border-left:3px solid var(--line);background:var(--surface-2,var(--surface));border-radius:0 8px 8px 0}
+.iso-hist ol>li>div{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}.iso-hist ol>li>div span{color:var(--muted);font-size:11.5px}
+.iso-hist ul{margin:4px 0 0;padding-left:16px;display:grid;gap:2px;color:var(--ink-2)}
+.iso-hist ul s{color:var(--muted)}
+.iso-reg td{vertical-align:middle}.iso-reg .sub{display:block;font-size:11px;color:var(--muted)}
+.iso-reg input{width:100%;min-width:70px}.iso-reg .w-rev{max-width:64px}.iso-reg input[type=date]{min-width:140px}
+.iso-h{margin:14px 0 6px;font-size:14px}
+.iso-arch{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.iso-arch select{min-width:120px}

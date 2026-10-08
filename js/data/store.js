@@ -3,7 +3,7 @@
 /* ---------- store (shared db, or in-memory when db is unavailable) ----------
    The app's single read / write path: views call Store (or the live queries in boot.js), never a storage API directly.
    db is the claude.ai db, or the Supabase adapter (js/data/supabase.js on js/data/backend.js); without db it is memory. */
-const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map(),mpfm:new Map(),mpins:new Map()};
+const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map(),mpfm:new Map(),mpins:new Map(),audit:new Map()};
 /* plans saved with the removed status "progress" (กำลังดำเนินการ) are read as "planned" */
 const normTask=t=>{if(t&&t.status==='progress')t.status='planned';return t};
 const rows=m=>[...m].map(([id,d])=>normTask(Object.assign({id},d)));
@@ -17,9 +17,10 @@ function localPublish(){
 function afterWrite(c){if(c==='tasks'&&!S.bulk){invalidate();render()}}
 const Store={
   /* every row carries dept_id (central Supabase guide, item 3); the Supabase backend always overwrites it with BU1_CONFIG.deptId */
-  async set(c,id,d){d=Object.assign({},d,{dept_id:DEPT()});if(db){const r=await db.collection(c).doc(id).set(d);afterWrite(c);return r}if(!L[c])L[c]=new Map();L[c].set(id,Object.assign({},d));if(!S.bulk)localPublish()},
-  async update(c,id,d){if(db){const r=await db.collection(c).doc(id).update(d);afterWrite(c);return r}L[c].set(id,Object.assign({},L[c].get(id),d));localPublish()},
-  async del(c,id){if(db){const r=await db.collection(c).doc(id).delete();afterWrite(c);return r}L[c].delete(id);localPublish()},
+  /* plans and NCR carry their ISO 9001 change history (js/features/iso.js); a deleted one is logged first */
+  async set(c,id,d){d=Object.assign({},isoAudit(c,String(id),d,false),{dept_id:DEPT()});if(db){const r=await db.collection(c).doc(id).set(d);afterWrite(c);return r}if(!L[c])L[c]=new Map();L[c].set(id,Object.assign({},d));if(!S.bulk)localPublish()},
+  async update(c,id,d){d=isoAudit(c,String(id),d,true);if(db){const r=await db.collection(c).doc(id).update(d);afterWrite(c);return r}L[c].set(id,Object.assign({},L[c].get(id),d));localPublish()},
+  async del(c,id){await isoDeleteLog(c,String(id));if(db){const r=await db.collection(c).doc(id).delete();afterWrite(c);return r}L[c].delete(id);localPublish()},
   async where(c,field,op,val){
     if(db){const s=await db.collection(c).where(field,op,val).get();return docRows(s)}
     return rows(L[c]).filter(x=>op==='in'?val.includes(x[field]):op==='array-contains'?(x[field]||[]).includes(val):x[field]===val);

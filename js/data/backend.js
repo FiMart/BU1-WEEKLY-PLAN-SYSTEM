@@ -37,10 +37,10 @@ const CENTRAL_TYPES=[
   {id:'site_survey',name:'Site Survey',color:'#64748b'},
 ];
 /* entity -> public tables it is read from (for realtime) */
-const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],projects:[],photos:[],filechunks:[]};
+const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
 /* entities kept as rows of app_settings, one row per record, id = prefix + record id */
-const KV_PREFIX={ncr:NCR_PREFIX,mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
+const KV_PREFIX={ncr:NCR_PREFIX,mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
 
@@ -96,16 +96,16 @@ function supabaseBackend(client,{dept}){
       planNo:d.jobNo||'',customer:CENTRAL_CUSTOMERS[d.customer]||d.customer||'',location:d.location||'',areaId:d.areaId||'',
       timeNote:x.timeNote!=null?x.timeNote:[d.startTime,d.endTime].filter(Boolean).join('–')+(d.startTime?' น.':''),
       detail,request:x.request||'',transport:x.transport!=null?x.transport:cranes.join(', '),
-      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaGo:x.gaGo||'',gaBack:x.gaBack||'',carReason:x.carReason||'',carNote:x.carNote||'',gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar')),/* GA's other fields, read only */
+      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaGo:x.gaGo||'',gaBack:x.gaBack||'',selfDrive:!!x.selfDrive,carReason:x.carReason||'',carNote:x.carNote||'',gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar')),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
-      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
+      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
   }
   const leaveOf=r=>{const d=r.data||{};const x=d.bu1wp||{};
     return {id:LEAVE_PREFIX+r.id,date:weekDate(d.week||r.week,d.day),period:x.period||'full',jobType:'leave',
-      staffIds:d.personId?[d.personId]:[],detail:x.detail!=null?x.detail:d.kind||'ลา',status:x.status||'planned',statusNote:x.statusNote||'',
+      staffIds:d.personId?[d.personId]:[],detail:x.detail!=null?x.detail:d.kind||'ลา',status:x.status||'planned',statusNote:x.statusNote||'',history:asList(x.history),
       createdBy:x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,src:'leaves'}};
   const staffOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:d.name||r.id,role:d.position||'',order:x.order??i,active:!d.archived}};
   const resourceOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:craneName(d)||r.id,code:d.plate?d.name||'':'',group:d.type||'',vendor:d.vendor||'',
@@ -154,12 +154,13 @@ function supabaseBackend(client,{dept}){
   const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */
-      detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA */carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
+      detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */
       insItems:asList(t.insItems),/* Weekly plan instrument rows + certificates (js/features/instrument.js) */
+      history:asList(t.history),
       docNA:asList(t.docNA),/* เอกสารหลังจบงาน marked ไม่มีสำหรับงานนี้: 'sr' | 'qc' | 'job' */
       reports:asList(t.reports),/* Service Report / QC / ใบรับงาน files (js/dialog/report.js), bytes in app_settings like the files above */
       createdAt:t.createdAt||(old&&old.createdAt)||'',createdBy:t.createdBy||(old&&old.createdBy)||null,updatedAt:t.updatedAt||'',updatedBy:t.updatedBy||null}));

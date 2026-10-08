@@ -345,10 +345,10 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 .t{border-collapse:collapse;width:100%;margin-bottom:4px}.t th,.t td{border:1px solid #c6d9f1;padding:3px 5px;text-align:left;vertical-align:top;font-size:9.5px;overflow-wrap:anywhere}.t thead th{background:#e6f1fd;font-weight:600}.t .n{text-align:right;white-space:nowrap}.t tr{break-inside:avoid}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}.e{color:#62738f;margin:2px 0 6px}
 .sig{display:flex;gap:30px;margin-top:34px;break-inside:avoid}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:34px 10px 4px}
-@media print{.bar{display:none}body{margin:0;max-width:none}}</style></head><body>
+@media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${S.line?' · '+esc(lineName()):''} · ${esc(P.label)}</h1></div></div>
-<p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>
+<p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml('dash')}
 ${sec(1,'สรุปภาพรวม','Summary')}
 <div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>
 <ul class="f">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul>
@@ -370,7 +370,7 @@ async function dashXlsx(btn){
     const title=[`${DASH_ORG} · รายงานผลการปฏิบัติงาน ${P.label} (${thDate(P.from)} – ${thDate(P.to)})`];
     const stamp=[`จัดทำเมื่อ ${thDate(ymd(now))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.`];
     const widths=aoa=>{const w=[];aoa.forEach(r=>r.forEach((v,i)=>{w[i]=Math.max(w[i]||8,Math.min(50,String(v==null?'':v).length+2))}));return w.map(wch=>({wch}))};
-    const add=(name,head,body)=>{const ws=X.utils.aoa_to_sheet([title,stamp,[],...head,...body]);ws['!cols']=widths([...head,...body]);X.utils.book_append_sheet(wb,ws,name)};
+    const add=(name,head,body)=>{const ws=X.utils.aoa_to_sheet([title,stamp,isoXlsxRow('dash'),...head,...body]);ws['!cols']=widths([...head,...body]);X.utils.book_append_sheet(wb,ws,name)};
     add('สรุป',[[T.kpi.title],T.kpi.head],[...T.kpi.rows,[],['ประเด็นสำคัญ'],...D.findings.map(f=>['• '+f.s])]);
     for(const k of ['lines','cal','ins','insCert',...(D.mp?['mpTrend','mpCodes','mpFm','mpIns','mpInsLab']:[]),'trend','status','role','person','types','cust','veh','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
     await saveFile(dashFile(P)+'.xlsx',X.write(wb,{type:'array',bookType:'xlsx'}));

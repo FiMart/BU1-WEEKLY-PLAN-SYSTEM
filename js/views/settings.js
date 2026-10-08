@@ -20,6 +20,7 @@ const MD_ICONS={
   backup:'<path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 17l3 3 3-3"/>',
   holidays:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.6.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
   about:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/>',
+  iso:'<path d="M12 3.5 5 6.2v5.3c0 4.3 2.9 7.6 7 9 4.1-1.4 7-4.7 7-9V6.2z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
   prefs:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
 };
 function renderSettings(){
@@ -91,7 +92,7 @@ function renderSettings(){
      body:`<div><button type="button" class="btn danger" data-action="clear-sample"${hasSample?'':' disabled'}>ลบข้อมูลตัวอย่างทั้งหมด</button></div>`});
   const us=usersSection();if(us)secs.unshift(us);
   secs.splice(secs.findIndex(s=>s.id==='periods')+1,0,holidaySection());
-  secs.push(backupSection(),prefsSection(),aboutSection());
+  secs.push(isoSection(),backupSection(),prefsSection(),aboutSection());
   const cur=secs.find(s=>s.id===S.md)||secs[0];
   return `
   <div class="md">

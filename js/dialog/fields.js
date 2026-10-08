@@ -79,10 +79,12 @@ function gaSummary(t){const l=gaInfo(t);if(!l)return '';const v=k=>(l.find(([x])
 function gaInfoHtml(t){const l=gaInfo(t);if(!l)return '';
   return `<div class="ga-info"><b>${CAR_ICON}ข้อมูลรถจาก GA</b><dl>${l.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></div>`}
 /* the times asked of GA (user, 7 Oct 2026): ไป = leave the office, กลับ = back; both optional */
-const gaTimes=t=>t&&t.needGA&&(t.gaGo||t.gaBack)?[t.gaGo?`ไป ${t.gaGo} น.`:'',t.gaBack?`กลับ ${t.gaBack} น.`:''].filter(Boolean).join(' · '):'';
+const gaTimes=t=>t&&t.selfDrive?(t.gaGo?`รับรถ ${t.gaGo} น.`:''):t&&t.needGA&&(t.gaGo||t.gaBack)?[t.gaGo?`ไป ${t.gaGo} น.`:'',t.gaBack?`กลับ ${t.gaBack} น.`:''].filter(Boolean).join(' · '):'';
 /* รถส่วนตัว: why, and the note */
 const ownCarText=t=>[t.carReason?`เหตุผล: ${t.carReason}`:'',t.carNote||''].filter(Boolean).join(' · ');
-const transportText=t=>OWN_CAR.includes(t.transport)&&!t.needGA?'รถส่วนตัว'+(ownCarText(t)?' · '+ownCarText(t):''):(gaInfo(t)?`รถส่วนกลาง GA · ${gaSummary(t)}`+(t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!gaSummary(t).includes(t.transport)?' · '+t.transport:''):gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':''))+(gaTimes(t)?' · '+gaTimes(t):'');
+/* ขอรถใช้เอง (user, 8 Oct 2026): a GA car our staff drive — sent to GA like รถส่วนกลาง, with เหตุผล / หมายเหตุ and the hours */
+const selfDriveText=t=>'ขอรถใช้เอง (รถ GA)'+(gaInfo(t)?' · '+gaSummary(t):' · รอ GA ระบุรถ')+(ownCarText(t)?' · '+ownCarText(t):'')+(gaTimes(t)?' · '+gaTimes(t):'');
+const transportText=t=>t.selfDrive?selfDriveText(t):OWN_CAR.includes(t.transport)&&!t.needGA?'รถส่วนตัว'+(ownCarText(t)?' · '+ownCarText(t):''):(gaInfo(t)?`รถส่วนกลาง GA · ${gaSummary(t)}`+(t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!gaSummary(t).includes(t.transport)?' · '+t.transport:''):gaWaiting(t)?'รถส่วนกลาง GA · รอ GA ระบุรถและทะเบียน':(t.transport||'')+(t.needGA&&t.transport?' (รถส่วนกลาง GA)':''))+(gaTimes(t)?' · '+gaTimes(t):'');
 /* ใช้ทีมร่วมฯ: the box turns solid when on, and names the area it applies to */
 function syncSharedArea(){
   const box=$('#shareBox');if(!box)return;box.classList.toggle('on',$('#f-sharedTeam').checked);
@@ -93,7 +95,7 @@ function syncSharedArea(){
    รถแผนก = the Lab's vehicles (tiles, clash check) · รถส่วนกลาง (GA) = needGA + เวลาไป / กลับ (+ the plate GA tells us) ·
    รถส่วนตัว = transport 'รถส่วนตัว' + เหตุผล (required) / หมายเหตุ · ไม่ใช้รถ = transport 'ไม่ใช้รถ'. Nothing picked = no car given. */
 const carMode=()=>(document.querySelector('input[name="car-mode"]:checked')||{}).value||'';
-function carModeOf(t){if(!t)return '';if(t.needGA||t.transport==='GA')return 'ga';const v=t.transport||'';if(v==='ไม่ใช้รถ')return 'none';if(OWN_CAR.includes(v))return 'own';return v?'dept':''}
+function carModeOf(t){if(!t)return '';if(t.selfDrive||(OWN_CAR.includes(t.transport)&&!t.needGA))return 'own';if(t.needGA||t.transport==='GA')return 'ga';const v=t.transport||'';if(v==='ไม่ใช้รถ')return 'none';if(OWN_CAR.includes(v))return 'own';return v?'dept':''}
 function setCarMode(m){document.querySelectorAll('input[name="car-mode"]').forEach(r=>{r.checked=r.value===m});syncCarMode()}
 function syncCarMode(){
   const m=carMode();$('#carDept').hidden=m!=='dept';$('#carGa').hidden=m!=='ga';$('#carOwn').hidden=m!=='own';
@@ -102,10 +104,10 @@ function syncCarMode(){
 }
 /* the plan's car fields as saved, from the open choice (fields of the other choices are cleared) */
 function carForm(){
-  const m=carMode();const blank={needGA:false,gaGo:'',gaBack:'',carReason:'',carNote:''};
+  const m=carMode();const blank={needGA:false,selfDrive:false,gaGo:'',gaBack:'',carReason:'',carNote:''};
   if(m==='dept')return Object.assign(blank,{transport:normTransport($('#f-transport').value)});
   if(m==='ga')return Object.assign(blank,{transport:normTransport($('#f-gaPlate').value),needGA:true,gaGo:$('#f-gaGo').value,gaBack:$('#f-gaBack').value});
-  if(m==='own')return Object.assign(blank,{transport:'รถส่วนตัว',carReason:$('#f-carReason').value.trim(),carNote:$('#f-carNote').value.trim()});
+  if(m==='own')return Object.assign(blank,{transport:'',needGA:true,selfDrive:true,gaGo:$('#f-ownGo').value,gaBack:'',carReason:$('#f-carReason').value.trim(),carNote:$('#f-carNote').value.trim()});
   if(m==='none')return Object.assign(blank,{transport:'ไม่ใช้รถ'});
   return Object.assign(blank,{transport:''});
 }

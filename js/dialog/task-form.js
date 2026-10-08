@@ -17,7 +17,7 @@ function openTask(id,preset){
   $('#f-date').value=v.date;$('#f-until').value='';$('#f-period').value=periodOf(v);$('#f-timeNote').value=v.timeNote||'';
   $('#f-detail').value=detailOf(v);$('#f-request').value=v.request!=null?v.request:(v.note||'');
   fillTransportList();{const cm=carModeOf(t?v:null);$('#f-transport').value=cm==='dept'?v.transport||'':'';$('#f-gaPlate').value=cm==='ga'&&v.transport&&v.transport!=='GA'&&v.transport!=='ไม่ใช้รถ'?v.transport:'';
-    $('#f-gaGo').value=v.gaGo||'';$('#f-gaBack').value=v.gaBack||'';$('#f-carReason').value=v.carReason||'';$('#f-carNote').value=v.carNote||'';$('#gaFromApp').innerHTML=t?gaInfoHtml(t):'';setCarMode(cm)}syncTrAdd();renderTrGrid();
+    $('#f-gaGo').value=cm==='ga'?v.gaGo||'':'';$('#f-gaBack').value=cm==='ga'?v.gaBack||'':'';$('#f-ownGo').value=cm==='own'?v.gaGo||'':'';$('#f-carReason').value=v.carReason||'';$('#f-carNote').value=v.carNote||'';$('#gaFromApp').innerHTML=t?gaInfoHtml(t):'';setCarMode(cm)}syncTrAdd();renderTrGrid();
   $('#f-contact').value=v.contact||'';$('#f-contactTel').value=v.contactTel||'';
   pickGuests=(v.guests||[]).slice();$('#tpGuest').value='';loadPrep(v);loadCal(v);loadIns(v);
   if(t)renderDrawerView(t);else $('#dView').innerHTML='';
@@ -120,14 +120,15 @@ function renderDrawerView(t){
       ${calViewHtml(t,9)}${insViewHtml(t,9)}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
-      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${OWN_CAR.includes(t.transport)&&!t.needGA&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
+      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${(t.selfDrive||OWN_CAR.includes(t.transport)&&!t.needGA)&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${S.canWrite?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
       ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
-        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}`;
+        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
+    ${isoHistoryHtml(t)}`;
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }
 /* เวลาไป / กลับ for GA: kept only while ต้องการรถส่วนกลาง is ticked */
@@ -206,8 +207,8 @@ function validate(v){
   if(!v.date)return ['เลือกวันที่ของงาน','#f-date'];
   /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
   if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];
-  if(v.needGA&&v.gaGo&&v.gaBack&&v.gaBack<=v.gaGo)return ['เวลากลับต้องหลังเวลาไป (รถส่วนกลาง GA)','#f-gaBack'];
-  if(OWN_CAR.includes(v.transport)&&!v.needGA&&!v.carReason)return ['ใส่เหตุผลที่ใช้รถส่วนตัว','#f-carReason'];
+  if(v.needGA&&!v.selfDrive&&v.gaGo&&v.gaBack&&v.gaBack<=v.gaGo)return ['เวลากลับต้องหลังเวลาไป (รถส่วนกลาง GA)','#f-gaBack'];
+  if(v.selfDrive){if(!v.gaGo)return ['ใส่เวลารับรถ (ขอรถใช้เอง)','#f-ownGo'];if(!v.carReason)return ['ใส่เหตุผลที่ขอรถใช้เอง','#f-carReason']}
   return null;
 }
 const meta=()=>({updatedAt:new Date().toISOString(),updatedBy:S.me||null});
