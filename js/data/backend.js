@@ -40,6 +40,8 @@ const CENTRAL_TYPES=[
 const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
 /* entities kept as rows of app_settings, one row per record, id = prefix + record id */
+/* data.ga… fields this app writes itself (GA Fleet's request fields, see gaFields): not GA's answer (gaMore) */
+const GA_OWN=['gaDepart','gaPattern','gaUrgent','gaCargo','gaNote','gaRequestedAt','gaCancel','gaWholeRange'];
 const KV_PREFIX={ncr:NCR_PREFIX,mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
@@ -96,7 +98,11 @@ function supabaseBackend(client,{dept}){
       planNo:d.jobNo||'',customer:CENTRAL_CUSTOMERS[d.customer]||d.customer||'',location:d.location||'',areaId:d.areaId||'',
       timeNote:x.timeNote!=null?x.timeNote:[d.startTime,d.endTime].filter(Boolean).join('–')+(d.startTime?' น.':''),
       detail,request:x.request||'',transport:x.transport!=null?x.transport:cranes.join(', '),
-      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,gaGo:x.gaGo||'',gaBack:x.gaBack||'',selfDrive:!!x.selfDrive,carReason:x.carReason||'',carNote:x.carNote||'',gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar')),/* GA's other fields, read only */
+      needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,
+      /* วิธีเดินทาง: GA Fleet's own fields first (data.gaDepart / gaPattern / …, transport 'self'), then this app's older copies */
+      gaGo:d.gaDepart||x.gaGo||'',gaBack:x.gaBack||'',gaPattern:d.gaPattern||'',gaUrgent:!!d.gaUrgent,gaCargo:d.gaCargo&&typeof d.gaCargo==='object'?d.gaCargo:null,gaNote:d.gaNote||'',gaRequestedAt:d.gaRequestedAt||'',
+      selfDrive:!!x.selfDrive||d.transport==='self',carReason:d.selfReason||x.carReason||'',carNote:d.selfNote||x.carNote||'',
+      gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
       photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
@@ -171,8 +177,21 @@ function supabaseBackend(client,{dept}){
     for(const n of names){const hit=[...lk.cranes].find(([,c])=>[craneName(c),c.name,c.plate].some(v=>v&&norm(v)===norm(n)));if(hit)ids.push(hit[0])}
     return ids;
   }
+  /* the GA request in GA Fleet's own booking fields (read by ga-fleet.vercel.app; the BU2 form writes the same):
+     needsGACar · gaPattern wait|drop|pickup_return|continue · gaDepart "HH:MM" · gaUrgent · gaCargo {size, caution} ·
+     gaNote · gaRequestedAt · ขอรถไปเอง = transport 'self' + selfReason / selfNote · gaCancel {reason} when a request is withdrawn */
+  function gaFields(d,t,wasNeed,st){
+    const put=(k,v)=>{if(v==null||v===''||v===false)delete d[k];else d[k]=v};
+    const need=!!t.needGA&&st!=='cancelled';const self=need&&!!t.selfDrive;
+    put('gaDepart',need?t.gaGo||'':'');put('gaPattern',need&&!self?t.gaPattern||'wait':'');put('gaUrgent',need&&!self&&!!t.gaUrgent);
+    put('gaCargo',need&&!self&&t.gaCargo&&t.gaCargo.size?{size:t.gaCargo.size,...(t.gaCargo.caution?{caution:t.gaCargo.caution}:{})}:null);
+    put('gaNote',need?t.gaNote||'':'');put('selfReason',self?t.carReason||'':'');put('selfNote',self?t.carNote||'':'');
+    if(self)d.transport='self';else if(d.transport==='self')delete d.transport;
+    if(need){if(!d.gaRequestedAt)d.gaRequestedAt=new Date().toISOString();delete d.gaCancel}
+    else{delete d.gaRequestedAt;if(wasNeed)d.gaCancel={reason:st==='cancelled'?`ยกเลิกแผนงาน${t.statusNote?' · '+t.statusNote:''}`:'แผนกเปลี่ยนวิธีเดินทาง ไม่ใช้รถ GA',at:new Date().toISOString()}}
+  }
   function bookingRow(t,old,lk){
-    const d=Object.assign({},old?old.data||{}:{});
+    const d=Object.assign({},old?old.data||{}:{});const wasNeed=d.needsGACar===true;
     const ids=craneIds(t.transport,lk);const cust=Object.keys(CENTRAL_CUSTOMERS).find(k=>norm(CENTRAL_CUSTOMERS[k])===norm(t.customer));
     const st=t.status||'planned';const centralType=CENTRAL_TYPES.some(c=>c.id===t.jobType)?t.jobType:null;
     Object.assign(d,{id:t.id,week:weekOf(t.date),day:dayOf(t.date),
@@ -183,6 +202,7 @@ function supabaseBackend(client,{dept}){
       crane:norm(t.transport)===norm(asList(d.crane).map(id=>craneName(lk.cranes.get(id))||id).join(', '))?asList(d.crane):ids,
       tag:d.tag!=null?d.tag:(t.planNo||''),scope:Array.isArray(d.scope)?d.scope:asList(d.scope),equipment:asList(d.equipment),
       createdBy:d.createdBy||t.createdBy||'',bu1wp:bu1wpOf(t,d.bu1wp)});
+    gaFields(d,t,wasNeed,st);
     if(t.areaId)d.areaId=t.areaId;else delete d.areaId;
     if(t.sharedTeam)d.allowSharedTeam=true;else delete d.allowSharedTeam;/* BU2's own field: the old app reads it too */
     if(t.period==='am')d.session='morning';else if(t.period==='pm')d.session='afternoon';else delete d.session;

@@ -37,9 +37,9 @@ const isoXlsxRow=k=>[`${isoLine(k)} · ส่งออกโดย ${isoWho()} �
 
 /* ---------- 1) audit trail ---------- */
 const ISO_COLLS=new Set(['tasks','ncr']);
-const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy']);
+const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','gaRequestedAt','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy']);
 const ISO_FIELD={date:'วันที่',period:'ช่วงเวลา',jobType:'หัวข้องาน',jobTypeOther:'หัวข้องาน (อื่นๆ)',line:'สายงาน',planNo:'Plan No.',sale:'Sale',customer:'Customer',location:'Location',areaId:'พื้นที่ (Safety)',
-  timeNote:'Time',detail:'Detail',request:'Request',transport:'รถ',needGA:'ขอรถ GA',selfDrive:'ขอรถใช้เอง',gaGo:'เวลาไป / รับรถ',gaBack:'เวลากลับ / คืนรถ',carReason:'เหตุผล (รถ)',carNote:'หมายเหตุ (รถ)',
+  timeNote:'Time',detail:'Detail',request:'Request',transport:'รถ',needGA:'ขอรถ GA',selfDrive:'ขอรถไปเอง',gaGo:'เวลารถออก / รับรถ',gaBack:'เวลากลับ / คืนรถ',gaPattern:'รูปแบบรถ GA',gaUrgent:'งานด่วน (รถ GA)',gaCargo:'ของต้องขน',gaNote:'หมายเหตุถึง GA',carReason:'เหตุผลขอรถไปเอง',carNote:'รายละเอียด (รถ)',
   contact:'Contact',contactTel:'เบอร์ติดต่อ',guests:'คนแผนกอื่น',prep:'ใบเตรียมงาน',staffIds:'Team Service',sharedTeam:'ใช้ทีมร่วม',status:'สถานะ',statusNote:'เหตุผล / ปัญหา',
   calItems:'Weekly plan calibration',insItems:'Weekly plan instrument',reports:'เอกสารหลังจบงาน',docNA:'เอกสารที่ไม่มีสำหรับงานนี้',photoIds:'รูป',files:'ไฟล์แนบ',ncrId:'NCR',
   ncrNo:'NCR No.',taskId:'แผนงาน',category:'หมวดปัญหา',issue:'ปัญหา',cause:'สาเหตุ',correction:'การแก้ไขเฉพาะหน้า',action:'การแก้ไขและป้องกัน',owner:'ผู้รับผิดชอบ',due:'กำหนดเสร็จ',state:'สถานะ NCR',result:'ผลการตรวจติดตาม'};
@@ -54,6 +54,8 @@ function isoText(k,v,other){
   if(k==='areaId'&&typeof areaName==='function')return areaName(v);
   if(k==='line')return LINE[v]?LINE[v].name:String(v);
   if(k==='period')return (PERIOD[v]||{}).name||String(v);
+  if(k==='gaPattern')return GA_PATTERNS[v]||String(v);
+  if(k==='gaCargo')return cargoText(v)||'—';
   if(k==='jobType'){const t=jobTypes().find(x=>x.id===v);return t?t.name:String(v)}
   if(k==='reports'||k==='files')return asArr(v).map(f=>(f&&(f.label!=null?f.label||f.name:f.name))||'').filter(Boolean).join(', ')||`${asArr(v).length} ไฟล์`;
   if(typeof v==='boolean')return v?'ใช่':'ไม่';

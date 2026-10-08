@@ -38,10 +38,11 @@ function renderActions(){
 const CLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg>';
 const CAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
 function transportChip(v,t){
-  if(t&&t.selfDrive){const tip=[ownCarText(t),gaTimes(t),gaInfo(t)?gaInfo(t).map(([k,x])=>k+": "+x).join(" · "):"รอ GA ระบุรถ"].filter(Boolean).join(" · ");
-    return `<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc(tip)}">${CAR_ICON}ขอรถใช้เอง · ${gaInfo(t)?esc(gaSummary(t)):"รอ GA"}</span>`}
-  if(t&&gaInfo(t))return `<span class="tchip gaok" title="${esc(gaInfo(t).map(([k,x])=>k+": "+x).join(" · ")+(gaTimes(t)?" · "+gaTimes(t):""))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
-  if(t&&gaWaiting(t))return `<span class="tchip gawait" title="ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง${gaTimes(t)?' · '+esc(gaTimes(t)):''}">${CAR_ICON}รถ GA · รอทะเบียน${t.gaGo?' · ไป '+esc(t.gaGo):''}</span>`;
+  const note=t?gaNoteText(t):'';
+  if(t&&t.selfDrive){const tip=[ownCarText(t),gaTimes(t),gaInfo(t)?gaInfo(t).map(([k,x])=>k+": "+x).join(" · "):"รอ GA ระบุรถ",note].filter(Boolean).join(" · ");
+    return `<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc(tip)}">${CAR_ICON}ขอรถไปเอง · ${gaInfo(t)?esc(gaSummary(t)):"รอ GA"}</span>`}
+  if(t&&gaInfo(t))return `<span class="tchip gaok" title="${esc([gaInfo(t).map(([k,x])=>k+": "+x).join(" · "),gaTimes(t),note].filter(Boolean).join(" · "))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
+  if(t&&gaWaiting(t))return `<span class="tchip gawait${t.gaUrgent?' urgent':''}" title="${esc(['ขอรถ GA แล้ว GA จะระบุรถและทะเบียนให้ภายหลัง',gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA · ${t.gaUrgent?'ด่วน · ':''}รอทะเบียน${t.gaGo?' · ออก '+esc(t.gaGo):''}</span>`;
   if(!v||v==='ไม่ใช้รถ')return '';
   const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':OWN_CAR.includes(v)?'own':'car';
   return `<span class="tchip ${cls}"${cls==='own'&&t&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?v:cls==='own'?'รถส่วนตัว':'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;

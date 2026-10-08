@@ -109,6 +109,25 @@
 .doc-file .fmeta{flex:1 1 160px;min-width:0}
 #dlg .doc-file input.doc-lbl{order:5;flex:1 1 100%;min-width:0;height:32px;min-height:0;padding:0 10px;font:inherit;font-size:13px;font-weight:600;border-radius:8px}
 #dlg .doc-file input.doc-lbl.empty{border-color:color-mix(in srgb,var(--warn) 60%,var(--line));background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+/* one row per document (Service Report · QC · ใบรับงาน), each with its own upload button */
+.doc-rows{display:grid;gap:8px}
+.doc-row{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.doc-row.ok{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.doc-row.miss{border-color:color-mix(in srgb,var(--crit) 50%,var(--line))}
+.doc-row.na{border-style:dashed;opacity:.75}
+.doc-rh{display:flex;align-items:center;gap:10px;min-width:0}
+.doc-ic{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;flex:none;font-style:normal;font-size:12px;font-weight:700;background:var(--surface-2,var(--line));color:var(--muted)}
+.doc-row.ok .doc-ic{background:var(--good);color:#fff}
+.doc-row.miss .doc-ic{background:var(--crit);color:#fff}
+.doc-nm{flex:1;display:grid;gap:1px;min-width:0}
+.doc-nm b{font-size:13.5px;color:var(--ink)}
+.doc-row.miss .doc-nm b{color:var(--crit-ink)}
+.doc-nm small{font-size:12px;color:var(--muted)}
+.doc-act{display:flex;align-items:center;gap:10px;flex:none}
+.doc-act .lnk{font-size:12px;color:var(--muted)}
+.doc-row.other{border-style:dashed}
+.doc-row.other .doc-ic{background:var(--accent-soft);color:var(--accent);font-size:15px}
+@media (max-width:520px){.doc-row{padding:9px 9px}.doc-rh{flex-wrap:wrap}.doc-act{flex-basis:100%;padding-left:34px}.doc-row .doc-file .fmeta{flex-basis:100px}}
 .doc-tag{flex:none;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:var(--good-ink);background:color-mix(in srgb,var(--good) 12%,transparent)}.pcount.sr.miss{color:var(--crit-ink)}
 .fstat.doc{color:var(--crit-ink);background:var(--crit-soft)}/* ข้อมูลรถจาก GA (gaCar + ga… fields, read only) */
 .tchip.gaok{color:var(--good-ink);border-color:color-mix(in srgb,var(--good) 50%,var(--line));background:color-mix(in srgb,var(--good) 9%,var(--surface))}
@@ -119,30 +138,56 @@
 .ga-info dl div{display:grid;gap:1px;min-width:0}
 .ga-info dt{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .ga-info dd{margin:0;font-size:13.5px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
-/* รถ / Car: four choices, each opens its own fields (user, 7 Oct 2026) */
-.car-mode{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+/* วิธีเดินทาง: four choices, one required, each opens its own fields (user, 7–8 Oct 2026; layout of the BU2 / GA form) */
+.car-mode{display:flex;flex-wrap:wrap;gap:8px}
 .car-mode label{position:relative;cursor:pointer}
 .car-mode input{position:absolute;opacity:0;pointer-events:none}
-.car-mode label>span{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;height:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s,background .15s,box-shadow .15s}
-.car-mode svg{grid-row:1/3;width:22px;height:22px;fill:none;stroke:var(--cm);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.car-mode b{font-size:13.5px;line-height:1.25;color:var(--ink)}
-.car-mode small{font-size:11.5px;color:var(--muted)}
-.car-mode label:hover>span{border-color:color-mix(in srgb,var(--cm) 55%,var(--line))}
-.car-mode label.on>span,.car-mode input:checked+span{border-color:var(--cm);background:color-mix(in srgb,var(--cm) 10%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--cm) 15%,transparent)}
+.car-mode label>span{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 1px 2px rgba(10,30,60,.05);transition:border-color .15s,background .15s,box-shadow .15s}
+.car-mode svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.car-mode b{font-size:14px;line-height:1.25;color:var(--ink);white-space:nowrap}
+.car-mode label:hover>span{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.car-mode label.on>span,.car-mode input:checked+span{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));box-shadow:0 0 0 1px var(--accent)}
+.car-mode input:checked+span b,.car-mode input:checked+span svg{color:color-mix(in srgb,var(--accent) 78%,var(--ink));stroke:currentColor}
 .car-mode input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .car-mode input:disabled+span{cursor:not-allowed;opacity:.6}
-.car-pane{display:grid;gap:10px;margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2,var(--surface));animation:rise .2s var(--ease) both}
+.car-err{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-size:13.5px;font-weight:600;color:var(--crit-ink,#c0262d)}
+.car-err[hidden]{display:none}
+.car-err svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.req{font-style:normal;color:var(--crit,#d63c3c);font-weight:700}
+.car-pane{display:grid;gap:8px;justify-items:start;margin-top:12px;padding:2px 0 2px 16px;border-left:2px solid var(--accent);animation:rise .2s var(--ease) both}
 .car-pane[hidden]{display:none}
-.car-ga{border-color:color-mix(in srgb,#1baf7a 45%,var(--line));background:color-mix(in srgb,#1baf7a 6%,var(--surface))}
-.car-own{border-color:color-mix(in srgb,#c27c0e 45%,var(--line));background:color-mix(in srgb,#c27c0e 6%,var(--surface))}
-.car-note{margin:0;font-size:12.5px;color:var(--ink-2)}
-.car-ga .ga-times{max-width:none;margin:0;padding:0;border:0;background:none;border-radius:0}
-.car-field{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.car-pane>*{max-width:100%}
+.car-k{margin-top:4px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.car-note{margin:0;font-size:13px;color:var(--ink-2)}
+.car-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+#dlg .car-time{width:140px;min-height:44px;font:inherit;font-size:15px;font-variant-numeric:tabular-nums}
+.car-chips{display:flex;flex-wrap:wrap;gap:6px}
+.car-chips label{position:relative;cursor:pointer}
+.car-chips input{position:absolute;opacity:0;pointer-events:none}
+.car-chips span{display:inline-block;padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2,var(--surface));font-size:13px;color:var(--ink-2);transition:border-color .15s,background .15s}
+.car-chips label:hover span{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.car-chips input:checked+span{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:color-mix(in srgb,var(--accent) 78%,var(--ink));font-weight:600}
+.car-chips input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.car-more{display:grid;gap:8px;width:100%}
+.car-more>summary{display:inline-flex;align-items:center;gap:6px;width:max-content;cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--accent) 78%,var(--ink))}
+.car-more>summary::-webkit-details-marker{display:none}
+.car-more>summary::before{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);transition:transform .15s}
+.car-more[open]>summary::before{transform:rotate(45deg) translate(-2px,-2px)}
+.car-more .cm-close,.car-more[open] .cm-open{display:none}
+.car-more[open] .cm-close{display:inline}
+.car-more[open]{gap:10px}
+.car-cargo{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;width:100%}
+.car-cargo[hidden]{display:none}
+#carOwn #f-carNote{width:100%;min-height:44px;font:inherit;font-size:14px}
+.car-field{display:grid;gap:4px;width:100%;font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .car-field small{font-weight:400;color:var(--muted)}
 .car-field input,.car-field textarea{font:inherit;font-size:14px;font-weight:400}
+.car-ganote{margin-top:12px;padding-left:16px;border-left:2px solid var(--accent)}
+.car-ganote[hidden]{display:none}
+.car-ganote b{color:var(--good-ink);font-size:13px}
 .car-ga #gaFromApp:empty{display:none}
+.car-ga #gaFromApp{width:100%}
 .car-why{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-2);white-space:normal}
 .tchip.own{color:#9a6200;border-color:color-mix(in srgb,#c27c0e 45%,var(--line))}
-@media (max-width:760px){.car-mode{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.car-own .ga-times{max-width:none;margin:0;padding:0;border:0;background:none;border-radius:0}
-.car-own .ga-times label{color:#9a6200}
+.tchip.gawait.urgent{color:var(--crit-ink,#c0262d)}
+@media (max-width:520px){.car-mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.car-mode label>span{width:100%;padding:8px 10px}}
