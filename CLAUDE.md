@@ -12,6 +12,7 @@ Source documents: the BU2 hand-off package (`CLAUDE-HANDOFF.md`, `DB-CONTRACT.md
 - Fields only this app has go under `data.bu1wp` (detail, request, contact, sale, guests, prep checklist, precise status, timeNote, transport text, createdAt/updatedAt/By).
 - Every select/delete `.eq('dept_id','BU1')`; every upsert sets `dept_id`; `bookings` and `leaves` must also write the `week` column. Page selects with `order('id').range()` (1,000-row cap).
 - Roles: `public.user_roles.data.level` = `admin|planer|engineer|sale|ga|viewer`. RLS only checks department membership, so level rules are enforced in `js/features/roles.js`.
+  ดูอย่างเดียว (user, 8 Oct 2026) has `perm.work`: `canWork()` (= `can('status')` or viewer on the central DB) gates the plan view's status buttons, เอกสารหลังจบงาน (js/dialog/report.js) and the NCR of a plan (ไม่เสร็จ; js/features/ncr.js); plan details, new plans, standalone NCRs and the rest stay `S.canWrite` / `can('status')`.
 - ⚠ The old app's "sync" deletes rows it does not hold locally (`delete … where id not in local list`). Rows written by this app could be deleted by a stale old-app tab — check with the owner before switching writes on.
 
 ## Rules (from the hand-off)

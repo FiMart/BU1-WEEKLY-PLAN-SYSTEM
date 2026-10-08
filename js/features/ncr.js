@@ -18,7 +18,7 @@ function nextNcrNo(date){
 /* link shown in a plan's drawer */
 function ncrLinkHtml(t){
   const n=ncrOfTask(t);
-  if(!n)return can('status')?`<div class="ncr-link warn"><b>⚠ งานไม่เสร็จ · ยังไม่มี NCR</b><span>บันทึก NCR เพื่อติดตามการแก้ไข</span><button type="button" class="btn sm" data-ncr-new="${esc(t.id)}">เปิด NCR</button></div>`:'';
+  if(!n)return canWork()?`<div class="ncr-link warn"><b>⚠ งานไม่เสร็จ · ยังไม่มี NCR</b><span>บันทึก NCR เพื่อติดตามการแก้ไข</span><button type="button" class="btn sm" data-ncr-new="${esc(t.id)}">เปิด NCR</button></div>`:'';
   const st=ncrStateOf(n);
   return `<div class="ncr-link" style="--c:${st.color}"><b>${esc(n.ncrNo)} · ${esc(st.th)}${ncrOverdue(n)?' · เกินกำหนด':''}</b><span>${esc(n.category||'')}${n.owner?` · ผู้รับผิดชอบ ${esc(n.owner)}`:''}${n.due?` · กำหนด ${esc(thDate(n.due))}`:''}</span><button type="button" class="btn sm" data-ncr-open="${esc(n.id)}">เปิด NCR</button></div>`;
 }
@@ -31,7 +31,7 @@ function openNcr(id,task){
   const v=n||{ncrNo:'',taskId:t?t.id:'',planNo:t?t.planNo||'':'',date:t?t.date:ymd(new Date()),jobTypeName:t?typeLabel(t):'',customer:t?t.customer||'':'',location:t?t.location||'':'',staffIds:t?(t.staffIds||[]).slice():[],
     category:'',issue:t&&NEEDS_REASON.has(t.status)?t.statusNote||'':'',cause:'',correction:'',action:'',owner:'',due:'',state:'open',result:''};
   ncrEdit={id:n?n.id:null,task:t,saved:false};
-  const w=can('status');const dis=w?'':' disabled';
+  const w=t?canWork():can('status');const dis=w?'':' disabled';/* ดูอย่างเดียว: only the NCR of a plan (ไม่เสร็จ) */
   const st=ncrStateOf(v);
   $('#ncrTitle').textContent=n?`${n.ncrNo}`:'เปิด NCR ใหม่';
   $('#ncrSub').textContent=n?`${st.th}${ncrOverdue(n)?' · เกินกำหนด':''} · รายงานงานที่ไม่สำเร็จ (Non-Conformance Report)`:'รายงานงานที่ไม่สำเร็จ (Non-Conformance Report) · เลขที่ NCR จะออกให้อัตโนมัติเมื่อบันทึก';
@@ -62,7 +62,7 @@ function openNcr(id,task){
 }
 function ncrErr(m){const e=$('#ncrErr');e.textContent=m||'';e.hidden=!m}
 async function saveNcr(){
-  if(!can('status')||!ncrEdit)return;
+  if(!ncrEdit||!(ncrEdit.task?canWork():can('status')))return;
   const fd=new FormData($('#ncrForm'));const g=k=>String(fd.get(k)||'').trim();
   if(!g('issue')){ncrErr('ใส่รายละเอียดปัญหา');$('#ncr-issue').focus();return}
   if(!g('date')){ncrErr('เลือกวันที่พบปัญหา');return}

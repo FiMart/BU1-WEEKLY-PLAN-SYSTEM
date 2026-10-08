@@ -10,9 +10,9 @@ const LEVELS=[
   {id:'engineer',th:'วิศวกร',en:'Engineer',desc:'เพิ่มและแก้แผนงาน เปลี่ยนสถานะ แนบรูปและไฟล์ แผนกำลังคนโปรเจกต์ · แก้ข้อมูลหลักและลบแผนไม่ได้',perm:{edit:1,status:1,ga:1}},
   {id:'sale',th:'ฝ่ายขาย',en:'Sale',desc:'เพิ่มและแก้แผนงาน เปลี่ยนสถานะ ค้นหา และดาวน์โหลดรายงาน · แก้ข้อมูลหลักและลบแผนไม่ได้',perm:{edit:1,status:1,ga:1}},
   {id:'ga',th:'GA',en:'GA',desc:'ดูแผนงาน และระบุรถ / ทะเบียนให้แผนงานที่ขอรถส่วนกลาง',perm:{ga:1}},
-  {id:'viewer',th:'ดูอย่างเดียว',en:'Viewer',desc:'เปิดดูแผนงานได้ แก้ไขไม่ได้',perm:{}},
+  {id:'viewer',th:'ดูอย่างเดียว',en:'Viewer',desc:'เปิดดูแผนงาน เปลี่ยนสถานะงาน และแนบเอกสารหลังจบงานได้ · แก้รายละเอียดแผนไม่ได้',perm:{work:1}},
 ];
-const PERM_KEYS=['edit','status','del','master','users','import','ga'];
+const PERM_KEYS=['edit','status','del','master','users','import','ga','work'];
 const levelOf=id=>LEVELS.find(l=>l.id===String(id||'').trim().toLowerCase())||null;
 /* claude.ai and offline: every permission follows S.canWrite (no per-person levels there); user management is Supabase only */
 S.perm=Object.fromEntries(PERM_KEYS.map(k=>[k,k!=='users']));S.level=null;S.isHr=false;
@@ -24,6 +24,9 @@ function applyLevel(level){
 const can=k=>S.backend==='supabase'&&isReadOnly()?false:k==='ga'?!!S.perm.ga&&(S.canWrite||S.backend==='supabase'):S.canWrite&&!!S.perm[k];
 /* Safety Training page: every level except ดูอย่างเดียว (user, 8 Oct 2026); the plan's area-card badges stay */
 const safetyOk=()=>!(S.backend==='supabase'&&S.level==='viewer');
+/* work on an existing plan without editing it (user, 8 Oct 2026): status (with its NCR for ไม่เสร็จ) and เอกสารหลังจบงาน —
+   every level that may edit, plus ดูอย่างเดียว (perm.work, central database only) */
+const canWork=()=>can('status')||(S.backend==='supabase'&&!isReadOnly()&&!!S.perm.work);
 const levelLabel=id=>{const L=levelOf(id);return L?`${L.th} (${L.en})`:String(id||'—')};
 
 /* signed-in person's level for this department (RLS returns only their own rows) and HR flag */

@@ -74,7 +74,7 @@ function docBox(t,edit){
 }
 /* read-only list in the plan's details (people who cannot edit); editors get the box under the status buttons */
 function reportViewHtml(t,k){
-  if(S.canWrite||isLeave(t)||(!reportsOf(t).length&&!docNeeded(t)))return '';
+  if(canWork()||isLeave(t)||(!reportsOf(t).length&&!docNeeded(t)))return '';
   return `<div class="wide" style="--k:${k}"><dt>เอกสารหลังจบงาน</dt><dd>${docBox(t,false)}</dd></div>`;
 }
 function reportBoxHtml(t){return isLeave(t)?'':docBox(t,true)}
@@ -82,7 +82,7 @@ function redrawReportView(){renderDrawerView(editing);renderPhotos();renderFiles
 const docLeftToast=t=>docNeeded(t)?(docMissing(t).length?` · ยังขาด ${docMissing(t).map(k=>DOC_NAME[k]).join(', ')}`:' · เอกสารครบแล้ว'):'';
 /* kind = the document row the files were uploaded on: they are labelled with that document (เอกสารอื่น ๆ: no label) */
 async function addReports(files,kind){
-  if(!editing||!S.canWrite||repBusy||!(DOC_NAME[kind]||kind===OTHER_DOC))return;
+  if(!editing||!canWork()||repBusy||!(DOC_NAME[kind]||kind===OTHER_DOC))return;
   const kname=DOC_NAME[kind]||'เอกสารอื่น ๆ';
   const room=MAX_REPORTS-reportsOf(editing).length;
   const all=[...(files||[])].filter(Boolean);if(!all.length)return;
@@ -106,7 +106,7 @@ async function addReports(files,kind){
 }
 /* a file's label, typed or picked: saved at once ("qc" → "QC", "sr, qc" → "Service Report, QC") */
 async function setReportLabel(fid,val){
-  if(!editing||!S.canWrite)return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
+  if(!editing||!canWork())return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
   const label=docCanon(String(val||'').replace(/\s+/g,' ').trim().slice(0,80));if(label===docLabel(f))return;
   const id=editing.id;const reports=reportsOf(editing).map(x=>x.id===fid?Object.assign({},x,{label}):x);
   try{await Store.update('tasks',id,Object.assign({reports},meta()));
@@ -115,7 +115,7 @@ async function setReportLabel(fid,val){
   catch(err){toast(errText(err));noteWriteError(err);redrawReportView()}
 }
 async function removeReport(fid){
-  if(!editing||!S.canWrite)return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
+  if(!editing||!canWork())return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
   if(!await askConfirm('ลบไฟล์เอกสาร?',`ลบไฟล์ ${f.name}${docLabel(f)?` (${docLabel(f)})`:''} ออกจากแผนนี้\nลบแล้วกู้คืนไม่ได้`,'ลบไฟล์'))return;
   const id=editing.id;const reports=reportsOf(editing).filter(x=>x.id!==fid);
   try{await Store.update('tasks',id,Object.assign({reports},meta()));
@@ -125,7 +125,7 @@ async function removeReport(fid){
 }
 /* ไม่มีสำหรับงานนี้: on / off for one document */
 async function toggleDocNA(kind){
-  if(!editing||!S.canWrite||!DOC_NAME[kind])return;const id=editing.id;
+  if(!editing||!canWork()||!DOC_NAME[kind])return;const id=editing.id;
   const cur=docNAOf(editing);const docNA=cur.includes(kind)?cur.filter(x=>x!==kind):cur.concat([kind]);
   try{await Store.update('tasks',id,Object.assign({docNA},meta()));
     if(editing&&editing.id===id){editing=Object.assign({},editing,{docNA});redrawReportView()}
