@@ -23,7 +23,7 @@ function openTask(id,preset){
   loadPhotos(v.photoIds||[]);loadFiles(t);
   const st=form.querySelector(`#f-st-${v.status||'planned'}`);if(st)st.checked=true;
   $('#f-reason').value=v.statusNote||'';syncReason();
-  pickSel=new Set(v.staffIds||[]);pickPool=null;$('#tpQ').value='';$('#tpFree').checked=false;$('#tpAllowBusy').checked=false;
+  pickSel=new Set(v.staffIds||[]);pickPool=null;pickTeam=null;$('#tpQ').value='';$('#tpFree').checked=false;$('#tpAllowBusy').checked=false;
   renderPickSel();renderPickerList();
   $('#untilWrap').hidden=!!t;$('#copyBox').open=false;
   if(t){const nx=ymd(addDays(parseD(t.date),1));$('#cp-from').value=nx;$('#cp-to').value=nx;$('#cp-type').innerHTML=`<option value="">เหมือนเดิม (${esc(typeLabel(t))})</option>`+typeOptions('','');$('#cp-type').value=''}

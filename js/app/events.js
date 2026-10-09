@@ -140,7 +140,7 @@ document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)retu
     const have=new Set(S.staff.map(s=>norm(s.name)));let order=Math.max(0,...S.staff.map(x=>Number(x.order)||0));
     const rowsIn=String(new FormData(f).get('rows')||'').split(/\r?\n/).map(l=>l.split(/\t|,/).map(x=>x.trim())).filter(r=>r[0]);
     /* third column = ทีม: "Lab On-Site" / "On-Site" / "onsite" or "Lab" (anything else = not set) */
-    const teamIn=v=>{const k=norm(v).replace(/[\s_-]/g,'');return !k?'':/onsite/.test(k)?'onsite':k==='lab'?'lab':''};
+    const teamIn=v=>{const k=norm(v).replace(/[\s_-]/g,'');return !k?'':/onsite/.test(k)?'onsite':k==='lab'?'lab':/^all(team)?$|ทั้งสอง|ทุกทีม/.test(k)?'all':''};
     const todo=[];for(const [name,role,team] of rowsIn){const k=norm(name);if(have.has(k))continue;have.add(k);todo.push({name:name.slice(0,80),role:roleName(role).slice(0,80),team:teamIn(team)})}
     if(!todo.length){toast(rowsIn.length?'ทุกชื่อมีอยู่ในระบบแล้ว':'วางรายชื่อก่อน หนึ่งคนต่อหนึ่งบรรทัด');return}
     const btn=f.querySelector('button[type=submit]');btn.disabled=true;let n=0;

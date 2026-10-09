@@ -82,11 +82,12 @@ function dashCompute(){
       share:pct(lj.length,totalJ)}});
   const noLineN=jobs.filter(t=>!lineOf(t)).length;
   /* ทีม (user, 8 Oct 2026): plans with someone of the team on them, completion, and the team's own man-days */
-  const tOf=id=>teamOf(S.staff.find(s=>s.id===id));
-  const teamRows=TEAMS.map(tm=>{const tj=jobs.filter(t=>(t.staffIds||[]).some(id=>tOf(id)===tm.id));const td=tj.filter(t=>t.date<=today);
+  /* All Team people count in both teams (user, 9 Oct 2026) */
+  const tOf=id=>teamOf(S.staff.find(s=>s.id===id));const inT=(id,tm)=>inTeamId(S.staff.find(s=>s.id===id),tm);
+  const teamRows=WORK_TEAMS.map(tm=>{const tj=jobs.filter(t=>(t.staffIds||[]).some(id=>inT(id,tm.id)));const td=tj.filter(t=>t.date<=today);
     return {tm,n:tj.length,done:tj.filter(t=>t.status==='done').length,doneRate:td.length?pct(td.filter(t=>t.status==='done').length,td.length):null,
-      md:tj.reduce((a,t)=>a+(t.staffIds||[]).filter(id=>tOf(id)===tm.id).length*(periodOf(t)==='full'?1:.5),0),
-      people:S.staff.filter(s=>s.active!==false&&teamOf(s)===tm.id).length,share:pct(tj.length,totalJ)}});
+      md:tj.reduce((a,t)=>a+(t.staffIds||[]).filter(id=>inT(id,tm.id)).length*(periodOf(t)==='full'?1:.5),0),
+      people:S.staff.filter(s=>s.active!==false&&inTeamId(s,tm.id)).length,share:pct(tj.length,totalJ)}});
   const noTeamN=jobs.filter(t=>!(t.staffIds||[]).some(id=>tOf(id))).length;
   const calR=calWeekRows(jobs);const cal=calStats(calR.map(r=>r.x));const judged=cal.pass+cal.fail;const passRate=judged?pct(cal.pass,judged):null;
   const countBy=f=>{const m=new Map();calR.forEach(r=>{const k=String(f(r)||'').trim()||'(ไม่ระบุ)';m.set(k,(m.get(k)||0)+1)});return [...m].sort((a,b)=>b[1]-a[1])};
@@ -210,7 +211,7 @@ function renderDash(){
         <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}
   /* ทีม side by side (ทุกทีม, once anyone has a team); a card opens that team */
   if(!S.team&&teamsUsed()){const R=D.teamRows;
-    h+=`<section class="panel span-12 dl-lines dl-teams" style="--d:2"><header><h2>แยกตามทีม</h2><p>แผนที่มีคนของทีมนั้น (แผนเดียวอาจมีทั้งสองทีม) · คน-วัน นับเฉพาะคนของทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด${D.noTeamN?` · แผนที่ยังไม่มีคนของทีมใด ${D.noTeamN} แผน`:''}</p></header>
+    h+=`<section class="panel span-12 dl-lines dl-teams" style="--d:2"><header><h2>แยกตามทีม</h2><p>แผนที่มีคนของทีมนั้น (แผนเดียวอาจมีทั้งสองทีม) · คน All Team นับในทั้งสองทีม · คน-วัน นับเฉพาะคนของทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด${D.noTeamN?` · แผนที่ยังไม่มีคนของทีมใด ${D.noTeamN} แผน`:''}</p></header>
       <div class="dl-cards">${R.map(r=>`<button type="button" class="dl-card" data-team-tab="${r.tm.id}" style="--lc:${r.tm.color}"><span class="dl-ico">${PERSON_ICON}</span><span class="dl-b"><b>${esc(r.tm.name)}</b>
         <span class="dl-k"><span><em>${num(r.n)}</em>แผน</span><span><em>${r.doneRate==null?'–':r.doneRate+'%'}</em>ปิดงาน</span><span><em>${f1(r.md)}</em>คน-วัน</span><span><em>${r.people}</em>คน</span></span>
         <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}

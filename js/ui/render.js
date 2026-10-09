@@ -172,8 +172,8 @@ function lineTabs(counts,note){
 }
 /* ทีม switch (user, 8 Oct 2026): ทุกทีม · Lab On-Site · Lab, with the number of active people in each */
 function teamTabs(){
-  const n=id=>S.staff.filter(s=>s.active!==false&&(!id||teamOf(s)===id)).length;
-  return `<div class="team-tabs" role="tablist" aria-label="ทีม"><span class="tt-k">ทีม</span>${[{id:'',name:'ทุกทีม',color:'var(--accent)'}].concat(TEAMS).map(t=>{const on=S.team===t.id;
+  const n=id=>S.staff.filter(s=>s.active!==false&&(!id||inTeamId(s,id))).length;/* All Team people count in both */
+  return `<div class="team-tabs" role="tablist" aria-label="ทีม"><span class="tt-k">ทีม</span>${[{id:'',name:'ทุกทีม',color:'var(--accent)'}].concat(WORK_TEAMS).map(t=>{const on=S.team===t.id;
     return `<button type="button" role="tab" class="tt${on?' on':''}" data-team-tab="${t.id}" aria-selected="${on}" style="--tc:${t.color}"><i aria-hidden="true"></i>${esc(t.name)}<b>${n(t.id)}</b></button>`}).join('')}</div>`;
 }
 /* the สายงาน switch sits above the filters on Weekly Plan (with the week's counts), Dashboard and Booking; the ทีม switch with it

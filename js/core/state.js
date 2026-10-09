@@ -39,7 +39,7 @@ function applyPrefs(){
   S.dash.mode=['month','quarter','year'].includes(pref('dash'))?pref('dash'):'week';
   S.pf.by=pref('by')==='cust'?'cust':'type';S.pf.groups=[];
   S.line=LINE[pref('line')]?pref('line'):'';/* สายงาน tab: '' = ทั้งหมด */
-  S.team=TEAM[pref('team')]?pref('team'):'';/* ทีม filter: '' = ทุกทีม */
+  S.team=TEAM[pref('team')]&&!TEAM[pref('team')].all?pref('team'):'';/* ทีม filter: '' = ทุกทีม */
   S.md=pref('md')||'staff';S.pmode=pref('pmode')==='day'||pref('pmode')==='week'?pref('pmode'):null;
   document.body.classList.toggle('mini',wasTablet||pref('mini')==='1');
   const th=pref('theme');if(th==='dark'||th==='light')document.documentElement.setAttribute('data-theme',th);else document.documentElement.removeAttribute('data-theme');

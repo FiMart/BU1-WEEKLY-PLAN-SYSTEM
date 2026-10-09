@@ -32,7 +32,10 @@
 #lineBar .lt-chip{font-size:10px;padding:0 6px}
 #lineBar .lt-meta{margin-top:1px;gap:2px 10px;font-size:11.5px}
 #lineBar .lt-meta b{font-size:12px}
-#lineBar .lt-bar{height:3px;margin-top:3px}
+#lineBar .lt-bar{display:none}/* one height for the tabs on every page: counts on one line, no progress bar */
+#lineBar .lt{min-height:52px}
+#lineBar .lt-meta{flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
+#lineBar .lt-all .lt-meta span:nth-child(n+4){display:none}/* ทั้งหมด: plans · done · meters (the Instrument count is on its own tab) */
 #lineBar .lt-n{min-width:0;font-size:20px}
 #lineBar .lt.on{box-shadow:0 4px 12px color-mix(in srgb,var(--lc) 30%,transparent)}
 #lineBar .lt.on::after{display:none}
@@ -90,12 +93,50 @@
 .wc .chip-flag{margin-top:1px;font-size:11px;padding:1px 6px}
 .wc-dot{width:8px;height:8px}
 
-/* Dashboard: smaller report header and KPI tiles */
-.rpt-hd{padding:12px 16px;gap:8px 16px}
+/* Dashboard: smaller report header */
+.rpt-hd{padding:12px 16px;gap:8px 16px;border-radius:14px}
 .rpt-hd h2{font-size:19px}
-.tile{padding:12px 14px}
-.tile .val{font-size:26px}
-.panel>header{padding-bottom:6px}
+
+/* ---------- one scale for every page (user, 9 Oct 2026: "ให้สมส่วนกับหน้าอื่นๆทั้งหมด") ----------
+   bars 56 px · tabs 46 px · tiles 24 px numbers · panel titles 15.5 px · radius 14 px */
+:root{--r:14px}
+/* week / month bars: สรุปรายคน, Dashboard, กำลังคนโปรเจกต์, Master Plan */
+.weekbar,.mp-bar{min-height:56px;padding:8px 12px;gap:8px 14px;border-radius:14px;margin-bottom:0;box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.wk-nav button{min-height:34px}
+.wk-label strong{font-size:18px}
+.wk-label span{font-size:12px}
+.mp-mon b{font-size:17px}
+.mp-pick{width:34px;height:34px}
+.mp-search{height:34px}
+.mp-act .btn,.weekbar .btn{min-height:34px;padding:0 12px;font-size:13px}
+/* tabs: Master Plan tabs the same height as the สายงาน tabs */
+.mp-tabs{gap:8px;margin-bottom:0}
+.mp-tab{min-height:46px;padding:7px 12px;gap:10px;border-radius:12px;box-shadow:none}
+.mp-tab-ico{width:30px;height:30px;border-radius:9px}
+.mp-tab svg{width:17px;height:17px}
+.mp-tab-t b{font-size:14px}.mp-tab-t small{font-size:11.5px}
+/* panels and cards */
+.panel{padding:14px 16px;gap:10px;border-radius:14px;box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.panel h2,.panel>header h2{font-size:15.5px}
+.panel>header p{font-size:12.5px;margin-top:2px}
+.panel>header{padding-bottom:4px}
+.mp-card,.wp-panel{border-radius:14px}
+.mp-card+.mp-card{margin-top:10px}
+.mp-card-h{padding:10px 14px}
+.mp-card-h h3{font-size:15.5px}
+.help .panel h2{font-size:16px}
+/* number tiles: Dashboard, NCR, Master Plan */
+.tiles,.mp-sum{gap:10px;margin-bottom:0}
+.tile,.mp-k{padding:11px 14px;gap:2px;border-radius:14px;box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.tile .val,.mp-k b{font-size:24px;line-height:1.15}
+.tile .val small{font-size:12px}
+.tile .lbl{font-size:12px}
+/* tables of people / days: shorter rows */
+.people .cell{min-height:52px}
+.grid td{padding:5px}
+.grid thead th{padding-block:6px}
+/* one gap between blocks inside a page */
+.mp-tabs,.mp-bar,.mp-sum{margin-bottom:10px}
 
 /* below the board */
 .avp-top{padding-block:8px}
@@ -105,3 +146,48 @@
 /* daily view (tablet / phone) */
 .pd-grp h3{font-size:13.5px}
 .pd-cards{gap:6px}
+
+/* ---------- Team Service picker (user, 9 Oct 2026: "อ่านง่ายและดูง่ายต่อการเลือกทีมงาน") ---------- */
+#tpTeams{display:flex;flex-wrap:wrap;gap:6px}
+#tpTeams[hidden]{display:none}
+.tpt{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font:600 13px/1.2 var(--f-body);cursor:pointer;transition:border-color .15s,background .15s,transform .12s var(--ease)}
+.tpt i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--tc)}
+.tpt small{font-size:11.5px;font-weight:600;color:var(--muted)}
+.tpt:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--line))}
+.tpt:active{transform:scale(.97)}
+.tpt.on{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 12%,var(--surface));color:var(--ink);box-shadow:0 0 0 1px var(--tc)}
+.tpt.on small{color:var(--ink-2)}
+.tp-key{margin:0;display:flex;flex-wrap:wrap;gap:2px 14px;font-size:12px;color:var(--muted)}
+/* the list: team header bars across the whole width, a ตำแหน่ง label row, then tiles */
+#dlg .tp-list{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:0 10px 12px;border-radius:12px}
+#dlg .tp-list .tp-team{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0 -10px;padding:9px 14px;border-radius:0;border-left:4px solid var(--tc);border-bottom:1px solid color-mix(in srgb,var(--tc) 25%,var(--line));background:color-mix(in srgb,var(--tc) 11%,var(--surface));font-size:14px;color:var(--ink)}
+#dlg .tp-list .tp-team:first-child{border-radius:12px 12px 0 0}
+#dlg .tp-list .tp-team:not(:first-child){margin-top:10px}
+#dlg .tp-list .tp-team i{display:block;flex:none;width:10px;height:10px;border-radius:50%;background:var(--tc)}
+#dlg .tp-list .tp-team b{font-weight:700}
+#dlg .tp-list .tp-team span{font-size:12px;font-weight:600;color:var(--muted)}
+.tp-tall{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--tc) 40%,var(--line));background:var(--surface);font-size:12px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.tp-tall input{width:15px;height:15px;margin:0;accent-color:var(--tc)}
+#dlg .tp-list .tp-group{grid-column:1/-1;position:static;margin:6px 0 -2px;padding:2px 2px 0;background:none;border:0;display:flex;align-items:center;gap:8px;font-size:12px}
+#dlg .tp-list .tp-group b{letter-spacing:.04em;font-size:11.5px;color:var(--ink-2)}
+#dlg .tp-list .tp-group span{font-size:11.5px;color:var(--muted);font-weight:600}
+#dlg .tp-list .tp-group small{margin-left:auto}
+/* person tile: avatar · name · status pill · check circle */
+#dlg .tp-list .tp-row{min-height:56px;padding:8px 10px;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+#dlg .tp-list .tp-row .avatar.sm{width:32px;height:32px;font-size:13px}
+#dlg .tp-list .tp-name{gap:3px}
+#dlg .tp-list .tp-name b{font-size:14px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-st{justify-self:start;max-width:100%;padding:0 8px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-st.st-free{color:var(--good-ink);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.tp-st.st-part{color:var(--warn-ink);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.tp-st.st-busy,.tp-st.st-leave{color:var(--muted);background:var(--line-2)}
+#dlg .tp-list .tp-row.on::after{content:none}
+.tp-ck{flex:none;width:22px;height:22px;margin-left:auto;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.tp-row.on .tp-ck{border-color:var(--accent);background:var(--accent)}
+.tp-row.on .tp-ck::before{content:"";width:6px;height:11px;margin-top:-2px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.tp-row.un.on .tp-ck{border-color:var(--crit);background:var(--crit)}
+.tp-row.lock .tp-ck{opacity:.4}
+#dlg .tp-list .tp-row.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 16%,transparent)}
+#dlg .tp-list .tp-row:not(.lock):hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+@media (max-width:520px){#dlg .tp-list{grid-template-columns:1fr 1fr;gap:6px;padding:0 8px 10px}#dlg .tp-list .tp-team{margin:0 -8px}.tp-tall{margin-left:0}#dlg .tp-list .tp-row{min-height:50px;padding:7px 8px;gap:7px}#dlg .tp-list .tp-row .avatar.sm{width:26px;height:26px}#dlg .tp-list .tp-name b{font-size:13px}.tp-ck{width:18px;height:18px}}
+@media (prefers-reduced-motion:reduce){.tpt{transition:none}.tpt:active{transform:none}}

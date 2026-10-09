@@ -38,8 +38,10 @@ const lineOf=t=>isLeave(t)?'':LINE[t.line]?t.line:LINE[typeOf(t).line]?typeOf(t)
    a work plan nobody is on yet shows in every team (it still needs people) */
 const teamOf=s=>s&&TEAM[s.team]?s.team:'';
 const teamName=id=>TEAM[id]?TEAM[id].name:NO_TEAM;
-const inTeam=s=>!S.team||teamOf(s)===S.team;
-const teamMatch=t=>{if(!S.team)return true;const ids=t.staffIds||[];if(!ids.length)return !isLeave(t);return ids.some(id=>teamOf(S.staff.find(s=>s.id===id))===S.team)};
+/* member of a work team: that team, or All Team (in both) */
+const inTeamId=(s,id)=>{const t=teamOf(s);return !!t&&(t===id||(t==='all'&&!!TEAM[id]&&!TEAM[id].all))};
+const inTeam=s=>!S.team||inTeamId(s,S.team);
+const teamMatch=t=>{if(!S.team)return true;const ids=t.staffIds||[];if(!ids.length)return !isLeave(t);return ids.some(id=>inTeamId(S.staff.find(s=>s.id===id),S.team))};
 /* the open tab (S.line) shows its own plans, plans without a line, and leave (people are shared); then the team filter */
 const lineMatch=t=>(!S.line||!lineOf(t)||lineOf(t)===S.line)&&teamMatch(t);
 const lineName=()=>S.line&&LINE[S.line]?LINE[S.line].name:'';

@@ -44,6 +44,13 @@ function posGroups(list){
   let extra=0;
   return [...m].filter(([,l])=>l.length).map(([k,l])=>{const i=order.indexOf(k);return {key:k,list:l,color:k===NO_POS?'#8a979c':POS_COLORS[(i>=0?i:order.length+extra++)%POS_COLORS.length]}});
 }
+/* Team Service picker (user, 9 Oct 2026: "อ่านง่ายและดูง่ายต่อการเลือกทีมงาน"): a team switch with free / total counts,
+   one section per team (full-width header + "เลือกทุกคนที่ว่างในทีม"), ตำแหน่ง inside it, person tiles with a status pill.
+   pickTeam = the picker's own switch; null = follow the page's ทีม filter (reset each time the form opens); picked people always stay */
+let pickTeam=null;
+const pickTeamNow=()=>pickTeam==null?S.team:pickTeam;
+const pickInTeam=(s,id)=>!id||(id==='all'?teamOf(s)==='all':inTeamId(s,id));
+const isUn=a=>!!a&&(a.cls==='busy'||a.cls==='leave');
 function renderPickerList(){
   const list=$('#tpList');if(!list)return;
   const q=norm($('#tpQ').value);const freeOnly=$('#tpFree').checked;const allowBusy=$('#tpAllowBusy').checked;
@@ -51,26 +58,40 @@ function renderPickerList(){
   const area=($('#f-area')||{}).value;const cardOnly=$('#tpCardOnly').checked&&typeof hasSafety==='function'&&hasSafety()&&!!area&&!!areaRule(SAFE,area);
   const cardOk=id=>{const s=personCardStatus(SAFE,id,area);return !!s&&(s.k==='ok'||s.k==='warn')};
   const people=pickPeople().filter(s=>!cardOnly||pickSel.has(s.id)||cardOk(s.id));
+  const av=new Map(people.map(s=>[s.id,availOf(s.id)]));
+  /* team switch: ทุกทีม · Lab On-Site · Lab · All Team, "ว่าง free/total" each (no switch until teams are set) */
+  const useTeams=S.staff.some(s=>teamOf(s));const pt=useTeams?pickTeamNow():'';
+  const tb=$('#tpTeams');
+  if(tb){tb.hidden=!useTeams;
+    if(useTeams)tb.innerHTML=[{id:'',name:'ทุกทีม',color:'var(--accent)'}].concat(TEAMS).map(t=>{const l=people.filter(s=>pickInTeam(s,t.id));const f=l.filter(s=>!isUn(av.get(s.id))).length;const on=pt===t.id;
+      return `<button type="button" class="tpt${on?' on':''}" data-tp-team="${t.id}" aria-pressed="${on}" style="--tc:${t.color}"><i aria-hidden="true"></i>${esc(t.name)}<small>ว่าง ${f}/${l.length}</small></button>`}).join('')}
+  const shown=people.filter(s=>pickSel.has(s.id)||pickInTeam(s,pt));
+  /* open team first, then All Team (they work in it too), then the rest; one section without headers until teams are set */
+  const tRank=id=>id===pt&&pt?0:id==='all'&&pt?1:id?2+TEAMS.findIndex(t=>t.id===id):99;
+  const tOrder=useTeams?TEAMS.map(t=>t.id).concat(['']).sort((a,b)=>tRank(a)-tRank(b)):[null];
   let html='';
-  /* ทีม first (the open team on top; every team stays pickable), then ตำแหน่ง inside it; no team headers until teams are set */
-  const useTeams=S.staff.some(s=>teamOf(s));const tOrder=useTeams?TEAMS.map(t=>t.id).concat(['']).sort((a,b)=>(b===S.team)-(a===S.team)):[null];
-  for(const tid of tOrder){const inT=tid==null?people:people.filter(s=>teamOf(s)===tid);if(!inT.length)continue;const at=html.length;
-  for(const {key:team,list:members,color} of posGroups(inT)){
-    const rows=members.map(s=>{const a=availOf(s.id);const un=!!a&&(a.cls==='busy'||a.cls==='leave');return {s,a,un,lock:un&&!allowBusy&&!pickSel.has(s.id)}})
-      .filter(({s,un})=>(!q||norm([s.name,s.role,teamOf(s)?teamName(teamOf(s)):''].join(' ')).includes(q))&&(!freeOnly||pickSel.has(s.id)||!un))
-      .sort((x,y)=>x.un-y.un);
-    if(!rows.length)continue;
-    const pickable=rows.filter(r=>!r.lock);const nUn=rows.filter(r=>r.un).length;
-    const nSel=pickable.filter(r=>pickSel.has(r.s.id)).length;const allOn=pickable.length>0&&nSel===pickable.length;
-    html+=`<label class="tp-group sel" style="--pc:${color}"><input type="checkbox" data-tp-all="${esc(pickable.map(r=>r.s.id).join(','))}"${allOn?' checked':''}${pickable.length?'':' disabled'} data-some="${nSel&&!allOn?1:0}" aria-label="เลือกทุกคนที่ว่าง ตำแหน่ง ${esc(team)}"><b>${esc(team)}</b> ว่าง ${rows.length-nUn}/${rows.length} คน<small>${allOn?'เลือกครบแล้ว':nSel?`เลือก ${nSel}/${pickable.length}`:pickable.length?'ติ๊กเพื่อเลือกทุกคนที่ว่าง':'ไม่มีคนว่าง'}</small></label>`;
-    html+=rows.map(({s,a,un,lock})=>{const on=pickSel.has(s.id);
-      const tip=[s.name,s.role].filter(Boolean).join(' · ')+(un?` · ไม่ว่าง: ${a.txt}`:'');
-      return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b>${un?`<small class="why">${esc(a.txt)}</small>`:a&&a.cls==='part'?`<small>${esc(a.txt)}</small>`:''}${cardBadge(formCard(s.id))}</span></label>`}).join('');
-  }
-  if(tid!=null&&html.length>at)html=html.slice(0,at)+`<div class="tp-team" style="--tc:${TEAM[tid]?TEAM[tid].color:'#8a979c'}"><i aria-hidden="true"></i>${esc(teamName(tid))}</div>`+html.slice(at);
+  for(const tid of tOrder){const inT=tid==null?shown:shown.filter(s=>teamOf(s)===tid);if(!inT.length)continue;
+    let sec='';let tFree=0,tAll=0;const tPick=[];const tc=TEAM[tid]?TEAM[tid].color:'#8a979c';
+    for(const {key:pos,list:members,color} of posGroups(inT)){
+      const rows=members.map(s=>{const a=av.get(s.id);const un=isUn(a);return {s,a,un,lock:un&&!allowBusy&&!pickSel.has(s.id)}})
+        .filter(({s,un})=>(!q||norm([s.name,s.role,teamOf(s)?teamName(teamOf(s)):''].join(' ')).includes(q))&&(!freeOnly||pickSel.has(s.id)||!un))
+        .sort((x,y)=>x.un-y.un);
+      if(!rows.length)continue;
+      const pickable=rows.filter(r=>!r.lock);const nUn=rows.filter(r=>r.un).length;tFree+=rows.length-nUn;tAll+=rows.length;tPick.push(...pickable.map(r=>r.s.id));
+      const nSel=pickable.filter(r=>pickSel.has(r.s.id)).length;const allOn=pickable.length>0&&nSel===pickable.length;
+      sec+=`<label class="tp-group sel" style="--pc:${color}"><input type="checkbox" data-tp-all="${esc(pickable.map(r=>r.s.id).join(','))}"${allOn?' checked':''}${pickable.length?'':' disabled'} data-some="${nSel&&!allOn?1:0}" aria-label="เลือกทุกคนที่ว่าง ตำแหน่ง ${esc(pos)}"><b>${esc(pos)}</b><span>ว่าง ${rows.length-nUn}/${rows.length}</span><small>${allOn?'เลือกครบแล้ว':nSel?`เลือก ${nSel}/${pickable.length}`:''}</small></label>`;
+      sec+=rows.map(({s,a,un,lock})=>{const on=pickSel.has(s.id);
+        const st=un?a.txt:a&&a.cls==='part'?a.txt:'ว่าง';const sc=un?a.cls:a&&a.cls==='part'?'part':'free';
+        const tip=[s.name,s.role,teamOf(s)?teamName(teamOf(s)):''].filter(Boolean).join(' · ')+` · ${st}`;
+        return `<label class="tp-row${on?' on':''}${un?' un':''}${lock?' lock':''}${on&&s.id===lastPicked?' just':''}" style="--pc:${color};--tc:${tc}" title="${esc(tip)}"><input type="checkbox" class="tp-cb" data-tp value="${esc(s.id)}"${on?' checked':''}${lock?' disabled':''}><span class="avatar sm" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="tp-name"><b>${esc(s.name)}</b><small class="tp-st st-${sc}">${esc(st)}</small>${cardBadge(formCard(s.id))}</span><i class="tp-ck" aria-hidden="true"></i></label>`}).join('');
+    }
+    if(!sec)continue;
+    if(tid!=null){const nSel=tPick.filter(id=>pickSel.has(id)).length;const allOn=tPick.length>0&&nSel===tPick.length;
+      html+=`<div class="tp-team" style="--tc:${tc}"><i aria-hidden="true"></i><b>${esc(teamName(tid))}</b><span>ว่าง ${tFree}/${tAll} คน${nSel?` · เลือก ${nSel}`:''}</span>${tPick.length?`<label class="tp-tall"><input type="checkbox" data-tp-all="${esc(tPick.join(','))}"${allOn?' checked':''} data-some="${nSel&&!allOn?1:0}"> เลือกทุกคนที่ว่างในทีม</label>`:''}</div>`}
+    html+=sec;
   }
   const top=list.scrollTop;
-  list.innerHTML=html||`<div class="tp-empty">${cardOnly&&!people.length?'ยังไม่มีใครมีบัตรพื้นที่นี้ (หรือยังไม่ได้จับคู่พนักงานกับ HR)':people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'}</div>`;
+  list.innerHTML=html||`<div class="tp-empty">${cardOnly&&!people.length?'ยังไม่มีใครมีบัตรพื้นที่นี้ (หรือยังไม่ได้จับคู่พนักงานกับ HR)':shown.length||!people.length?(people.length?'ไม่พบรายชื่อที่ตรงกับคำค้น':'ยังไม่มีรายชื่อพนักงาน เพิ่มได้ที่หน้าข้อมูลหลัก'):'ทีมนี้ยังไม่มีรายชื่อ เลือก ทุกทีม เพื่อดูทุกคน'}</div>`;
   list.scrollTop=top;lastPicked=null;
   list.querySelectorAll('[data-some="1"]').forEach(x=>{x.indeterminate=true});
 }
@@ -95,6 +116,7 @@ form.addEventListener('keydown',e=>{
 form.addEventListener('click',e=>{
   const tr=e.target.closest('[data-tr]');if(tr){if(tr.getAttribute('aria-disabled')==='true'){toast(`${tr.dataset.tr} ถูกใช้แล้วในช่วงเวลานี้ เลือกคันอื่น หรือเปลี่ยนช่วงเวลา`);return}pickTransport(tr.dataset.tr);return}
   if(e.target.id==='trClear'){$('#f-transport').value='';syncTrAdd();renderTrGrid();checkConflicts();$('#f-transport').focus();return}
+  const tt=e.target.closest('[data-tp-team]');if(tt){pickTeam=tt.dataset.tpTeam;renderPickerList();return}
   const rm=e.target.closest('[data-tp-remove]');if(rm){pickSel.delete(rm.dataset.tpRemove);renderPickSel();renderPickerList();checkConflicts();return}
   const gr=e.target.closest('[data-tp-guest-remove]');if(gr){pickGuests.splice(Number(gr.dataset.tpGuestRemove),1);renderPickSel();return}
   if(e.target.closest('#tpGuestAdd')){addGuest();$('#tpGuest').focus();return}

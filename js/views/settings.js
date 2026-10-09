@@ -37,7 +37,7 @@ function renderSettings(){
   const activeStaff=staff.filter(s=>s.active!==false).length;
   const secs=[
     {id:'staff',title:'พนักงาน',sub:`ใช้งาน ${activeStaff} คน · ${teamCount}`,count:staff.length,
-     desc:'รายชื่อสำหรับ Team Service แบ่งเป็น 2 ทีม (Lab On-Site · Lab) แล้วเรียงตามตำแหน่ง ทีมใช้จัดกลุ่มรายชื่อ ตัวกรองทีมบน Weekly Plan และรายงาน คนที่ปิดใช้งานจะไม่แสดงในตัวเลือก แต่แผนเก่ายังอยู่ครบ',
+     desc:'รายชื่อสำหรับ Team Service แบ่งเป็นทีม Lab On-Site · Lab · All Team (อยู่ได้ทั้งสองทีม นับเป็นคนของทั้งสองทีม) แล้วเรียงตามตำแหน่ง ทีมใช้จัดกลุ่มรายชื่อ ตัวกรองทีมบน Weekly Plan และรายงาน คนที่ปิดใช้งานจะไม่แสดงในตัวเลือก แต่แผนเก่ายังอยู่ครบ',
      body:`<div class="md-tools"><input type="search" id="md-q" placeholder="ค้นหาชื่อ ตำแหน่ง หรือทีม" aria-label="ค้นหาพนักงาน" autocomplete="off"><span class="hint" id="md-qn">${staff.length} คน</span></div>
       <div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>ลำดับ</th><th>ชื่อ</th><th>ทีม</th><th>ตำแหน่ง</th><th>ใช้งาน</th><th></th></tr></thead><tbody>
       ${staff.map((s,i)=>`<tr class="${s.active===false?'inactive':''}${i&&teamOf(staff[i-1])!==teamOf(s)?' team-break':''}" data-q="${esc(norm([s.name,s.role,teamName(teamOf(s))].join(' ')))}"><td><input class="w-num" type="number" min="0" id="st-o-${esc(s.id)}" data-coll="staff" data-id="${esc(s.id)}" data-field="order" value="${esc(s.order??'')}"${dis} aria-label="ลำดับ"></td>
@@ -49,7 +49,7 @@ function renderSettings(){
       </tbody></table></div>
       ${can('master')?`<form class="add-row" data-add="staff"><input name="name" id="add-st-name" placeholder="ชื่อ-นามสกุล" maxlength="80" required aria-label="ชื่อ"><select name="team" id="add-st-team" aria-label="ทีม">${teamOpts(S.team)}</select><select name="role" id="add-st-role" aria-label="ตำแหน่ง">${posOpts('')}</select><button class="btn primary" type="submit">เพิ่มคน</button></form>
       <details class="bulk"><summary>เพิ่มหลายคนพร้อมกัน (วางจาก Excel)</summary><form data-bulk>
-        <p class="hint" style="margin:0">หนึ่งคนต่อหนึ่งบรรทัด เรียงคอลัมน์ ชื่อ · ตำแหน่ง · ทีม (Lab On-Site หรือ Lab ไม่ใส่ก็ได้) คัดลอกจาก Excel มาวางได้เลย ระบบจะข้ามชื่อที่มีอยู่แล้ว</p>
+        <p class="hint" style="margin:0">หนึ่งคนต่อหนึ่งบรรทัด เรียงคอลัมน์ ชื่อ · ตำแหน่ง · ทีม (Lab On-Site, Lab หรือ All Team ไม่ใส่ก็ได้) คัดลอกจาก Excel มาวางได้เลย ระบบจะข้ามชื่อที่มีอยู่แล้ว</p>
         <textarea name="rows" id="bulk-rows" rows="6" placeholder="สมชาย ใจดี&#9;Engineer&#9;Lab On-Site&#10;สมหญิง รักงาน&#9;Technician&#9;Lab"></textarea>
         <div><button class="btn primary" type="submit">เพิ่มทั้งหมด</button></div></form></details>`:''}`},
     {id:'vehicle',title:'รถ',sub:'ประเภทรถ · ชื่อรถ / ทะเบียน',count:vs.length,

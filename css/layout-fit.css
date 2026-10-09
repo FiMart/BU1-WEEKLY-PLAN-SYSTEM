@@ -62,5 +62,6 @@
 .edit-table tr.team-break td{border-top:2px solid var(--line)}
 .team-sel.t-onsite{border-color:color-mix(in srgb,#d9761c 55%,var(--line));background:color-mix(in srgb,#d9761c 8%,var(--surface))}
 .team-sel.t-lab{border-color:color-mix(in srgb,#2a78d6 55%,var(--line));background:color-mix(in srgb,#2a78d6 8%,var(--surface))}
+.team-sel.t-all{border-color:color-mix(in srgb,#7148c9 55%,var(--line));background:color-mix(in srgb,#7148c9 8%,var(--surface))}
 .dl-teams .dl-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8}
 @media (prefers-reduced-motion:reduce){.team-tabs .tt{transition:none}.team-tabs .tt:active{transform:none}}

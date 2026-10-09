@@ -36,8 +36,12 @@ const PERIODS=[{id:'am',name:'เช้า',a:0,b:0},{id:'pm',name:'บ่าย
 const PERIOD=Object.fromEntries(PERIODS.map(p=>[p.id,p]));
 /* ทีม (user, 8 Oct 2026): every person is in one team (staff.team ↔ people.data.bu1wp.team; '' = not set yet).
    Separate from สายงาน: a Flow Meter or Instrument plan may use people of either team. */
-const TEAMS=[{id:'onsite',name:'Lab On-Site',short:'On-Site',color:'#d9761c',desc:'ทีมออกหน้างาน'},{id:'lab',name:'Lab',short:'Lab',color:'#2a78d6',desc:'ทีมใน Lab'}];
+/* All Team (user, 9 Oct 2026) = works in both teams: counts as a member of Lab On-Site and of Lab (filters, Dashboard),
+   shown as its own group; not a filter button itself (WORK_TEAMS are) */
+const TEAMS=[{id:'onsite',name:'Lab On-Site',short:'On-Site',color:'#d9761c',desc:'ทีมออกหน้างาน'},{id:'lab',name:'Lab',short:'Lab',color:'#2a78d6',desc:'ทีมใน Lab'},
+  {id:'all',name:'All Team',short:'All',color:'#7148c9',desc:'อยู่ได้ทั้งสองทีม',all:true}];
 const TEAM=Object.fromEntries(TEAMS.map(t=>[t.id,t]));
+const WORK_TEAMS=TEAMS.filter(t=>!t.all);
 const NO_TEAM='ยังไม่ระบุทีม';
 const DEFAULT_POSITIONS=['Admin','Engineer','Technician','Special Contract','Assistant Technician'];
 /* earlier Thai role names, converted once to the English roles above (and when pasted in bulk) */

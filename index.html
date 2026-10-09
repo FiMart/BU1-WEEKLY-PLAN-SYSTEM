@@ -58,7 +58,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.4.0 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.4.3 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -253,7 +253,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
           <div class="tp" role="group" aria-labelledby="lblTeam">
             <div class="tp-sel" id="tpSel" aria-live="polite"></div>
             <div class="tp-bar"><input type="search" id="tpQ" placeholder="ค้นหาชื่อ หรือตำแหน่ง" aria-label="ค้นหาคนใน Team Service" autocomplete="off"><label class="check"><input type="checkbox" id="tpFree"> ซ่อนคนที่ไม่ว่าง</label><label class="check" title="ใช้เมื่อตั้งใจจัดคนซ้อนงาน ระบบจะยังเตือนว่าจัดชน"><input type="checkbox" id="tpAllowBusy"> ให้เลือกคนที่ไม่ว่างได้</label><label class="check" id="tpCardWrap" title="แสดงเฉพาะคนที่บัตรพื้นที่ที่เลือกยังใช้ได้วันนี้ (ผ่าน หรือ ใกล้หมดอายุ)" hidden><input type="checkbox" id="tpCardOnly"> เฉพาะคนที่มีบัตรพื้นที่นี้</label></div>
-            <p class="tp-key"><span class="k-free">กดชื่อเพื่อเลือก = ว่างในวันและช่วงเวลาที่เลือก</span><span class="k-un">สีเทา = ติดงานหรือลาในช่วงเวลานั้น เลือกไม่ได้</span></p>
+            <div class="tp-tteams" id="tpTeams" role="group" aria-label="แสดงทีม" hidden></div>
+            <p class="tp-key"><span class="k-free">กดชื่อเพื่อเลือก · ป้ายเขียว = ว่างในวันและช่วงเวลาที่เลือก</span><span class="k-un">สีเทา = ติดงานหรือลา เลือกไม่ได้</span></p>
             <div class="tp-list" id="tpList"></div>
             <div class="tp-guest">
               <label for="tpGuest">คนจากแผนกอื่น <span class="th">พิมพ์ชื่อเอง แล้วกด Enter หรือปุ่มเพิ่ม</span></label>
