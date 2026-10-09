@@ -29,8 +29,7 @@ function render(){
   const ready=!notReady();const anim=ready&&!reduceMotion()?S.anim:null;
   const sc=main.querySelector('.scroll-x');const sl=sc?sc.scrollLeft:0;const st=sc?sc.scrollTop:0;
   main.className=anim?'anim-'+anim:'';
-  main.innerHTML=VIEW_FN()[S.view]();
-  const sc2=main.querySelector('.scroll-x');if(sc2&&!anim){sc2.scrollLeft=sl;sc2.scrollTop=st}
+  main.innerHTML=VIEW_FN()[S.view]();  const sc2=main.querySelector('.scroll-x');if(sc2&&!anim){sc2.scrollLeft=sl;sc2.scrollTop=st}
   if(S.view==='search')fillSearch();
   if(S.view==='booking')fillBooking();
   if(S.view==='safety')fillSafety();

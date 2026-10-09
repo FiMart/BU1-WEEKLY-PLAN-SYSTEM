@@ -104,9 +104,9 @@ async function saveViewStatus(val,note){
     else toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err);renderDrawerView(editing);renderPhotos()}
 }
-/* หมายเหตุ in the plan view (user, 9 Oct 2026): right under the สถานะงาน buttons; people without them (GA) see it in the same place */
+/* หมายเหตุ in the plan view (user, 9 Oct 2026): last section, right above ประวัติการแก้ไข (ISO 9001); read-only for people without status rights (GA) */
 const remarkBox=t=>t&&t.remark?`<div class="remark-box"><b>📝 หมายเหตุ</b><span>${esc(t.remark)}</span></div>`:'';
-/* หมายเหตุ is written here, not in the edit form (user, 9 Oct 2026: "ย้ายหัวข้อ หมายเหตุ … ข้างล่าง หัวข้อ สถานะงาน"); saved at once */
+/* หมายเหตุ is written here, not in the edit form (user, 9 Oct 2026: "ย้ายหัวข้อ หมายเหตุ … ข้างบน หัวข้อประวัติการแก้ไข (ISO 9001)"); saved at once */
 const remarkEdit=t=>`<div class="v-remark"><label for="v-remark">📝 หมายเหตุ</label><textarea id="v-remark" rows="2" maxlength="1000" placeholder="เช่น โทรแจ้งลูกค้าก่อนเข้า 1 วัน · ใช้ประตู 3 · เตรียมบัตรผ่านโรงงาน">${esc(t.remark||'')}</textarea>
   <div class="v-row"><button type="button" class="btn sm" data-action="save-vremark" id="vRemarkSave">บันทึกหมายเหตุ</button>${t.remark?'<button type="button" class="lnk" data-action="clear-vremark">ลบหมายเหตุ</button>':''}</div></div>`;
 async function saveViewRemark(text){
@@ -143,10 +143,10 @@ function renderDrawerView(t){
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${canWork()?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
-      ${remarkEdit(t)}
       ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
-        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:remarkBox(t)}
+        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
+    ${canWork()?remarkEdit(t):remarkBox(t)}
     ${isoHistoryHtml(t)}`;
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }

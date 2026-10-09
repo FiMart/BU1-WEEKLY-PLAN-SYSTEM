@@ -2,13 +2,13 @@
 <title>BU1 Lab Weekly Plan</title>
 <!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
 <script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
-add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg'});
-add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png'});
-add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png'});
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.7.7'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.7.7'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.7.7'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
 <script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
-<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png"></noscript>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.7.7"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -58,7 +58,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.7.2 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.7.7 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -136,6 +136,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
   </div>
   <!-- Weekly Plan: ticked plans → move to a date or delete (js/features/plan-select.js) -->
   <div class="pickbar" id="pickBar" role="region" aria-label="แผนงานที่เลือก" hidden></div>
+  <!-- the same button, floating, once the one in the page head has scrolled away -->
+  <button type="button" class="pick-fab" id="pickFab" data-action="pick-mode" hidden title="ติ๊กเลือกหลายแผน แล้วย้ายวัน เปลี่ยนสี หรือลบพร้อมกัน"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12.5 3 3 5.5-6"/></svg>เลือกหลายแผน</button>
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">

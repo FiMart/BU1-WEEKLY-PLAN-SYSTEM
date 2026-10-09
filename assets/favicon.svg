@@ -1,15 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- same mark as the sidebar (.sb-mark in css/sidebar.css) and the print logo (LOGO_MARK in js/features/export.js) -->
   <defs>
-    <linearGradient id="bg" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="4" y1="2" x2="60" y2="62" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#7FE0FF"/>
-      <stop offset=".45" stop-color="#2F8BFF"/>
-      <stop offset="1" stop-color="#0D46B5"/>
+      <stop offset=".5" stop-color="#2F8BFF"/>
+      <stop offset="1" stop-color="#1D5BE0"/>
     </linearGradient>
   </defs>
-  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bg)"/>
-  <rect x="12" y="15" width="40" height="37" rx="8" fill="#fff"/>
-  <path d="M12 23a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v3H12z" fill="#0A2A6B"/>
-  <rect x="20" y="9" width="5" height="11" rx="2.5" fill="#fff"/>
-  <rect x="39" y="9" width="5" height="11" rx="2.5" fill="#fff"/>
-  <path d="m21.5 38.5 7 7 14-14" fill="none" stroke="#1D5BE0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#bg)"/>
+  <rect x="1.75" y="1.75" width="60.5" height="60.5" rx="16.25" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5"/>
+  <text x="32" y="41.5" text-anchor="middle" font-family="Segoe UI,Arial,Helvetica,sans-serif" font-weight="700" font-size="27" letter-spacing="-.5" fill="#fff">BU1</text>
 </svg>

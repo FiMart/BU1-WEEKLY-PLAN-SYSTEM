@@ -18,7 +18,16 @@ function togglePick(id,el){
   if(el)el.classList.toggle('picked',S.picked.has(id));
   renderPickBar();
 }
+/* floating "เลือกหลายแผน" (user, 9 Oct 2026: "ให้ปุ่มเลือกหลายแผน สามารถกดได้เวลาเลื่อนดูแผนงานโดยที่ไม่ต้อง scroll ไปกด"):
+   #pickFab shows while the page-head button is out of view; in pick mode the bar at the bottom takes over (its "เสร็จ") */
+function syncPickFab(){
+  const f=$('#pickFab'),b=$('#btnPick');if(!f)return;
+  const off=!!b&&!b.hidden&&!S.pickMode&&S.view==='plan'&&(r=>r.bottom<=0||r.top>=window.innerHeight)(b.getBoundingClientRect());
+  if(f.hidden===off)f.hidden=!off;
+}
+window.addEventListener('scroll',syncPickFab,{passive:true});window.addEventListener('resize',syncPickFab);/* one rect read; the button changes only when it crosses */
 function renderPickBar(){
+  syncPickFab();
   const bar=$('#pickBar');if(!bar)return;
   const show=S.pickMode&&S.view==='plan';bar.hidden=!show;document.body.classList.toggle('has-pickbar',show);if(!show)return;
   const list=pickedTasks();S.picked=new Set(list.map(t=>t.id));const n=list.length;

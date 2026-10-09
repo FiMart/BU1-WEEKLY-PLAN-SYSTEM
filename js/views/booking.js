@@ -11,9 +11,9 @@ function renderBooking(){
   const vs=[...new Set(vehicles().map(v=>v.name).concat((allTasks()||[]).map(t=>t.transport).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'th'));
   return `<div class="toolbar bk-bar">
       <div class="seg bk-st" role="radiogroup" aria-label="สถานะ">${[['','ทุกสถานะ']].concat(STATUSES.map(s=>[s.id,s.th])).map(([v,l])=>`<label><input type="radio" name="bk-st" value="${v}"${S.bk.st===v?' checked':''}><span>${l}</span></label>`).join('')}</div>
-      <label class="wk-jump">ตั้งแต่ <input type="date" id="bk-from" value="${esc(S.bk.from)}"></label>
+      <div class="bk-dates" role="group" aria-label="ช่วงวันที่ และรถ"><label class="wk-jump">ตั้งแต่ <input type="date" id="bk-from" value="${esc(S.bk.from)}"></label>
       <label class="wk-jump">ถึง <input type="date" id="bk-to" value="${esc(S.bk.to)}"></label>
-      <select id="bk-veh" aria-label="รถ"><option value="">รถทั้งหมด</option>${vs.map(v=>`<option value="${esc(v)}"${S.bk.veh===v?' selected':''}>${esc(v)}</option>`).join('')}</select>
+      <select id="bk-veh" aria-label="รถ"><option value="">รถทั้งหมด</option>${vs.map(v=>`<option value="${esc(v)}"${S.bk.veh===v?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
       <input type="search" id="bk-q" placeholder="ค้นหา Plan No. / ลูกค้า / สถานที่ / Detail" value="${esc(S.bk.q)}" aria-label="คำค้น" autocomplete="off">
       ${S.bk.from||S.bk.to||S.bk.veh||S.bk.q||S.bk.st||S.bk.cust?'<button type="button" class="btn sm ghost" data-action="bk-clear">ล้างตัวกรอง</button>':''}
     </div>
