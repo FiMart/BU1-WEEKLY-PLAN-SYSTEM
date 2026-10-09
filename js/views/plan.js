@@ -17,18 +17,52 @@ function planGroups(list){
   if(leave)out.push(leave);
   return out;
 }
-const planMatch=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
-let gchipHtml='';
-function renderChips(){
-  let html='';
-  if(S.view==='plan'&&!notReady()){
-    const groups=planGroups(S.tasks.filter(planMatch));
-    S.pf.groups=S.pf.groups.filter(k=>groups.some(g=>g.key===k));
-    if(groups.length>1)html=`<button type="button" class="gchip all" data-gchip="" aria-pressed="${!S.pf.groups.length}">ทั้งหมด<b>${groups.reduce((a,g)=>a+g.tasks.length,0)}</b></button>`
-      +groups.map(g=>`<button type="button" class="gchip" data-gchip="${esc(g.key)}" style="--c:${safeColor(g.color)}" aria-pressed="${S.pf.groups.includes(g.key)}">${esc(g.label)}<b>${g.tasks.length}</b></button>`).join('');
-  }
-  if(html!==gchipHtml){$('#gchips').innerHTML=html;gchipHtml=html}
+const planBase=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
+/* หัวข้องาน / ลูกค้า filters (user, 10 Oct 2026: "filter ของ หัวข้องาน กับ ลูกค้า ให้เป็น Drop Down"; were the row chips under the
+   page title): two dropdowns in the filter bar, several picks each, both apply together. S.pf.types = job type ids ('__x' = a
+   deleted type), S.pf.custs = custKey values. They narrow the board, the week sheets and "เลือกทั้งหมดที่แสดง". */
+const typeKeyOf=t=>{const id=typeIdOf(t);return jobTypes().some(x=>x.id===id)?id:'__x'};
+const typeFilterOk=t=>!S.pf.types.length||S.pf.types.includes(typeKeyOf(t));
+const custFilterOk=t=>!S.pf.custs.length||S.pf.custs.includes(custKey(t));
+const planMatch=t=>planBase(t)&&typeFilterOk(t)&&custFilterOk(t);
+/* the options with counts: each list counts with the other filter applied; a picked option stays listed (count 0) so it can be unpicked */
+function planFilterOpts(){
+  const base=S.tasks.filter(planBase);const cnt=(list,key)=>{const m=new Map();list.forEach(t=>{const k=key(t);m.set(k,(m.get(k)||0)+1)});return m};
+  const tc=cnt(base.filter(custFilterOk),typeKeyOf),cc=cnt(base.filter(typeFilterOk),custKey);
+  const types=jobTypes().filter(x=>tc.has(x.id)||S.pf.types.includes(x.id)).map(x=>({v:x.id,label:x.name,n:tc.get(x.id)||0}))
+    .concat(tc.has('__x')||S.pf.types.includes('__x')?[{v:'__x',label:'ประเภทที่ถูกลบแล้ว',n:tc.get('__x')||0}]:[]);
+  const custs=[...new Set([...cc.keys(),...S.pf.custs])].map(k=>({v:k,label:k,n:cc.get(k)||0}))
+    .sort((a,b)=>(a.v===NO_CUST)-(b.v===NO_CUST)||b.n-a.n||a.label.localeCompare(b.label,'th'));
+  return {types,custs};
 }
+const ddValue=(picked,opts,all)=>!picked.length?all:picked.length===1?((opts.find(o=>o.v===picked[0])||{}).label||picked[0]):`${picked.length} รายการ`;
+let pfDdHtml={types:'',custs:''};
+function renderChips(){
+  $('#gchips').innerHTML='';/* the old row chips: replaced by the dropdowns */
+  const show=S.view==='plan'&&!notReady();$('#pfTypeDD').hidden=$('#pfCustDD').hidden=!show;
+  if(!show){$('#pfTypeDD').open=$('#pfCustDD').open=false;return}
+  const o=planFilterOpts();
+  [['types',o.types,'#pfTypeList','#pfTypeV','#pfTypeDD','ทุกหัวข้องาน'],['custs',o.custs,'#pfCustList','#pfCustV','#pfCustDD','ทุกลูกค้า']].forEach(([k,opts,list,val,dd,all])=>{
+    const html=opts.length?opts.map(x=>`<label class="dd-opt"><input type="checkbox" data-dd="${k}" value="${esc(x.v)}"${S.pf[k].includes(x.v)?' checked':''}><span>${esc(x.label)}</span><b>${x.n}</b></label>`).join(''):'<p class="dd-none">ไม่มีแผนในสัปดาห์นี้</p>';
+    if(html!==pfDdHtml[k]){$(list).innerHTML=html;pfDdHtml[k]=html;if(k==='custs')ddSearch()}
+    $(val).textContent=ddValue(S.pf[k],opts,all);$(dd).classList.toggle('on',S.pf[k].length>0);
+    const c=$(dd).querySelector('[data-dd-clear]');if(c)c.disabled=!S.pf[k].length;
+  });
+}
+/* ลูกค้า search inside its dropdown (hides the options that do not match) */
+function ddSearch(){const q=norm(($('#pfCustQ')||{}).value||'');document.querySelectorAll('#pfCustList .dd-opt').forEach(l=>{l.hidden=!!q&&!norm(l.textContent).includes(q)})}
+document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('input[data-dd]');if(!i)return;
+  const k=i.dataset.dd;S.pf[k]=i.checked?[...new Set(S.pf[k].concat(i.value))]:S.pf[k].filter(x=>x!==i.value);S.anim=null;render()});
+document.addEventListener('input',e=>{if(e.target.id==='pfCustQ')ddSearch()});
+document.addEventListener('click',e=>{
+  const c=e.target.closest('[data-dd-clear]');if(c){S.pf[c.dataset.ddClear]=[];S.anim=null;render();return}
+  if(e.target.closest('[data-dd-close]')){e.target.closest('details').open=false;return}
+  document.querySelectorAll('#planbar details.dd[open]').forEach(d=>{if(!d.contains(e.target))d.open=false});/* one open at a time; a click outside closes */
+});
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.matches||!d.matches('#planbar details.dd')||!d.open)return;
+  document.querySelectorAll('#planbar details.dd[open]').forEach(x=>{if(x!==d)x.open=false});
+  if(d.id==='pfCustDD'){const q=$('#pfCustQ');if(q&&!isPhoneW())setTimeout(()=>q.focus(),30)}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const d=document.querySelector('#planbar details.dd[open]');if(d){d.open=false;d.querySelector('summary').focus()}}});
 function renderActions(){
   const plan=S.view==='plan',ready=!notReady();
   $('#copyMenu').hidden=!plan||!ready;if(!plan)$('#copyMenu').open=false;
@@ -50,7 +84,7 @@ function transportChip(v,t){
   if(t&&gaWaiting(t))return `<span class="tchip gawait${t.gaUrgent?' urgent':''}" title="${esc(['ขอรถ GA แล้ว GA จะระบุรถและทะเบียนให้ภายหลัง',gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA · ${t.gaUrgent?'ด่วน · ':''}รอทะเบียน${t.gaGo?' · ออก '+esc(t.gaGo):''}</span>`;
   if(!v||v==='ไม่ใช้รถ')return '';
   const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':OWN_CAR.includes(v)?'own':'car';
-  return `<span class="tchip ${cls}"${cls==='own'&&t&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?v:cls==='own'?'รถส่วนตัว':'รถ '+esc(v)}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
+  return `<span class="tchip ${cls}"${cls==='own'&&t&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?v:cls==='own'?'รถส่วนตัว':esc(v)/* the car icon says it is a vehicle: no "รถ" before every plate (user, 10 Oct 2026) */}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
 }
 function wcard(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);

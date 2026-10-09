@@ -3,7 +3,7 @@
 /* ---------- state ---------- */
 const S={staff:[],resources:[],projects:[],tasks:[],cfg:{},week:mondayOf(new Date()),month:firstOfMonth(new Date()),view:'plan',showSun:true,
   mode:'connecting',canWrite:true,me:null,tasksReady:false};
-S.pf={q:'',teams:[],busy:false,staff:'',type:'',by:'type',groups:[]};S.anim='view';S.sel=new Set();
+S.pf={q:'',teams:[],busy:false,staff:'',type:'',by:'type',groups:[],types:[],custs:[]};/* types / custs = the หัวข้องาน / ลูกค้า dropdown filters (js/views/plan.js) */S.anim='view';S.sel=new Set();
 S.srch={q:'',by:'all',from:'',to:''};S.showAvail=true;S.pmode=null;S.pday=null;S.mday=null;S.md='staff';S.mdq='';S.dash={mode:'week'};S.projEdit=null;
 const flashIds=new Set();
 const known=new Map();

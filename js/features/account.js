@@ -41,11 +41,48 @@ function openAccount(){
   $('#acctBody').innerHTML=`
     <div class="acct-basic"><img src="${esc(av)}" alt=""><div><h2 id="acctTitle">${esc(name)}</h2>${email&&norm(email)!==norm(name)?`<p>${esc(email)}</p>`:''}<span class="acct-role ${esc(r.level)}">${esc(r.label)}</span></div></div>
     <dl class="acct-rows">${rows.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>
+    ${u?pwFormHtml(email):''}
     <p class="acct-more"><button type="button" class="lnk" data-action="goto-prefs">ไปที่การตั้งค่า</button></p>`;
   $('#acctLogout').hidden=S.backend!=='supabase';
   $('#acctNote').textContent=S.mode==='live'&&S.backend!=='supabase'?'ชื่อและรูปมาจากบัญชี claude.ai':'';
   const d=$('#acctDlg');if(!d.open)d.showModal();
 }
+
+/* เปลี่ยนรหัสผ่าน (user, 10 Oct 2026: "ผู้ใช้งานระบบ สามารถเปลี่ยนรหัสผ่านได้ในหน้าบัญชี"): central account only.
+   The current password is checked first (signing in again with it), then sb.auth.updateUser({password}). */
+function pwFormHtml(email){
+  return `<details class="acct-pw" id="acctPw"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4"/></svg><b>เปลี่ยนรหัสผ่าน</b><small>ใช้กับทุกแอปที่เข้าด้วยบัญชีกลางนี้</small></summary>
+    <form id="acctPwForm" class="acct-pw-form" novalidate>
+      <input type="email" name="username" autocomplete="username" value="${esc(email)}" hidden>
+      <label class="field"><span>รหัสผ่านปัจจุบัน</span><span class="pw-wrap"><input id="cp-cur" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" data-pw-toggle aria-label="แสดงรหัสผ่าน">แสดง</button></span></label>
+      <label class="field"><span>รหัสผ่านใหม่ <small class="hint">อย่างน้อย 8 ตัวอักษร</small></span><span class="pw-wrap"><input id="cp-new" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="pw-eye" data-pw-toggle aria-label="แสดงรหัสผ่าน">แสดง</button></span></label>
+      <label class="field"><span>ยืนยันรหัสผ่านใหม่</span><input id="cp-new2" type="password" autocomplete="new-password" minlength="8" required></label>
+      <p class="acct-pw-msg" id="cpMsg" role="alert" hidden></p>
+      <div class="acct-pw-row"><button type="submit" class="btn primary" id="cpSave">บันทึกรหัสผ่านใหม่</button><span class="hint">ลืมรหัสผ่านปัจจุบัน? ออกจากระบบแล้วกด "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ</span></div>
+    </form></details>`;
+}
+function cpMsg(text,kind){const el=$('#cpMsg');if(!el)return;el.textContent=text||'';el.className='acct-pw-msg'+(kind?' '+kind:'');el.hidden=!text}
+async function changePassword(){
+  const cur=$('#cp-cur').value,pw=$('#cp-new').value,pw2=$('#cp-new2').value;
+  const fail=(m,f)=>{cpMsg(m,'err');if(f)$(f).focus()};
+  if(!cur)return fail('ใส่รหัสผ่านปัจจุบัน','#cp-cur');
+  if(pw.length<8)return fail('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร','#cp-new');
+  if(pw!==pw2)return fail('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน','#cp-new2');
+  if(pw===cur)return fail('รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านปัจจุบัน','#cp-new');
+  if(typeof sb==='undefined'||!sb||!S.auth||!S.auth.email)return fail('เปลี่ยนรหัสผ่านได้เมื่อเข้าสู่ระบบด้วยบัญชีกลางเท่านั้น');
+  const btn=$('#cpSave');btn.disabled=true;cpMsg('กำลังบันทึก…');
+  try{
+    const chk=await withTimeout(sb.auth.signInWithPassword({email:S.auth.email,password:cur}),15000);
+    if(chk.error){fail(/invalid login|credentials/i.test(chk.error.message||'')?'รหัสผ่านปัจจุบันไม่ถูกต้อง':authText(chk.error),'#cp-cur');return}
+    const {data,error}=await withTimeout(sb.auth.updateUser({password:pw}),15000);
+    if(error){fail(/reauth/i.test(error.message||'')?'ระบบกลางต้องยืนยันตัวตนอีกครั้ง ใช้ "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบเพื่อรับลิงก์ตั้งรหัสใหม่ทางอีเมล':authText(error));return}
+    if(data&&data.user)S.auth.user=data.user;
+    ['#cp-cur','#cp-new','#cp-new2'].forEach(s=>{$(s).value=''});cpMsg('เปลี่ยนรหัสผ่านแล้ว ครั้งหน้าเข้าสู่ระบบด้วยรหัสผ่านใหม่','ok');toast('เปลี่ยนรหัสผ่านแล้ว');
+  }catch(e){fail(authText(e))}
+  finally{btn.disabled=false}
+}
+document.addEventListener('submit',e=>{if(e.target.id!=='acctPwForm')return;e.preventDefault();changePassword()});
+document.addEventListener('input',e=>{if(e.target.closest&&e.target.closest('#acctPwForm')&&$('#cpMsg')&&$('#cpMsg').classList.contains('err'))cpMsg('')});
 
 /* preferences of the signed-in account (js/core/state.js keeps them per account): shown in the account window and in จัดการข้อมูล › การตั้งค่า */
 const PREF_GROUPS=[

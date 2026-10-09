@@ -433,3 +433,87 @@ body.has-pickbar .app{padding-bottom:110px}
 .tneed-v{display:inline-block;margin-left:6px;padding:0 8px;border:1px solid;font-size:11.5px;text-transform:none;letter-spacing:0}
 .wc-pp .tchip.tneed{margin-right:2px}
 .bk-table .c-team .tchip.tneed{margin-top:4px;font-size:11px}
+
+/* ---------- เลือกหลายแผน next to เพิ่มแผนงาน (user, 10 Oct 2026: "ตำแหน่งที่เหมาะสมต่อการหาปุ่ม") ----------
+   index.html puts it second; a thin divider then separates the editing pair from sharing / export */
+.lbl-short{display:none}
+@media (min-width:761px){
+  .ph-actions #btnPick:not([hidden]){position:relative;margin-right:9px}
+  .ph-actions #btnPick:not([hidden])::after{content:"";position:absolute;right:-9px;top:6px;bottom:6px;width:1px;background:var(--line)}
+}
+
+/* ---------- Weekly Plan on phones (user, 10 Oct 2026: "mobile ข้างบน weekly plan ให้โชว์แค่ข้อมูลที่จำเป็น") ----------
+   ≤760 px and Weekly Plan only (body[data-page="plan"], set in render()). Kept: title, one row of + เพิ่มแผนงาน · เลือกหลายแผน ·
+   ส่ง LINE, สายงาน + ทีม in one sliding row, search + คน, week nav, the clash count. Hidden (still on tablet / desktop):
+   subtitle, row chips, Screenshot · Print / PDF · Excel, แถวตามหัวข้องาน / ลูกค้า, แสดงคนว่าง, the plan count, status counts */
+@media (max-width:760px){
+  body[data-page="plan"] #pageSub,body[data-page="plan"] #gchips,
+  body[data-page="plan"] #btnShot,body[data-page="plan"] #btnPrint,body[data-page="plan"] #btnXlsx,
+  body[data-page="plan"] #pf-by,body[data-page="plan"] #pf-availWrap,body[data-page="plan"] #pf-count,
+  body[data-page="plan"] .wp-brand,body[data-page="plan"] .wp-legend span:not(.alert){display:none!important}
+  body[data-page="plan"] .page-head{gap:8px}
+  body[data-page="plan"] .page-head h2{font-size:20px}
+  body[data-page="plan"] .ph-actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;width:100%}
+  body[data-page="plan"] .ph-actions>*{min-width:0}
+  body[data-page="plan"] .ph-actions .btn,body[data-page="plan"] .ph-actions .menu>summary.btn{width:100%;justify-content:center;gap:5px;min-height:40px;padding:0 6px;font-size:13px;white-space:nowrap}
+  body[data-page="plan"] .lbl-long{display:none}
+  body[data-page="plan"] .lbl-short{display:inline}
+  /* สายงาน + ทีม: one row that slides sideways */
+  body[data-page="plan"] #lineBar{flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;padding-bottom:1px}
+  body[data-page="plan"] #lineBar::-webkit-scrollbar{display:none}
+  body[data-page="plan"] #lineBar .line-tabs,body[data-page="plan"] #lineBar .line-tabs.slim{display:flex;flex:none;flex-wrap:nowrap;gap:6px}
+  body[data-page="plan"] #lineBar{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);padding-right:24px}/* the faded edge says "slide for more" */
+  body[data-page="plan"] #lineBar .lt{flex:none;min-height:34px;padding:2px 12px;gap:6px}
+  body[data-page="plan"] #lineBar .lt-ico{display:none}
+  body[data-page="plan"] #lineBar .lt-name{font-size:12.5px;white-space:nowrap}
+  body[data-page="plan"] #lineBar .team-tabs{display:flex;flex:none;flex-wrap:nowrap;gap:6px;margin:0;padding-left:8px;border-left:1px solid var(--line)}
+  body[data-page="plan"] #lineBar .team-tabs .tt{flex:none;min-height:34px;padding:2px 10px;font-size:12px;white-space:nowrap}
+  /* search + คน on one line */
+  /* search on its own line, then หัวข้องาน · ลูกค้า · คน side by side (v4.8.3) */
+  body[data-page="plan"] #planbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  body[data-page="plan"] #pf-q{grid-column:1/-1;min-width:0}
+  body[data-page="plan"] #pf-staff{min-width:0;width:100%}
+  body[data-page="plan"] #planbar .dd{min-width:0;position:static}
+  body[data-page="plan"] #planbar .dd-btn{width:100%;min-width:0;padding:0 8px}
+  body[data-page="plan"] #planbar .dd-btn svg,body[data-page="plan"] #planbar .dd-k{display:none}
+  body[data-page="plan"] #planbar .dd-pop{left:0;right:0;width:auto;max-width:none}
+  /* board head: week nav and the clash count only */
+  body[data-page="plan"] .wp-head{flex-wrap:nowrap;justify-content:space-between;gap:6px;padding:6px 8px}
+  body[data-page="plan"] .wp-legend{margin:0;flex:none}
+  body[data-page="plan"] .wp-nav{flex:1 1 auto;flex-wrap:nowrap;min-width:0;gap:4px}
+  body[data-page="plan"] .wp-wk{min-width:0;flex:1 1 auto;text-align:center}
+  body[data-page="plan"] .wp-wk b{font-size:15px;white-space:nowrap}
+  body[data-page="plan"] .wp-wk span{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body[data-page="plan"] .wp-nav .icon-btn,body[data-page="plan"] .wp-jump{flex:none}
+  body[data-page="plan"] #planbar{position:relative}
+}
+
+/* ---------- หัวข้องาน / ลูกค้า dropdown filters (user, 10 Oct 2026; renderChips in js/views/plan.js) ---------- */
+.dd{position:relative;flex:none}
+.dd[hidden]{display:none}
+.dd-btn{display:inline-flex;align-items:center;gap:6px;min-height:34px;max-width:240px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer;list-style:none;user-select:none}
+.dd-btn::-webkit-details-marker{display:none}
+.dd-btn::after{content:"";flex:none;width:7px;height:7px;margin:-3px 2px 0 4px;border:solid var(--muted);border-width:0 1.6px 1.6px 0;transform:rotate(45deg);transition:transform .15s}
+.dd[open] .dd-btn::after{transform:rotate(-135deg);margin-top:3px}
+.dd-btn svg{width:15px;height:15px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.dd-k{color:var(--ink-2);flex:none}
+.dd-v{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.dd-btn:hover,.dd[open] .dd-btn{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.dd.on .dd-btn{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.dd.on .dd-v{color:var(--accent)}
+.dd.on .dd-btn svg{stroke:var(--accent)}
+.dd-pop{position:absolute;z-index:40;top:calc(100% + 6px);left:0;width:280px;max-width:calc(100vw - 32px);display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 14px 34px rgba(13,22,38,.18),0 2px 6px rgba(13,22,38,.08)}
+.dd-q{width:100%;min-height:34px;font-size:13px}
+.dd-list{display:grid;gap:1px;max-height:min(320px,55vh);overflow:auto;overscroll-behavior:contain}
+.dd-opt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;cursor:pointer}
+.dd-opt[hidden]{display:none}
+.dd-opt:hover{background:var(--surface-2)}
+.dd-opt input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.dd-opt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd-opt b{min-width:22px;padding:0 6px;border-radius:999px;font-size:11.5px;font-weight:700;text-align:center;color:var(--ink-2);background:var(--surface-2)}
+.dd-opt:has(input:checked){background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.dd-opt:has(input:checked) span{font-weight:600}
+.dd-none{margin:6px 8px;font-size:12.5px;color:var(--muted)}
+.dd-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px 0;border-top:1px solid var(--line-2)}
+.dd-foot .lnk:disabled{opacity:.4;cursor:default}
+#gchips:empty{display:none}

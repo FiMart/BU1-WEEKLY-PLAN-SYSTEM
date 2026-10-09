@@ -18,6 +18,7 @@ const PAGES={
 const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,mplan:renderMp,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
+  document.body.dataset.page=S.view;/* page-specific phone layout (css/compact.css, "Weekly Plan on phones") */
   {const mb=document.querySelector('.bn-more');if(mb)mb.classList.toggle('on',!!document.querySelector(`#bnSheet [data-view="${S.view}"]`))}
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
   renderSync();renderBanners();renderLineBar();renderWeekbar();renderPlanbar();renderChips();renderActions();renderAccountCard();moveInd();
