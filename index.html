@@ -2,13 +2,13 @@
 <title>BU1 Lab Weekly Plan</title>
 <!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
 <script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
-add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.7.7'});
-add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.7.7'});
-add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.7.7'});
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.8.0'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.8.0'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.8.0'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
 <script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
-<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.7.7"></noscript>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.8.0"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -58,7 +58,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.7.7 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.8.0 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -210,15 +210,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
           <button type="button" class="lnk prep-last" id="prepLast" hidden></button>
         </div>
 
-        <div class="fl fl-full" id="lblTr"><b>วิธีเดินทาง <i class="req" aria-hidden="true">*</i></b><small>ต้องเลือก 1 อย่าง</small></div>
+        <div class="fl fl-full" id="lblTr"><b>วิธีเดินทาง</b><small>ไม่บังคับ · กดอันที่เลือกอีกครั้งเพื่อยกเลิก</small></div>
         <div class="fv fv-full tr-pick" role="group" aria-labelledby="lblTr">
           <div class="car-mode" role="radiogroup" aria-label="วิธีเดินทาง">
             <label title="รถของแผนก (Lab)"><input type="radio" name="car-mode" value="dept"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2"/><circle cx="6.5" cy="17.2" r="1.8"/><circle cx="17" cy="17.2" r="1.8"/></svg><b>รถแผนก</b></span></label>
             <label title="ขอรถส่วนกลางจาก GA (มีคนขับ)"><input type="radio" name="car-mode" value="ga"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h7A1.5 1.5 0 0 1 15 4.5V21M15 9h3.5A1.5 1.5 0 0 1 20 10.5V21M3 21h18M8.5 7h3M8.5 11h3M8.5 15h3"/></svg><b>รถ GA</b></span></label>
             <label title="ขอรถส่วนกลางไปขับเอง"><input type="radio" name="car-mode" value="own"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12.5" r="2"/><path d="M3.7 11c2.7-1 5.5-1.5 8.3-1.5s5.6.5 8.3 1.5M10.3 13.7 8.5 20.2M13.7 13.7l1.8 6.5"/></svg><b>ขอรถไปเอง</b></span></label>
-            <label title="งานนี้ไม่ใช้รถ"><input type="radio" name="car-mode" value="none"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="1.8"/><path d="m10 21 2-5.5 2.5 2.2V21M8 12.5l1.8-4 3.4-1.2 2.3 3.4 2.8 1"/><path d="m12 15.5 1.2-5.3"/></svg><b>ไม่ใช้รถ</b></span></label>
           </div>
-          <p class="car-err" id="carErr" role="alert" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.3v.1"/></svg>เลือกวิธีเดินทางก่อน</p>
           <div class="car-pane" id="carDept" hidden>
             <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
             <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถแผนกที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
@@ -259,6 +257,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 
         <div class="fl fl-full" id="lblTeam"><b>Team Service</b><small>ผู้ปฏิบัติงาน / Workers · ห้ามซ้ำในช่วงเวลาเดียวกัน · เลือกแล้ว <b id="tpN">0</b> คน</small></div>
         <div class="fv fv-full">
+          <!-- จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026); syncTeamNeed in js/dialog/picker.js -->
+          <div class="tneed-row" id="teamNeedRow">
+            <label for="f-teamNeed"><b>แผนงานนี้ใช้</b></label>
+            <div class="tneed-in"><button type="button" class="tneed-step" data-need-step="-1" aria-label="ลดจำนวน">−</button><input type="number" id="f-teamNeed" min="0" max="99" step="1" inputmode="numeric" placeholder="–" aria-describedby="teamNeedSt"><button type="button" class="tneed-step" data-need-step="1" aria-label="เพิ่มจำนวน">+</button></div>
+            <span class="tneed-unit">คน</span>
+            <span class="tneed-st" id="teamNeedSt" aria-live="polite"></span>
+          </div>
           <label class="share-box" id="shareBox" for="f-sharedTeam"><input type="checkbox" id="f-sharedTeam"><span><b>ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</b><small>เปิดเมื่อจงใจส่งทีมชุดเดียวกันทำหลายงานใน<em id="f-sharedArea">พื้นที่เดียวกัน</em>วันเดียวกัน — <strong>ต้องเปิดทั้งสองงาน</strong>จึงจะไม่ถูกนับว่าคนซ้ำ</small></span></label>
           <div class="tp" role="group" aria-labelledby="lblTeam">
             <div class="tp-sel" id="tpSel" aria-live="polite"></div>

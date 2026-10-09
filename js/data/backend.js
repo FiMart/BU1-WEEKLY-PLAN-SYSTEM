@@ -104,7 +104,7 @@ function supabaseBackend(client,{dept}){
       selfDrive:!!x.selfDrive||d.transport==='self',carReason:d.selfReason||x.carReason||'',carNote:d.selfNote||x.carNote||'',
       gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
-      staffIds:asList(d.workers),status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
+      staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
       photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
@@ -177,6 +177,7 @@ function supabaseBackend(client,{dept}){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */color:t.color||'',/* สีของแผน, '' = ตาม Plan No. (user, 9 Oct 2026) */
       detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
+      teamNeed:Math.max(0,Math.floor(Number(t.teamNeed)||0)),/* จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026) */
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */

@@ -24,10 +24,27 @@ function renderPickSel(){
     .concat(pickGuests.map((g,i)=>`<span class="tp-tag guest"><span class="avatar xs" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small><button type="button" data-tp-guest-remove="${i}" aria-label="เอา ${esc(g)} ออก">×</button></span>`));
   el.innerHTML=tags.length?tags.join(''):'<span class="hint">ยังไม่ได้เลือก (ไม่บังคับ บันทึกแผนก่อนแล้วเพิ่มทีมทีหลังได้) · ติ๊กชื่อจากรายการด้านล่าง หรือพิมพ์ชื่อคนจากแผนกอื่น</span>';
   $('#tpCount').textContent=tags.length?`เลือกแล้ว ${tags.length} คน${pickGuests.length?` (ในแผนก ${ids.length} · แผนกอื่น ${pickGuests.length})`:''}`:'';
-  $('#tpClear').hidden=!tags.length;$('#tpN').textContent=tags.length;
+  $('#tpClear').hidden=!tags.length;$('#tpN').textContent=tags.length;syncTeamNeed();
   const area=($('#f-area')||{}).value;$('#tpCard').innerHTML=cardSummary(ids,area);
   $('#tpCardWrap').hidden=!(typeof hasSafety==='function'&&hasSafety()&&area&&areaRule(SAFE,area));
 }
+/* แผนงานนี้ใช้ … คน (user, 9 Oct 2026): the number typed, and how many are still missing against the people picked */
+const teamNeedIn=()=>Math.max(0,Math.min(99,Math.floor(Number($('#f-teamNeed').value)||0)));
+function syncTeamNeed(){
+  const row=$('#teamNeedRow');if(!row)return;const leave=$('#f-type').value==='leave';row.hidden=leave;
+  const st=$('#teamNeedSt');const n=teamNeedIn();const h=pickSel.size+pickGuests.length;
+  row.classList.toggle('short',!!n&&h<n);row.classList.toggle('ok',!!n&&h>=n);
+  st.innerHTML=leave||!n?'<span class="hint">ไม่บังคับ · ใส่จำนวนคนที่งานนี้ต้องใช้ ระบบจะบอกว่ายังขาดกี่คน</span>'
+    :h<n?`<b>ขาดอีก ${n-h} คน</b><small>เลือกแล้ว ${h} จาก ${n} คน</small>`
+    :h>n?`<b>ครบแล้ว</b><small>เลือก ${h} คน · เกินที่ตั้งไว้ ${h-n} คน</small>`:`<b>ครบแล้ว</b><small>${h} จาก ${n} คน</small>`;
+}
+$('#f-teamNeed').addEventListener('input',syncTeamNeed);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-need-step]');if(!b||!$('#teamNeedRow').contains(b))return;
+  const i=$('#f-teamNeed');i.value=String(Math.max(0,Math.min(99,teamNeedIn()+Number(b.dataset.needStep))))||'';if(i.value==='0')i.value='';syncTeamNeed()});
+/* วิธีเดินทาง is optional (user, 9 Oct 2026): a click on the choice already picked clears it */
+let carWasOn=null;
+form.addEventListener('pointerdown',e=>{const l=e.target.closest('.car-mode label');const i=l&&l.querySelector('input');carWasOn=i&&i.checked?i:null},true);
+form.addEventListener('click',e=>{const i=e.target.closest('.car-mode input');if(!i||i!==carWasOn)return;carWasOn=null;i.checked=false;syncCarMode();checkConflicts()});
 function addGuest(){
   const inp=$('#tpGuest');const name=inp.value.trim().replace(/\s+/g,' ').slice(0,80);if(!name)return false;
   const inDept=S.staff.find(s=>norm(s.name)===norm(name));

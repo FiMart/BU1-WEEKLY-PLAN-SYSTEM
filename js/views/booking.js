@@ -55,7 +55,7 @@ function fillBooking(){
       <td class="c-loc">${esc(t.location||'–')}${t.areaId&&typeof areaName==='function'?`<span class="sub">พื้นที่ ${esc(areaName(t.areaId))}</span>`:''}</td>
       <td class="num c-date"><b>${EN_DAY[d.getDay()]}</b> ${esc(fmtShort(d))} ${String(be(d)).slice(-2)}<span class="sub">${esc(pName(t))}${t.timeNote?' · '+esc(t.timeNote):''}</span></td>
       <td class="c-car">${ch||esc(t.transport||'–')}</td>
-      <td class="c-team"><div class="avstack">${av||'–'}</div></td>
+      <td class="c-team"><div class="avstack">${av||'–'}</div>${teamNeedChip(t)}</td>
       <td class="booker c-by" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
       <td class="c-st"><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
     ||`<tr><td colspan="9" class="hint" style="padding:20px 12px">ไม่พบงานที่ตรงกับตัวกรอง</td></tr>`;

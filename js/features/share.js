@@ -18,7 +18,8 @@ function jobLines(t,withPeriod){
     ...((t.contact||t.contactTel)?[`☎️ ติดต่อ : ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`]:[]),
     ...calLines(t),...insLines(t),
     ...(prepText(t)?['🧰 '+prepText(t)]:[]),
-    ...(team.length>1?['👷 ทีมงาน :'].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ทีมงาน : ${team[0]||'-'}`]),
+    ...(()=>{const nd=teamNeedOf(t)?` (${team.length}/${teamNeedOf(t)} คน${teamShort(t)?` · ขาด ${teamShort(t)} คน`:''})`:'';/* จำนวนที่ต้องการ (user, 9 Oct 2026) */
+      return team.length>1?[`👷 ทีมงาน${nd} :`].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ทีมงาน${nd} : ${team[0]||'-'}`]})(),
     ...(t.sale?[`💼 Sale : ${t.sale}${tel?' '+tel:''}`]:[]),
     ...(LINE_STATUS[t.status]?[`${LINE_STATUS[t.status]} สถานะ : ${statusText(t)}`]:[]),
     ...(reportsOf(t).length||docNeeded(t)?[`📎 เอกสาร : ${DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)).map(k=>`${k.name} ${docsOf(t,k.id).length?'✅':'❌'}`).join(' · ')}`]:[]),

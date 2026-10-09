@@ -8,6 +8,15 @@ function visibleStaff(tasks){
   return S.staff.filter(s=>(s.active!==false||used.has(s.id))&&inTeam(s)).sort(sortPeople);/* the open ทีม only */
 }
 const teamNames=t=>[...(t.staffIds||[]).map(staffName),...(t.guests||[]).map(g=>g+' (แผนกอื่น)')];
+/* จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026: "แผนงานนี้ใช้ Team Service กี่คน … ขาดกี่คน"): task.teamNeed (0 = not set);
+   the team counted = staff + people from other departments; leave plans have none */
+const teamHave=t=>(t.staffIds||[]).length+(t.guests||[]).length;
+const teamNeedOf=t=>t&&!isLeave(t)?Math.max(0,Math.floor(Number(t.teamNeed)||0)):0;
+const teamShort=t=>Math.max(0,teamNeedOf(t)-teamHave(t));
+/* the short label: "ขาด 2 คน" · "ครบ 4/4" · "เกิน 1 คน" ('' when no number is set) */
+function teamNeedText(t){const n=teamNeedOf(t);if(!n)return '';const h=teamHave(t);return h<n?`ขาด ${n-h} คน`:h>n?`ครบ · เกิน ${h-n} คน`:`ครบ ${h}/${n}`}
+/* a chip for cards: red while short, green when complete */
+const teamNeedChip=t=>{const n=teamNeedOf(t);if(!n)return '';const s=teamShort(t);return `<span class="tchip tneed ${s?'short':'ok'}" title="Team Service ${teamHave(t)}/${n} คน${s?` · ขาดอีก ${s} คน`:' · ครบแล้ว'}">👷 ${teamHave(t)}/${n}${s?` · ขาด ${s}`:''}</span>`};
 /* people are grouped by ทีม (user, 8 Oct 2026; once anyone has one, and no team filter is on) then ตำแหน่ง (role) in the order of
    the positions list: group key "Lab On-Site · Engineer". (The old free-text staff "team" was dropped 5 Oct 2026; ทีม is TEAMS.) */
 const roleOf=s=>String((s&&s.role)||'').trim()||'ไม่ระบุตำแหน่ง';

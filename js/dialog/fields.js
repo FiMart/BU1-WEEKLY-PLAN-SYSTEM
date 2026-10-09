@@ -98,10 +98,11 @@ function syncSharedArea(){
   const a=($('#f-area')||{}).value;const name=a&&typeof areaName==='function'?areaName(a):$('#f-location').value.trim();
   $('#f-sharedArea').textContent=name?`พื้นที่ ${name} `:'พื้นที่เดียวกัน';
 }
-/* วิธีเดินทาง (user, 7–8 Oct 2026): four choices, one required, each opens its own fields —
+/* วิธีเดินทาง (user, 7–8 Oct 2026): three choices, each opens its own fields —
    รถแผนก = the Lab's vehicles (tiles, clash check) · รถ GA = needGA + รูปแบบ / เวลารถออก / งานด่วน / ของต้องขน
-   (+ the plate GA tells us) · ขอรถไปเอง = needGA + selfDrive + เวลารับรถ + เหตุผล (required) / รายละเอียด ·
-   ไม่ใช้รถ = transport 'ไม่ใช้รถ'. รถ GA and ขอรถไปเอง share หมายเหตุถึง GA. */
+   (+ the plate GA tells us) · ขอรถไปเอง = needGA + selfDrive + เวลารับรถ + เหตุผล (required) / รายละเอียด.
+   รถ GA and ขอรถไปเอง share หมายเหตุถึง GA. Optional since 9 Oct 2026 (user: "ลบไม่ใช้รถออก และไม่บังคับ"):
+   nothing chosen = transport ''; older plans saved as 'ไม่ใช้รถ' open with nothing chosen. */
 const carMode=()=>(document.querySelector('input[name="car-mode"]:checked')||{}).value||'';
 const radioVal=n=>(document.querySelector(`input[name="${n}"]:checked`)||{}).value||'';
 const setRadio=(n,v)=>document.querySelectorAll(`input[name="${n}"]`).forEach(r=>{r.checked=r.value===v});
@@ -119,11 +120,11 @@ function fillCarForm(v,cm,t){
   $('#f-gaNote').value=cm==='ga'||cm==='own'?v.gaNote||'':'';
   $('#gaFromApp').innerHTML=t?gaInfoHtml(t):'';setCarMode(cm);
 }
-function carModeOf(t){if(!t)return '';if(t.selfDrive||(OWN_CAR.includes(t.transport)&&!t.needGA))return 'own';if(t.needGA||t.transport==='GA')return 'ga';const v=t.transport||'';if(v==='ไม่ใช้รถ')return 'none';if(OWN_CAR.includes(v))return 'own';return v?'dept':''}
+function carModeOf(t){if(!t)return '';if(t.selfDrive||(OWN_CAR.includes(t.transport)&&!t.needGA))return 'own';if(t.needGA||t.transport==='GA')return 'ga';const v=t.transport||'';if(v==='ไม่ใช้รถ')return '';if(OWN_CAR.includes(v))return 'own';return v?'dept':''}
 function setCarMode(m){document.querySelectorAll('input[name="car-mode"]').forEach(r=>{r.checked=r.value===m});syncCarMode()}
 function syncCarMode(){
   const m=carMode();$('#carDept').hidden=m!=='dept';$('#carGa').hidden=m!=='ga';$('#carOwn').hidden=m!=='own';
-  $('#gaNoteBox').hidden=m!=='ga'&&m!=='own';$('#gaCargoBox').hidden=!$('#f-gaCargo').checked;if(m)$('#carErr').hidden=true;
+  $('#gaNoteBox').hidden=m!=='ga'&&m!=='own';$('#gaCargoBox').hidden=!$('#f-gaCargo').checked;
   document.querySelectorAll('.car-mode label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));
   if(m==='dept'){syncTrAdd();renderTrGrid()}
 }
@@ -135,7 +136,6 @@ function carForm(){
   if(m==='ga')return Object.assign(blank,{transport:normTransport($('#f-gaPlate').value),needGA:true,gaGo:$('#f-gaGo').value,gaPattern:radioVal('ga-pat')||'wait',gaUrgent:$('#f-gaUrgent').checked,
     gaCargo:$('#f-gaCargo').checked?{size:$('#f-gaCargoSize').value.trim(),caution:$('#f-gaCargoCaution').value.trim()}:null,gaNote:note});
   if(m==='own')return Object.assign(blank,{transport:'',needGA:true,selfDrive:true,gaGo:$('#f-ownGo').value,carReason:radioVal('self-why'),carNote:$('#f-carNote').value.trim(),gaNote:note});
-  if(m==='none')return Object.assign(blank,{transport:'ไม่ใช้รถ'});
   return Object.assign(blank,{transport:''});
 }
 function syncTrAdd(){
@@ -170,6 +170,7 @@ const curLine=()=>($('#f-type').value==='leave'?'':((document.querySelector('inp
 function setLine(id){const v=LINE[id]?id:'';document.querySelectorAll('input[name="f-line"]').forEach(r=>{r.checked=r.value===v})}
 function syncLineField(fromType){
   const leave=$('#f-type').value==='leave';document.querySelectorAll('#formFields .line-row').forEach(el=>{el.hidden=leave});
+  if(typeof syncTeamNeed==='function')syncTeamNeed();/* no head count on leave */
   const ty=jobTypes().find(x=>x.id===$('#f-type').value);const own=ty&&LINE[ty.line]?ty.line:'';
   if(fromType&&own)setLine(own);
   $('#lblLine small').textContent=own?`หัวข้องานนี้เป็นของ ${LINE[own].short}`:'ไม่บังคับ · หัวข้องานนี้ใช้ได้ทั้งสองสาย';
