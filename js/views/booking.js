@@ -18,7 +18,7 @@ function renderBooking(){
       ${S.bk.from||S.bk.to||S.bk.veh||S.bk.q||S.bk.st||S.bk.cust?'<button type="button" class="btn sm ghost" data-action="bk-clear">ล้างตัวกรอง</button>':''}
     </div>
     <div class="bk-cust" id="bkCust" role="group" aria-label="กรองตามลูกค้า"></div>
-    <div class="scroll-x"><table class="list bk-table"><thead><tr><th>Plan No.</th><th>ลูกค้า</th><th>หัวข้องาน</th><th>สถานที่ / พื้นที่</th><th>วันที่</th><th>รถ</th><th>Team Service</th><th>ผู้จอง</th><th>สถานะ</th></tr></thead>
+    <div class="scroll-x bk-wrap"><table class="list bk-table"><thead><tr><th>Plan No.</th><th>ลูกค้า</th><th>หัวข้องาน</th><th>สถานที่ / พื้นที่</th><th>วันที่</th><th>รถ</th><th>Team Service</th><th>ผู้จอง</th><th>สถานะ</th></tr></thead>
       <tbody id="bkBody"></tbody></table><div class="count-note" id="bkCount"></div></div>`;
 }
 function bkFiltered(all,skipCust){
@@ -26,7 +26,7 @@ function bkFiltered(all,skipCust){
   return all.filter(t=>!isLeave(t)&&lineMatch(t)&&(!from||t.date>=from)&&(!to||t.date<=to)&&(!st||(t.status||'planned')===st)
     &&(!veh||norm(t.transport).split(/\s*,\s*/).includes(norm(veh))||norm(t.transport)===norm(veh))
     &&(skipCust||!cust||norm(t.customer)===norm(cust))
-    &&(!q||norm([t.planNo,t.customer,t.location,t.areaId&&typeof areaName==='function'?areaName(t.areaId):'',detailOf(t),typeLabel(t)].join(' ')).includes(q)));
+    &&(!q||norm([t.planNo,t.customer,t.location,t.remark,t.areaId&&typeof areaName==='function'?areaName(t.areaId):'',detailOf(t),typeLabel(t)].join(' ')).includes(q)));
 }
 const bookerOf=t=>{const e=creatorOf(t);return e?String(e).split('@')[0]:'—'};
 function fillBooking(){
@@ -48,16 +48,16 @@ function fillBooking(){
     const av=team.slice(0,5).map(id=>{const n=staffName(id);return `<span class="avatar xs" title="${esc(n)}">${esc(initialOf(n))}</span>`}).join('')+(team.length>5?`<span class="more">+${team.length-5}</span>`:'')
       +((t.guests||[]).length?`<span class="more" title="${esc(t.guests.join(', '))}">+${t.guests.length} แผนกอื่น</span>`:'');
     const multi=t.planNo&&(days.get(t.planNo)||new Set()).size>1;
-    return `<tr class="bk-row" data-edit="${esc(t.id)}" tabindex="0">
-      <td class="num">${esc(t.planNo||'–')}${multi?' <span class="multi-badge" title="Plan No. นี้มีหลายวัน">หลายวัน</span>':''}</td>
-      <td>${esc(t.customer||'–')}</td>
-      <td><span class="tdot" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span>${LINE[lineOf(t)]?`<span class="sub">${esc(LINE[lineOf(t)].name)}</span>`:''}</td>
-      <td>${esc(t.location||'–')}${t.areaId&&typeof areaName==='function'?`<span class="sub">พื้นที่ ${esc(areaName(t.areaId))}</span>`:''}</td>
-      <td class="num"><b>${EN_DAY[d.getDay()]}</b> ${esc(fmtShort(d))} ${String(be(d)).slice(-2)}<span class="sub">${esc(pName(t))}${t.timeNote?' · '+esc(t.timeNote):''}</span></td>
-      <td>${ch||esc(t.transport||'–')}</td>
-      <td><div class="avstack">${av||'–'}</div></td>
-      <td class="booker" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
-      <td><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
+    return `<tr class="bk-row" data-edit="${esc(t.id)}" tabindex="0" style="--c:${planColor(t)}">
+      <td class="num c-pn">${esc(t.planNo||'–')}${multi?' <span class="multi-badge" title="Plan No. นี้มีหลายวัน">หลายวัน</span>':''}</td>
+      <td class="c-cust">${esc(t.customer||'–')}${t.remark?`<span class="sub bk-note" title="${esc(t.remark)}">📌 ${esc(t.remark)}</span>`:''}</td>
+      <td class="c-type"><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span>${LINE[lineOf(t)]?`<span class="sub">${esc(LINE[lineOf(t)].name)}</span>`:''}</td>
+      <td class="c-loc">${esc(t.location||'–')}${t.areaId&&typeof areaName==='function'?`<span class="sub">พื้นที่ ${esc(areaName(t.areaId))}</span>`:''}</td>
+      <td class="num c-date"><b>${EN_DAY[d.getDay()]}</b> ${esc(fmtShort(d))} ${String(be(d)).slice(-2)}<span class="sub">${esc(pName(t))}${t.timeNote?' · '+esc(t.timeNote):''}</span></td>
+      <td class="c-car">${ch||esc(t.transport||'–')}</td>
+      <td class="c-team"><div class="avstack">${av||'–'}</div></td>
+      <td class="booker c-by" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
+      <td class="c-st"><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
     ||`<tr><td colspan="9" class="hint" style="padding:20px 12px">ไม่พบงานที่ตรงกับตัวกรอง</td></tr>`;
   $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)&&lineMatch(t)).length.toLocaleString('th-TH')} แผน${scopeName()?` ${scopeName()}`:''}ในระบบ · กดแถวเพื่อเปิดแผน`;
 }

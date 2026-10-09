@@ -66,7 +66,7 @@ function dashCompute(){
     .sort((a,b)=>((order.indexOf(a.k)+1)||999)-((order.indexOf(b.k)+1)||999)||a.k.localeCompare(b.k,'th'));
 
   /* job types, customers, vehicles, sales */
-  const types=jobTypes().filter(t=>t.id!=='leave').map(ty=>({label:ty.name,color:ty.color,n:jobs.filter(t=>typeIdOf(t)===ty.id).length,id:ty.id})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+  const types=jobTypes().filter(t=>t.id!=='leave').map(ty=>({label:ty.name,n:jobs.filter(t=>typeIdOf(t)===ty.id).length,id:ty.id})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
   const knownIds=new Set(jobTypes().map(t=>t.id));const orphanN=jobs.filter(t=>!knownIds.has(typeIdOf(t))).length;if(orphanN)types.push({label:'ประเภทที่ถูกลบแล้ว',n:orphanN});
   const custKeyOf=t=>String(t.customer||'').trim()||'(ไม่ระบุลูกค้า)';
   const cust=new Map();jobs.forEach(t=>{const k=custKeyOf(t);cust.set(k,(cust.get(k)||0)+1)});const custList=[...cust].sort((a,b)=>b[1]-a[1]);
@@ -290,7 +290,7 @@ function renderDash(){
   h+=sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up','dashIssues');
   if(D.pairs.length){
     const overlapName=(a,b)=>{const am=pA(a)===0&&pA(b)===0,pm=pB(a)===1&&pB(b)===1;return am&&pm?'เช้า,บ่าย':am?'เช้า':'บ่าย'};
-    const planCell=t=>{const ty=typeOf(t);return `<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${safeColor(ty.color)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport?` · รถ: ${esc(t.transport)}`:''}</small></button>`};
+    const planCell=t=>{const ty=typeOf(t);return `<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${planColor(t)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport?` · รถ: ${esc(t.transport)}`:''}</small></button>`};
     h+=`<section class="panel span-12" id="dashConf" style="--d:13"><header><h2>แผนงานที่จัดชน · ${D.pairs.length} คู่</h2><p>แต่ละแถวคือแผนงาน 2 แผน ซึ่งใช้คนหรือรถคันเดียวกันในช่วงเวลาที่ทับกัน หรือจัดคนที่ลาไปทำงาน กดที่แผนงานเพื่อเปิดแก้ไข</p></header>
       <div class="scroll-x plain"><table class="mini ctab"><thead><tr><th>วันที่</th><th>ช่วงที่ทับกัน</th><th>แผนงาน</th><th>ชนกับแผนงาน</th><th>สาเหตุ</th></tr></thead><tbody>
       ${D.pairs.map(p=>{const who=p.staff.map(staffName);
@@ -304,7 +304,7 @@ function renderDash(){
     ${F.length?`<div class="scroll-x plain"><table class="mini ftab"><thead><tr><th>วันที่</th><th>งาน</th><th>ลูกค้า</th><th>สถานะ</th><th>เหตุผล / สิ่งที่ต้องทำ</th><th>ทีม</th></tr></thead><tbody>${F.map(t=>{const reason=NEEDS_REASON.has(t.status);const late=!reason&&isLate(t);const ty=typeOf(t);
       const stat=reason?`<span class="fstat ${esc(t.status)}">${(STATUS[t.status]||{}).icon||''} ${esc(stTh(t.status))}</span>`:late?'<span class="fstat late">⏱ เลยวันแล้ว</span>':gaWaiting(t)?'<span class="fstat ga">รอรถ GA</span>':'<span class="fstat doc">เอกสารไม่ครบ</span>';
       const why=reason?(t.statusNote?esc(t.statusNote):'<span class="hint">ยังไม่ได้ใส่เหตุผล</span>'):late?`<span class="hint">ยังเป็น "${esc(stTh(t.status))}" ควรอัปเดตสถานะ</span>${gaWaiting(t)?'<br><span class="hint">และยังรอ GA ระบุรถ</span>':''}`:gaWaiting(t)?'<span class="hint">ขอรถส่วนกลางแล้ว GA ยังไม่ได้ระบุรถและทะเบียน กรอกทะเบียนในแผนเมื่อได้รับแจ้ง</span>':`ยังไม่ได้ส่ง <b>${esc(docMissing(t).map(k=>DOC_NAME[k]).join(', '))}</b> <span class="hint">· เปิดแผนแล้วแนบไฟล์</span>`;
-      return `<tr data-edit="${esc(t.id)}"><td class="num">${esc(fmtDay(t.date))}</td><td><span class="tdot" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span>${t.planNo?`<span class="sub mono">${esc(t.planNo)}</span>`:''}</td><td>${esc(t.customer||'–')}</td>
+      return `<tr data-edit="${esc(t.id)}"><td class="num">${esc(fmtDay(t.date))}</td><td><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span>${t.planNo?`<span class="sub mono">${esc(t.planNo)}</span>`:''}</td><td>${esc(t.customer||'–')}</td>
         <td>${stat}</td><td class="why">${why}</td><td>${esc(teamNames(t).join(', ')||'–')}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="hint">ไม่มีงานที่ต้องติดตามในช่วงนี้</p>'}</section>`;
   return h+'</div>';
 }

@@ -19,6 +19,13 @@ const norm=s=>String(s||'').trim().toLowerCase();
 const detailOf=t=>String(t.detail!=null?t.detail:(t.title||''));
 const headline=t=>detailOf(t).split('\n').map(x=>x.trim()).find(Boolean)||'';
 const safeColor=c=>/^#[0-9a-fA-F]{6}$/.test(String(c||''))?c:'#8a979c';
+/* สีของแผน (user, 9 Oct 2026): job types have no colour any more. A plan uses its own colour (task.color ↔ data.bu1wp.color),
+   else one taken from its Plan No. (the same Plan No. always gets the same colour), else grey; leave is always grey */
+const PLAN_COLORS=['#2a78d6','#1baf7a','#7148c9','#eb6834','#d55181','#0e8fa3','#c27c0e','#3f9b3a','#d03b3b','#5b6b8c','#8a5cf6','#b4589f'];
+const NEUTRAL_COLOR='#8a979c';
+const planNoColor=pn=>{const k=String(pn||'').trim().toUpperCase();if(!k)return '';let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))>>>0;return PLAN_COLORS[h%PLAN_COLORS.length]};
+const ownColor=t=>t&&/^#[0-9a-fA-F]{6}$/.test(String(t.color||''))?t.color:'';
+const planColor=t=>!t||isLeave(t)?NEUTRAL_COLOR:ownColor(t)||planNoColor(t.planNo)||NEUTRAL_COLOR;
 const isWorking=t=>t.status!=='cancelled';
 function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.getDate()} ${EN_MON[sun.getMonth()]} ${String(sun.getFullYear()).slice(-2)}`}
 

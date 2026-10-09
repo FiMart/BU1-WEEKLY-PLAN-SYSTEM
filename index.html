@@ -58,7 +58,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.4.3 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.7.2 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -95,6 +95,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
       <button type="button" class="btn" data-action="shot" id="btnShot" title="บันทึกตารางสัปดาห์นี้เป็นรูป PNG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg> Screenshot</button>
       <button type="button" class="btn" data-action="report" id="btnPrint" title="พิมพ์ Weekly Plan ของสัปดาห์นี้ (A3 แนวนอน) หรือบันทึกเป็น PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></svg> Print / PDF</button>
       <button type="button" class="btn" data-action="xlsx" id="btnXlsx">Excel</button>
+      <button type="button" class="btn" data-action="pick-mode" id="btnPick" aria-pressed="false" hidden title="ติ๊กเลือกหลายแผน แล้วย้ายวันหรือลบพร้อมกัน"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12.5 3 3 5.5-6"/></svg> <span id="btnPickTxt">เลือกหลายแผน</span></button>
     </div>
   </div>
   <div id="banners" class="banners"></div>
@@ -133,6 +134,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <button type="button" class="btn selbar-cta" data-action="add-sel"><span class="plus">+</span> ลงแผนให้คนที่เลือก</button>
     <button type="button" class="btn ghost sm" data-action="clear-sel">ล้าง</button>
   </div>
+  <!-- Weekly Plan: ticked plans → move to a date or delete (js/features/plan-select.js) -->
+  <div class="pickbar" id="pickBar" role="region" aria-label="แผนงานที่เลือก" hidden></div>
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
@@ -147,13 +150,18 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
       <fieldset class="ro" id="formFields">
       <div class="sheet">
         <label class="fl" for="f-type"><b>หัวข้องาน</b><small>ประเภทงาน</small></label>
-        <div class="fv"><div class="row2"><select id="f-type"></select><input id="f-typeOther" maxlength="80" autocomplete="off" placeholder="พิมพ์หัวข้องาน เช่น ประชุมลูกค้า" aria-label="หัวข้องาน (อื่นๆ)"></div></div>
+        <div class="fv"><div class="type-q"><input id="f-typeQ" list="dl-types" maxlength="40" autocomplete="off" placeholder="พิมพ์ หรือเลือกหัวข้องาน" aria-label="หัวข้องาน"><button type="button" class="btn sm" id="typeAdd" hidden>+ เพิ่มเข้าข้อมูลหลัก</button></div>
+          <small class="hint" id="typeHint" hidden></small><datalist id="dl-types"></datalist>
+          <div hidden><select id="f-type" tabindex="-1" aria-hidden="true"></select><input id="f-typeOther" maxlength="80" tabindex="-1" aria-hidden="true"></div></div>
 
         <span class="fl line-row" id="lblLine"><b>สายงาน</b><small>ไม่บังคับ</small></span>
         <div class="fv line-row"><div class="seg line-seg" id="f-line" role="radiogroup" aria-labelledby="lblLine"></div></div>
 
         <label class="fl" for="f-planno"><b>Plan No.</b><small>รูปแบบ PN-YY-MMNNN</small></label>
         <div class="fv"><input id="f-planno" class="mono planno-in" maxlength="40" autocomplete="off" spellcheck="false" placeholder="เช่น PN-26-09004"><span class="hint" id="f-planhint" hidden></span></div>
+
+        <span class="fl" id="lblColor"><b>สีของแผน</b><small>ตาม Plan No. หรือเลือกเอง</small></span>
+        <div class="fv"><input type="hidden" id="f-color"><div class="pc-pick" id="pcPick" role="group" aria-labelledby="lblColor"></div></div>
 
         <label class="fl" for="f-sale"><b>Sale</b><small>ฝ่ายขายที่ดูแลงาน</small></label>
         <div class="fv"><select id="f-sale"></select><span class="hint" id="f-saleTel"></span></div>
@@ -460,6 +468,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/features/roles.js"></script>
 <script src="js/ui/render.js"></script>
 <script src="js/views/plan.js"></script>
+<script src="js/features/plan-select.js"></script>
 <script src="js/features/share.js"></script>
 <script src="js/views/people.js"></script>
 <script src="js/views/projects.js"></script>

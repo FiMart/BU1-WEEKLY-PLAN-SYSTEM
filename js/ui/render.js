@@ -140,12 +140,12 @@ function statusIcon(s){const st=STATUS[s]||STATUS.planned;return `<span class="s
 const jr=(k,v,cls)=>v?`<span class="jr"><span class="k">${k}</span><span class="v${cls?' '+cls:''}">${esc(v)}</span></span>`:'';
 function card(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
-  return `<button type="button" class="jc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,40)}" data-edit="${esc(t.id)}">
+  return `<button type="button" class="jc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${planColor(t)};--i:${Math.min(i||0,40)}" data-edit="${esc(t.id)}">
     <span class="jc-band"><i></i><b>${esc(typeLabel(t))}</b><span class="per">${esc(pName(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${docChip(t)}${prepChip(t)}${statusIcon(t.status)}</span>
     <span class="jc-body">
       ${t.planNo?`<span class="pn">${esc(t.planNo)}</span>`:''}
       ${t.customer?`<span class="jc-cust">${esc(t.customer)}</span>`:''}
-      ${jr('Location',t.location)}${jr('Time',t.timeNote)}${jr('Detail',detailOf(t).trim(),'clamp')}${jr('Request',t.request,'clamp')}
+      ${jr('Location',t.location)}${jr('Time',t.timeNote)}${jr('Detail',detailOf(t).trim(),'clamp')}${jr('Request',t.request,'clamp')}${jr('หมายเหตุ',t.remark,'clamp')}
       ${jr('Transport',t.transport)}${jr('Sale',t.sale)}${jr('Team',teamNames(t).join(', '))}
       ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
       ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
@@ -192,8 +192,7 @@ function lineTag(t){
   return S.line?'<span class="ln-tag none" title="แผนนี้ยังไม่ระบุสายงาน จึงแสดงทุกแท็บ">ไม่ระบุสาย</span>':'';
 }
 function legendStrip(){
-  return `<div class="legend-strip"><div class="grp"><span class="lg-title">หัวข้องาน</span>${jobTypes().filter(t=>t.active!==false).map(t=>`<span class="tdot" style="--c:${safeColor(t.color)}"><i></i>${esc(t.name)}</span>`).join('')}</div>
-    <div class="grp"><span class="lg-title">สถานะ</span>${STATUSES.map(s=>`<span><span class="s-${s.id}">${s.icon}</span> ${s.th}</span>`).join('')}</div></div>`;
+  return `<div class="legend-strip"><div class="grp"><span class="lg-title">สถานะ</span>${STATUSES.map(s=>`<span><span class="s-${s.id}">${s.icon}</span> ${s.th}</span>`).join('')}</div></div>`;
 }
 function emptyState(title,text,btn,ico){return `<div class="empty"><div class="empty-ico" aria-hidden="true">${ico||'+'}</div><h3>${title}</h3><p>${text}</p>${btn||''}</div>`}
 /* placeholders while data loads: the shape of the page that is coming (week grid / day list on a phone / cards) */
@@ -244,4 +243,4 @@ function askConfirm(title,msg,okLabel){
 function initialOf(name){const m=String(name||'').match(/[ก-ฮA-Za-z0-9]/);return m?m[0].toUpperCase():'?'}
 function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;const hol=holidayOf(k);
   return `<th class="${isT?'is-today':''}${hol?' hol-day':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${hol?`<span class="hol-pill" title="${esc(hol)}">${esc(hol)}</span>`:''}${meta||''}</div></div></th>`}
-const searchText=t=>[t.planNo,typeLabel(t),...calOf(t).map(x=>[x.reqNo,x.tag,x.type,x.size].join(' ')),...insOf(t).map(x=>[x.reqNo,x.tag,x.type,x.plant,x.remark,...x.certs.map(c=>c.certNo+' '+c.tagNo)].join(' ')),LINE[lineOf(t)]?LINE[lineOf(t)].name:'',t.customer,t.location,detailOf(t),t.request,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');
+const searchText=t=>[t.planNo,typeLabel(t),...calOf(t).map(x=>[x.reqNo,x.tag,x.type,x.size].join(' ')),...insOf(t).map(x=>[x.reqNo,x.tag,x.type,x.plant,x.remark,...x.certs.map(c=>c.certNo+' '+c.tagNo)].join(' ')),LINE[lineOf(t)]?LINE[lineOf(t)].name:'',t.customer,t.location,detailOf(t),t.request,t.remark,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');

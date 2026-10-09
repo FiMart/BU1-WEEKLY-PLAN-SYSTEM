@@ -96,6 +96,8 @@ function renderPickerList(){
   list.querySelectorAll('[data-some="1"]').forEach(x=>{x.indeterminate=true});
 }
 form.addEventListener('change',e=>{const t=e.target;
+  if(t.matches('[data-pc-custom]')){$('#f-color').value=t.value;renderColorPick();return}
+  if(t.matches('[data-pcv-custom]')){setPlanColor(t.value);return}
   if(t.matches('[data-tp-all]')){const ids=t.dataset.tpAll.split(',').filter(Boolean);ids.forEach(i=>t.checked?pickSel.add(i):pickSel.delete(i));renderPickSel();renderPickerList();return}
   if(t.matches('[data-tp]')){if(t.checked){pickSel.add(t.value);lastPicked=t.value}else pickSel.delete(t.value);t.closest('.tp-row').classList.toggle('on',t.checked);renderPickSel();renderPickerList();return}
   if(t.id==='tpFree'||t.id==='tpAllowBusy'||t.id==='tpCardOnly')renderPickerList();
@@ -108,7 +110,7 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30)}
   if(t.id==='f-sale')syncSaleTel();
 });
-form.addEventListener('input',e=>{if(e.target.id==='tpQ')renderPickerList();if(e.target.id==='f-transport'){syncTrAdd();renderTrGrid()}});
+form.addEventListener('input',e=>{if(e.target.id==='tpQ')renderPickerList();if(e.target.id==='f-planno')renderColorPick();if(e.target.id==='f-transport'){syncTrAdd();renderTrGrid()}});
 form.addEventListener('keydown',e=>{
   if((e.target.id==='tpQ'||e.target.id==='f-transport')&&e.key==='Enter')e.preventDefault();
   if(e.target.id==='tpGuest'&&e.key==='Enter'){e.preventDefault();addGuest()}
@@ -117,6 +119,9 @@ form.addEventListener('click',e=>{
   const tr=e.target.closest('[data-tr]');if(tr){if(tr.getAttribute('aria-disabled')==='true'){toast(`${tr.dataset.tr} ถูกใช้แล้วในช่วงเวลานี้ เลือกคันอื่น หรือเปลี่ยนช่วงเวลา`);return}pickTransport(tr.dataset.tr);return}
   if(e.target.id==='trClear'){$('#f-transport').value='';syncTrAdd();renderTrGrid();checkConflicts();$('#f-transport').focus();return}
   const tt=e.target.closest('[data-tp-team]');if(tt){pickTeam=tt.dataset.tpTeam;renderPickerList();return}
+  /* สีของแผน: in the form it waits for บันทึก; in the plan view it is saved at once */
+  const pc=e.target.closest('[data-pc]');if(pc){$('#f-color').value=pc.dataset.pc;renderColorPick();return}
+  const pv=e.target.closest('[data-pcv]');if(pv){setPlanColor(pv.dataset.pcv);return}
   const rm=e.target.closest('[data-tp-remove]');if(rm){pickSel.delete(rm.dataset.tpRemove);renderPickSel();renderPickerList();checkConflicts();return}
   const gr=e.target.closest('[data-tp-guest-remove]');if(gr){pickGuests.splice(Number(gr.dataset.tpGuestRemove),1);renderPickSel();return}
   if(e.target.closest('#tpGuestAdd')){addGuest();$('#tpGuest').focus();return}

@@ -94,10 +94,10 @@ function supabaseBackend(client,{dept}){
     const cranes=asList(d.crane).map(id=>craneName(lk.cranes.get(id))||id);
     return {id:r.id,date:weekDate(d.week||r.week,d.day),
       period:d.session==='morning'?'am':d.session==='afternoon'?'pm':'full',
-      jobType:x.jobType||d.jobType||'routine',jobTypeOther:x.jobTypeOther||'',jobTypeName:x.jobTypeName||'',line:x.line||'',
+      jobType:x.jobType||d.jobType||'routine',jobTypeOther:x.jobTypeOther||'',jobTypeName:x.jobTypeName||'',line:x.line||'',color:x.color||'',/* สีของแผน ('' = ตาม Plan No.) */
       planNo:d.jobNo||'',customer:CENTRAL_CUSTOMERS[d.customer]||d.customer||'',location:d.location||'',areaId:d.areaId||'',
       timeNote:x.timeNote!=null?x.timeNote:[d.startTime,d.endTime].filter(Boolean).join('–')+(d.startTime?' น.':''),
-      detail,request:x.request||'',transport:x.transport!=null?x.transport:cranes.join(', '),
+      detail,request:x.request||'',remark:x.remark||'',transport:x.transport!=null?x.transport:cranes.join(', '),
       needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,
       /* วิธีเดินทาง: GA Fleet's own fields first (data.gaDepart / gaPattern / …, transport 'self'), then this app's older copies */
       gaGo:d.gaDepart||x.gaGo||'',gaBack:x.gaBack||'',gaPattern:d.gaPattern||'',gaUrgent:!!d.gaUrgent,gaCargo:d.gaCargo&&typeof d.gaCargo==='object'?d.gaCargo:null,gaNote:d.gaNote||'',gaRequestedAt:d.gaRequestedAt||'',
@@ -113,6 +113,20 @@ function supabaseBackend(client,{dept}){
     return {id:LEAVE_PREFIX+r.id,date:weekDate(d.week||r.week,d.day),period:x.period||'full',jobType:'leave',
       staffIds:d.personId?[d.personId]:[],detail:x.detail!=null?x.detail:d.kind||'ลา',status:x.status||'planned',statusNote:x.statusNote||'',history:asList(x.history),
       createdBy:x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,src:'leaves'}};
+  /* one leave plan with several people (user, 9 Oct 2026: "แผนงานลาเลือกได้หลายคนใน 1 แผนงาน") = the row <id> (first person)
+     + rows <id>~<personId> for the others (leaveRows); read back as ONE plan with every person (old app rows stay single) */
+  const leaveBase=id=>String(id).split('~')[0];
+  function leavePlans(rows){
+    const m=new Map();rows.forEach(r=>{const b=leaveBase(r.id);if(!m.has(b))m.set(b,[]);m.get(b).push(r)});
+    return [...m].map(([b,list])=>{const main=list.find(r=>r.id===b)||list[0];const t=leaveOf(Object.assign({},main,{id:b}));
+      t.staffIds=[...new Set([main,...list.filter(r=>r!==main)].map(r=>(r.data||{}).personId).filter(Boolean))];return t});
+  }
+  /* the extra person rows of these leave plans: Map base → [rows] */
+  async function leaveExtras(bases){
+    const out=new Map();
+    for(const b of [...new Set(bases)])out.set(b,(await selectAll('leaves',q=>q.like('id',b+'~%'))).filter(r=>leaveBase(r.id)===b));
+    return out;
+  }
   const staffOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:d.name||r.id,role:d.position||'',team:x.team||'',order:x.order??i,active:!d.archived}};/* ทีม: this app's own field */
   const resourceOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:craneName(d)||r.id,code:d.plate?d.name||'':'',group:d.type||'',vendor:d.vendor||'',
     kind:'vehicle',order:x.order??i,active:!d.archived}};
@@ -122,7 +136,8 @@ function supabaseBackend(client,{dept}){
     const byWeek=q=>{if(f.from)q=q.gte('week',weekOf(f.from));if(f.to)q=q.lte('week',weekOf(f.to));return q};
     if(f.id!=null){
       const id=String(f.id);
-      if(id.startsWith(LEAVE_PREFIX))return (await selectAll('leaves',q=>q.eq('id',id.slice(LEAVE_PREFIX.length)))).map(leaveOf);
+      if(id.startsWith(LEAVE_PREFIX)){const b=id.slice(LEAVE_PREFIX.length);
+        const rows=(await selectAll('leaves',q=>q.eq('id',b))).concat([...(await leaveExtras([b])).values()].flat());return rows.length?leavePlans(rows):[]}
       return (await selectAll('bookings',q=>q.eq('id',id))).map(r=>taskOf(r,lk));
     }
     /* Plan No. check while typing: ask the server for that job number only */
@@ -132,7 +147,7 @@ function supabaseBackend(client,{dept}){
     const has=(f.contains||[]).find(([k])=>k==='photoIds'||k==='fileIds');
     if(has)return (await selectAll('bookings',q=>q.filter(`data->bu1wp->${has[0]}`,'cs',JSON.stringify([has[1]])))).map(r=>taskOf(r,lk));
     const [b,l]=await Promise.all([selectAll('bookings',byWeek),selectAll('leaves',byWeek)]);
-    return b.map(r=>taskOf(r,lk)).concat(l.map(leaveOf)).filter(t=>t.date);
+    return b.map(r=>taskOf(r,lk)).concat(leavePlans(l)).filter(t=>t.date);
   }
   /* this app's own job types and positions stay the choices (user, 6 Oct 2026); the old app's job types are kept
      inactive only so its plans still show a name and colour. Edits are saved in app_settings "bu1wp_config". */
@@ -159,8 +174,8 @@ function supabaseBackend(client,{dept}){
   const isLeaveTask=t=>t.jobType==='leave';
   const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
-    return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */
-      detail:t.detail??'',request:t.request||'',timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
+    return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */color:t.color||'',/* สีของแผน, '' = ตาม Plan No. (user, 9 Oct 2026) */
+      detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
@@ -222,14 +237,18 @@ function supabaseBackend(client,{dept}){
     const lk=await loadLookups();
     const bIds=[],lIds=[];rows.forEach(r=>{const id=String(r.id);if(id.startsWith(LEAVE_PREFIX))lIds.push(id.slice(LEAVE_PREFIX.length));else{bIds.push(id);lIds.push(id)}});
     const [oldB,oldL]=await Promise.all([byIds('bookings',bIds),byIds('leaves',lIds)]);
+    /* leave plans: their extra person rows too, so people taken off the plan lose their row */
+    const lBases=rows.map(r=>String(r.id)).filter(id=>id.startsWith(LEAVE_PREFIX)).map(id=>id.slice(LEAVE_PREFIX.length));
+    const extras=lBases.length?await leaveExtras(lBases):new Map();extras.forEach(l=>l.forEach(r=>oldL.set(r.id,r)));
     const putB=[],putL=[],dropB=[],dropL=[];
     for(const t0 of rows){
       const id=String(t0.id);const t=Object.assign(plain(t0),{id});
       if(!t.date)throw {code:'invalid_argument',message:'plan without a date'};
       if(id.startsWith(LEAVE_PREFIX)){
         const base=id.slice(LEAVE_PREFIX.length);
-        if(isLeaveTask(t))putL.push(...leaveRows(t,base,oldL));
-        else{dropL.push(base);putB.push(bookingRow(Object.assign({},t,{id:base}),null,lk))}/* leave turned into work */
+        if(isLeaveTask(t)){const nr=leaveRows(t,base,oldL);putL.push(...nr);const keep=new Set(nr.map(r=>r.id));
+          dropL.push(...(extras.get(base)||[]).map(r=>r.id).filter(x=>!keep.has(x)))}/* people taken off the leave plan */
+        else{dropL.push(base,...(extras.get(base)||[]).map(r=>r.id));putB.push(bookingRow(Object.assign({},t,{id:base}),null,lk))}/* leave turned into work */
       }else if(isLeaveTask(t)){
         if(oldB.has(id))dropB.push(id);/* work turned into leave */
         putL.push(...leaveRows(t,id,oldL));
@@ -284,7 +303,8 @@ function supabaseBackend(client,{dept}){
       ids=ids.map(String);if(!ids.length)return;
       if(entity==='tasks'){
         const leaves=ids.filter(i=>i.startsWith(LEAVE_PREFIX)).map(i=>i.slice(LEAVE_PREFIX.length));
-        await drop('bookings',ids.filter(i=>!i.startsWith(LEAVE_PREFIX)));await drop('leaves',leaves);return;
+        const ex=leaves.length?[...(await leaveExtras(leaves)).values()].flat().map(r=>r.id):[];/* a leave plan's other people too */
+        await drop('bookings',ids.filter(i=>!i.startsWith(LEAVE_PREFIX)));await drop('leaves',leaves.concat(ex));return;
       }
       if(entity==='staff')return drop('people',ids);
       if(entity==='resources'){await drop('cranes',ids);lookups=null;return}

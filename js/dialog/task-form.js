@@ -7,10 +7,10 @@ function openTask(id,preset){
   const v=t||{jobType:p.type||'',customer:p.customer||'',period:PERIOD[p.period]?p.period:'full',status:'planned',date:p.date||defaultDate(),staffIds:Array.isArray(p.staff)?p.staff.slice():p.staff?[p.staff]:[]};
   const tid=t?typeIdOf(t):(p.type&&jobTypes().some(x=>x.id===p.type)?p.type:'');
   $('#f-type').innerHTML=typeOptions(tid,'— เลือกหัวข้องาน —');$('#f-type').value=tid;
-  $('#f-typeOther').value=t&&tid==='other'?typeLabel(t)==='อื่นๆ'?'':typeLabel(t):'';syncTypeOther();
+  $('#f-typeOther').value=t&&tid==='other'?typeLabel(t)==='อื่นๆ'?'':typeLabel(t):'';syncTypeOther();fillTypeQ();
   /* สายงาน: the plan's own, else its job type's, else (new plan) the open tab */
   setLine(t?lineOf(t):(LINE[(jobTypes().find(x=>x.id===tid)||{}).line]?jobTypes().find(x=>x.id===tid).line:LINE[p.line]?p.line:''));syncLineField(false);
-  $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;
+  $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;$('#f-color').value=ownColor(v);renderColorPick();
   const sl=sales().map(s=>s.name);DEFAULT_SALES.forEach(n=>{if(!sl.some(x=>norm(x)===norm(n)))sl.push(n)});if(v.sale&&!sl.some(n=>norm(n)===norm(v.sale)))sl.push(v.sale);
   $('#f-sale').innerHTML=`<option value="">— เลือก Sale —</option>`+sl.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');$('#f-sale').value=v.sale||'';syncSaleTel();
   $('#f-customer').value=v.customer||'';$('#f-location').value=v.location||'';fillAreaSelect(v.areaId||'');$('#f-sharedTeam').checked=!!v.sharedTeam;syncSharedArea();
@@ -41,7 +41,7 @@ function openTask(id,preset){
   $('#dl-guests').innerHTML=opt(hist.flatMap(x=>x.guests||[]));
   if(!dlg.open)dlg.showModal();
   setMode(t?'view':'edit');
-  if(!t)setTimeout(()=>$('#f-type').focus(),30);
+  if(!t)setTimeout(()=>$('#f-typeQ').focus(),30);
   checkPlanNo();
 }
 /* who saved a plan: profile name with the e-mail beside it, or just the e-mail */
@@ -55,10 +55,10 @@ async function whoLabel(id){
 const creatorOf=t=>t.createdBy||(t.createdAt&&t.createdAt===t.updatedAt?t.updatedBy:'')||'';
 /* the drawer opens a card in read mode (like a job sheet); แก้ไข switches to the form */
 let dMode='edit';
-/* the drawer header takes the job type colour */
+/* the drawer header takes the plan's colour (its own, else its Plan No.'s; job types have none since 9 Oct 2026) */
 function syncDrawerColor(){
-  const ty=dMode==='view'&&editing?typeOf(editing):jobTypes().find(x=>x.id===$('#f-type').value);
-  dlg.style.setProperty('--dc',ty?safeColor(ty.color):'var(--accent)');
+  const c=dMode==='view'&&editing?planColor(editing):$('#f-color').value||planNoColor($('#f-planno').value);
+  dlg.style.setProperty('--dc',c||'var(--accent)');
 }
 /* GA level: can open an existing plan and change only the car (รถ / Car + ต้องการรถส่วนกลาง) */
 const gaOnlyEdit=()=>!S.canWrite&&!!editing&&can('ga');
@@ -86,6 +86,14 @@ function setMode(m){
 }
 const curStatus=()=>(form.querySelector('input[name="f-status"]:checked')||{}).value||'planned';
 function syncReason(){const s=curStatus();$('#f-reasonWrap').hidden=!NEEDS_REASON.has(s);$('#f-reasonLbl').textContent=reasonLabel(s)}
+/* สีของแผน from the plan view (user, 9 Oct 2026: "แก้ไขสีที่แผนงานได้เลย"): '' = ตาม Plan No. */
+async function setPlanColor(c){
+  if(!editing||!S.canWrite)return;const color=/^#[0-9a-f]{6}$/i.test(c||'')?String(c).toLowerCase():'';if(color===ownColor(editing))return;
+  const id=editing.id;
+  try{await Store.update('tasks',id,Object.assign({color},meta()));editing=Object.assign({},editing,{color});
+    renderDrawerView(editing);renderPhotos();renderFiles();syncDrawerColor();toast(color?'เปลี่ยนสีของแผนแล้ว':'ใช้สีตาม Plan No. แล้ว')}
+  catch(err){toast(errText(err));noteWriteError(err)}
+}
 async function saveViewStatus(val,note){
   if(!editing)return;const id=editing.id;
   try{await Store.update('tasks',id,Object.assign({status:val,statusNote:NEEDS_REASON.has(val)?note:''},meta()));
@@ -96,6 +104,16 @@ async function saveViewStatus(val,note){
     else toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err);renderDrawerView(editing);renderPhotos()}
 }
+/* หมายเหตุ in the plan view (user, 9 Oct 2026): right under the สถานะงาน buttons; people without them (GA) see it in the same place */
+const remarkBox=t=>t&&t.remark?`<div class="remark-box"><b>📝 หมายเหตุ</b><span>${esc(t.remark)}</span></div>`:'';
+/* หมายเหตุ is written here, not in the edit form (user, 9 Oct 2026: "ย้ายหัวข้อ หมายเหตุ … ข้างล่าง หัวข้อ สถานะงาน"); saved at once */
+const remarkEdit=t=>`<div class="v-remark"><label for="v-remark">📝 หมายเหตุ</label><textarea id="v-remark" rows="2" maxlength="1000" placeholder="เช่น โทรแจ้งลูกค้าก่อนเข้า 1 วัน · ใช้ประตู 3 · เตรียมบัตรผ่านโรงงาน">${esc(t.remark||'')}</textarea>
+  <div class="v-row"><button type="button" class="btn sm" data-action="save-vremark" id="vRemarkSave">บันทึกหมายเหตุ</button>${t.remark?'<button type="button" class="lnk" data-action="clear-vremark">ลบหมายเหตุ</button>':''}</div></div>`;
+async function saveViewRemark(text){
+  if(!editing||!canWork())return;const remark=String(text||'').trim().slice(0,1000);if(remark===(editing.remark||''))return;const id=editing.id;
+  try{await Store.update('tasks',id,Object.assign({remark},meta()));editing=Object.assign({},editing,{remark});renderDrawerView(editing);renderPhotos();renderFiles();toast(remark?'บันทึกหมายเหตุแล้ว':'ลบหมายเหตุแล้ว')}
+  catch(err){toast(errText(err));noteWriteError(err)}
+}
 function renderDrawerView(t){
   const ty=typeOf(t);const st=STATUS[t.status]||STATUS.planned;const d=parseD(t.date);
   const pool=S.tasks.some(x=>x.id===t.id)?S.tasks:[t];const conf=conflictsFor(t,pool);
@@ -104,7 +122,8 @@ function renderDrawerView(t){
   const people=(t.staffIds||[]).map(id=>{const s=staffById(id)||{};const n=staffName(id);return `<span class="${confStaff.has(id)?'conf':''}"><span class="avatar" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${s.role?` <small>${esc(s.role)}</small>`:''}${cardBadge(cardOf(id,t.areaId))}</span>`})
     .concat((t.guests||[]).map(g=>`<span class="guest"><span class="avatar" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small></span>`));
   const ln=LINE[lineOf(t)];
-  $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span>${ln?`<span class="badge" style="--c:${ln.color}"><i></i>${esc(ln.name)}</span>`:''}<span class="badge" style="--c:${safeColor(ty.color)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
+  $('#dView').innerHTML=`<div class="dv-badges"><span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span>${ln?`<span class="badge" style="--c:${ln.color}"><i></i>${esc(ln.name)}</span>`:''}<span class="badge" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
+    ${S.canWrite&&!isLeave(t)?`<div class="dv-color"><span>สีของแผน</span><div class="pc-pick">${colorPickHtml(t.color,t.planNo,'data-pcv')}</div></div>`:''}
     <div class="dv-by"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>ผู้จองแผน <b id="dvBy" class="dash">—</b></div>
     ${NEEDS_REASON.has(t.status)?`<div class="reason-box ${esc(t.status)}"><b>${statusFlag(t.status)} · เหตุผล / ปัญหาที่หน้างาน</b><span>${t.statusNote?esc(t.statusNote):'<i>ยังไม่ได้ใส่เหตุผล</i>'}</span></div>`:''}
     ${t.status==='notdone'||t.ncrId?ncrLinkHtml(t):''}
@@ -124,9 +143,10 @@ function renderDrawerView(t){
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน)</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${canWork()?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
+      ${remarkEdit(t)}
       ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
-        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
+        <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:remarkBox(t)}
     ${isoHistoryHtml(t)}`;
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }
@@ -135,7 +155,7 @@ function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
   return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,line:curLine(),jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
-    planNo:cleanPlan($('#f-planno').value),sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
+    planNo:cleanPlan($('#f-planno').value),color:$('#f-color').value,sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     ...carForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
@@ -201,8 +221,8 @@ form.addEventListener('input',checkConflicts);form.addEventListener('change',che
 dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
 function formError(msg){const el=$('#f-err');el.textContent=msg;el.hidden=!msg}
 function validate(v,copy){
-  if(!v.jobType)return ['เลือกหัวข้องานก่อนบันทึก','#f-type'];
-  if(v.jobType==='other'&&!v.jobTypeOther)return ['พิมพ์หัวข้องานเมื่อเลือก "อื่นๆ"','#f-typeOther'];
+  if(!v.jobType)return ['พิมพ์ หรือเลือกหัวข้องานก่อนบันทึก','#f-typeQ'];
+  if(v.jobType==='other'&&!v.jobTypeOther)return ['พิมพ์ชื่อหัวข้องาน (อื่นๆ)','#f-typeQ'];
   if(!v.date)return ['เลือกวันที่ของงาน','#f-date'];
   /* Team Service is optional (a plan can be booked first and staffed later); only a leave needs the person on leave */
   if(v.jobType==='leave'&&!v.staffIds.length)return ['เลือกพนักงานที่ลาอย่างน้อย 1 คน','#tpQ'];

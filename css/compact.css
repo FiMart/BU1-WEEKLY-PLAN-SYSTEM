@@ -191,3 +191,152 @@
 #dlg .tp-list .tp-row:not(.lock):hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
 @media (max-width:520px){#dlg .tp-list{grid-template-columns:1fr 1fr;gap:6px;padding:0 8px 10px}#dlg .tp-list .tp-team{margin:0 -8px}.tp-tall{margin-left:0}#dlg .tp-list .tp-row{min-height:50px;padding:7px 8px;gap:7px}#dlg .tp-list .tp-row .avatar.sm{width:26px;height:26px}#dlg .tp-list .tp-name b{font-size:13px}.tp-ck{width:18px;height:18px}}
 @media (prefers-reduced-motion:reduce){.tpt{transition:none}.tpt:active{transform:none}}
+
+/* ---------- สีของแผน (user, 9 Oct 2026): "ตาม Plan No." · palette · any colour ---------- */
+.pc-pick{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.pc-sw{position:relative;display:inline-grid;place-items:center;width:28px;height:28px;padding:0;border:2px solid var(--surface);border-radius:50%;background:var(--sw);box-shadow:0 0 0 1px var(--line);cursor:pointer;transition:transform .12s var(--ease),box-shadow .15s}
+.pc-sw:hover{transform:scale(1.08)}
+.pc-sw.on{box-shadow:0 0 0 2px var(--ink)}
+.pc-sw.on::after{content:"";width:6px;height:11px;margin-top:-3px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.pc-sw.pc-auto{width:auto;height:28px;padding:0 11px 0 6px;border-radius:999px;display:inline-flex;gap:6px;background:var(--surface);color:var(--ink-2);font:600 12px/1 var(--f-body);border:1px solid var(--line);box-shadow:none}
+.pc-sw.pc-auto i{width:16px;height:16px;border-radius:50%;background:var(--sw)}
+.pc-sw.pc-auto.on{border-color:var(--ink);color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.pc-sw.pc-auto.on::after{content:none}
+.pc-sw.pc-custom{background:conic-gradient(#e64a4a,#e6c84a,#4ae67a,#4ab4e6,#7a4ae6,#e64ab4,#e64a4a)}
+.pc-sw.pc-custom.on{background:var(--sw)}
+.pc-sw.pc-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.dv-color{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:-2px 0 2px}
+.dv-color>span{font-size:12px;font-weight:600;color:var(--muted)}
+.dv-color .pc-sw{width:24px;height:24px}.dv-color .pc-sw.pc-auto{width:auto;height:24px;white-space:nowrap}
+
+/* ---------- เลือกหลายแผน: tick cards, then move / delete from the bar ---------- */
+#btnPick.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent)}
+#btnPick svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+body.pick-mode #view .wc{position:relative;cursor:pointer}
+body.pick-mode #view .wc .wc-top{padding-right:22px}
+body.pick-mode #view .wc::before{content:"";position:absolute;z-index:1;top:6px;right:6px;width:18px;height:18px;border-radius:5px;border:1.5px solid color-mix(in srgb,var(--ink) 30%,var(--line));background:var(--surface)}
+body.pick-mode #view .wc.picked{outline:2px solid var(--accent);outline-offset:1px;background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+body.pick-mode #view .wc.picked::before{border-color:var(--accent);background:var(--accent)}
+body.pick-mode #view .wc.picked::after{content:"";position:absolute;z-index:2;top:9px;right:12px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+body.pick-mode #view .wadd{display:none}
+.pickbar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:26;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;
+  max-width:min(980px,calc(100vw - 32px));padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 14px 40px rgba(13,22,38,.22);animation:rise .2s var(--ease) both}
+.pickbar[hidden]{display:none}
+.pk-count{display:inline-flex;align-items:baseline;gap:6px;font-size:13px;color:var(--ink-2)}
+.pk-count b{font:700 20px/1 var(--f-disp);color:var(--accent)}
+.pk-count small{font-size:11.5px;color:var(--muted)}
+.pk-sep{width:1px;height:24px;background:var(--line)}
+.pk-move{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.pk-move input{min-height:32px;font:inherit;font-size:13px}
+.pk-hint{flex-basis:100%;margin:0;text-align:center;font-size:11.5px;color:var(--muted)}
+.pk-color{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px;padding-top:8px;border-top:1px solid var(--line-2)}
+.pk-color>span{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.pk-color .pc-sw{width:24px;height:24px}.pk-color .pc-sw.pc-auto{width:auto;height:24px;white-space:nowrap}
+.pk-color .pc-pick.off{opacity:.45;pointer-events:none}
+body.has-pickbar .app{padding-bottom:110px}
+@media (max-width:760px){.pickbar{bottom:calc(84px + env(safe-area-inset-bottom,0px));padding:8px 10px}.pk-sep{display:none}}
+@media (prefers-reduced-motion:reduce){.pc-sw{transition:none}.pc-sw:hover{transform:none}.pickbar{animation:none}}
+/* ---------- หัวข้องาน: type or pick, add a new one to ข้อมูลหลัก ---------- */
+.type-q{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#dlg .type-q input{flex:1 1 260px;min-width:0}
+#typeAdd{flex:none;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+#typeHint{display:block;margin-top:4px;font-size:12px;color:var(--warn-ink)}
+#typeHint[hidden]{display:none}
+/* ========== Weekly Plan redesign (user, 9 Oct 2026: การ์ด · ส่วนหัว / แถบเครื่องมือ · ตารางพอดีจอ · คนว่าง) ========== */
+/* สายงาน: slim pills (every page) on the same row as ทีม */
+#lineBar .line-tabs,#lineBar .line-tabs.slim{flex:0 1 auto;display:flex;flex-wrap:wrap;gap:6px}
+#lineBar .lt,#lineBar .line-tabs.slim .lt{min-height:36px;padding:3px 10px 3px 4px;gap:8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--lc) 35%,var(--line));background:var(--surface);box-shadow:none}
+#lineBar .lt-ico,#lineBar .line-tabs.slim .lt-ico{width:28px;height:28px;border-radius:50%}
+#lineBar .lt-ico svg,#lineBar .line-tabs.slim .lt-ico svg{width:15px;height:15px}
+#lineBar .lt-meta,#lineBar .lt-chip,#lineBar .lt-desc,#lineBar .lt-bar,#lineBar .lt-wm{display:none}
+#lineBar .lt-body{gap:0}
+#lineBar .lt-name{font-size:13.5px;font-weight:700}
+#lineBar .lt-n{min-width:24px;padding:1px 8px;border-radius:999px;font:700 12px/1.5 var(--f-body);text-align:center;color:var(--lc);background:color-mix(in srgb,var(--lc) 13%,transparent)}
+#lineBar .lt.on,#lineBar .line-tabs.slim .lt.on{border-color:var(--lc);background:var(--lc);box-shadow:0 3px 10px color-mix(in srgb,var(--lc) 30%,transparent)}
+#lineBar .lt.on .lt-name{color:#fff}
+#lineBar .lt.on .lt-n{color:#fff;background:rgba(255,255,255,.25)}
+#lineBar .team-tabs{margin-left:auto}
+@media (max-width:760px){#lineBar .line-tabs,#lineBar .line-tabs.slim{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex-basis:100%}#lineBar .lt{justify-content:center;padding:3px 6px}#lineBar .lt-n{display:none}#lineBar .team-tabs{margin-left:0}}
+/* board header: week navigation · line / team chips · counts, one slim row (the brand line stays on Screenshot) */
+.wp-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:6px 12px}
+.wp-nav{order:1}
+.wp-brand{order:2;display:flex;align-items:center;gap:6px}
+.wp-bt{display:none}
+.wp-panel.capture .wp-bt{display:inline}
+.wp-legend{order:3;margin-left:auto}
+@media (max-width:1180px){.wp-head{justify-content:center}.wp-legend{margin-left:0}}
+/* the table fits the page: narrower label column, rows as tall as their cards, "+" appears on hover */
+.wp col.c-g{width:108px}
+.wp tbody th.gh{padding:8px 6px 8px 12px}
+.gh-name{font-size:12.5px}
+.wp td{position:relative;padding:4px}
+.wcell{gap:4px;min-height:46px}
+.wadd{position:absolute;right:4px;bottom:4px;z-index:2;display:grid;place-items:center;width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);font-size:0;box-shadow:0 2px 6px rgba(13,22,38,.12)}
+.wadd::before{content:"+";font:600 16px/1 var(--f-body);color:var(--accent)}
+.wadd:hover{border-color:var(--accent);background:var(--accent)}.wadd:hover::before{color:#fff}
+/* plan card: tinted with its colour, Plan No. on its own line, two lines of detail */
+.wc{padding:7px 9px 8px;gap:3px;border-radius:10px;border:1px solid color-mix(in srgb,var(--c) 24%,var(--line));border-left:4px solid var(--c);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 8%,var(--surface)),var(--surface) 70%)}
+.wc-top{gap:5px;align-items:flex-start}
+.wc-title{flex:1;min-width:0;font:700 12.5px/1.35 var(--f-mono);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-sub .ln-tag{margin-right:4px;vertical-align:1px}
+.wc-dot{margin-top:4px}
+.wc-sub{font-size:11.5px}
+.wc-where{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.wc-det{-webkit-line-clamp:2;line-clamp:2}
+.wc-chips{align-items:center;gap:3px}
+.wc-pp .pp{background:var(--surface);border:1px solid var(--line-2)}
+/* ผู้ปฏิบัติงานที่ว่าง: same label column as the board, smaller head and rows */
+.avp{margin-top:10px;border-radius:14px}
+.avp-top{padding:8px 14px;align-items:center}
+.avp-tbl col.c-g{width:108px}
+.avp-tbl thead th{padding:6px}
+.avp-tbl thead th b{font-size:12px}
+.avp-tbl thead th>span{font-size:11px}
+.avp-tbl thead th i{margin-top:3px;padding:0 7px;font-size:11px}
+.avp-tbl .avp-role{padding:7px 6px 7px 12px}
+.avp-tbl .avp-role b{font-size:11px}
+.avp-tbl .avp-role small{font-size:10.5px}
+.avp-tbl td{padding:3px 4px}
+.avp-tbl .avp-row{gap:6px;padding:2px 4px;font-size:12.5px;border-radius:6px}
+.avp-tbl .avp-row .avatar.xs{width:18px;height:18px;font-size:10px}
+.avp-tbl .avp-name small{display:inline-block;margin:0 0 0 4px;vertical-align:1px}
+
+/* ========== Booking Plan: fits every screen (user, 9 Oct 2026) ========== */
+.bk-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.bk-bar #bk-q{order:-1;flex:1 1 260px;min-width:0;min-height:34px}
+.bk-bar select,.bk-bar .wk-jump input{min-height:34px;font-size:13px}
+.bk-bar .wk-jump{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.bk-cust{margin:0}
+.bk-wrap{container-type:inline-size}
+.bk-table td,.bk-table th{vertical-align:middle}
+.bk-table td.c-date{white-space:nowrap}
+.bk-table tr.bk-row td:first-child{box-shadow:inset 4px 0 0 var(--c)}
+/* narrow (laptop with the sidebar, tablet, phone): every booking becomes a card */
+@container (max-width:1050px){
+  .bk-table thead{display:none}
+  .bk-table,.bk-table tbody{display:block;width:100%}
+  .bk-table tbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px;padding:10px}
+  .bk-table tr.bk-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"pn st" "cust cust" "type date" "loc loc" "car team";gap:5px 10px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;background:var(--surface)}
+  .bk-table tr.bk-row:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));border-left-color:var(--c)}
+  .bk-table tr.bk-row td{display:block;min-width:0;padding:0;border:0;background:none!important;box-shadow:none!important}
+  .bk-table .c-pn{grid-area:pn;font-weight:700}.bk-table .c-st{grid-area:st;justify-self:end}
+  .bk-table .c-cust{grid-area:cust;font-weight:600;overflow-wrap:anywhere}
+  .bk-table .c-type{grid-area:type}.bk-table .c-date{grid-area:date;justify-self:end;text-align:right}
+  .bk-table .c-loc{grid-area:loc;font-size:12.5px;color:var(--ink-2);overflow-wrap:anywhere}
+  .bk-table .c-car{grid-area:car;min-width:0}.bk-table .c-team{grid-area:team;justify-self:end}.bk-table .c-by{display:none!important}
+  .bk-table tr:not(.bk-row) td{display:block}
+}
+/* ---------- หมายเหตุของแผน (user, 9 Oct 2026: every role sees it) ---------- */
+.wc-note{font-size:11.5px;line-height:1.4;color:var(--warn-ink);background:color-mix(in srgb,var(--warn) 13%,transparent);border-radius:6px;padding:2px 6px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.remark-box{display:grid;gap:3px;padding:9px 12px;border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-left:4px solid var(--warn);border-radius:10px;background:color-mix(in srgb,var(--warn) 9%,var(--surface))}
+.remark-box b{font-size:12.5px;color:var(--warn-ink)}
+.remark-box span{font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere}
+.bk-note{color:var(--warn-ink)!important;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* หมายเหตุ written in the plan view, under สถานะงาน */
+.v-remark{display:grid;gap:6px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-left:4px solid var(--warn);border-radius:10px;background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+.v-remark label{font-size:13px;font-weight:700;color:var(--warn-ink)}
+.v-remark label small{font-weight:500;color:var(--muted)}
+#dlg .v-remark textarea{width:100%;min-height:56px;font:inherit;font-size:14px;background:var(--surface)}
+.v-remark .v-row{display:flex;align-items:center;gap:12px}
+.v-remark .lnk{font-size:12.5px;color:var(--muted)}

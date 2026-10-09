@@ -12,7 +12,7 @@ function planGroups(list){
   /* job types in their set order, but ลา (leave) always as the last row */
   const out=[];const seen=new Set();let leave=null;
   for(const ty of jobTypes()){seen.add(ty.id);const l=list.filter(t=>typeIdOf(t)===ty.id);if(!l.length)continue;
-    const g={key:'t:'+ty.id,label:ty.name,color:ty.color,tasks:l,preset:{type:ty.id}};if(ty.id==='leave')leave=g;else out.push(g)}
+    const g={key:'t:'+ty.id,label:ty.name,color:NEUTRAL_COLOR,tasks:l,preset:{type:ty.id}};/* หัวข้องาน has no colour (user, 9 Oct 2026) */if(ty.id==='leave')leave=g;else out.push(g)}
   const rest=list.filter(t=>!seen.has(typeIdOf(t)));if(rest.length)out.push({key:'t:__x',label:'ประเภทที่ถูกลบแล้ว',color:'#8a979c',tasks:rest,preset:{}});
   if(leave)out.push(leave);
   return out;
@@ -34,6 +34,11 @@ function renderActions(){
   $('#copyMenu').hidden=!plan||!ready;if(!plan)$('#copyMenu').open=false;
   $('#btnShot').hidden=!plan||!ready||!downloads;
   $('#btnPrint').hidden=$('#btnXlsx').hidden=!(plan||S.view==='people')||!ready||!downloads;
+  /* เลือกหลายแผน: Weekly Plan only; leaving the page ends it */
+  if(!plan&&S.pickMode){S.pickMode=false;S.picked.clear();document.body.classList.remove('pick-mode')}
+  const bp=$('#btnPick');bp.hidden=!plan||!ready||!canPick();bp.classList.toggle('on',S.pickMode);bp.setAttribute('aria-pressed',String(S.pickMode));
+  $('#btnPickTxt').textContent=S.pickMode?'เลิกเลือก':'เลือกหลายแผน';
+  renderPickBar();
 }
 const CLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg>';
 const CAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
@@ -54,12 +59,15 @@ function wcard(t,conf,i){
   const det=headline(t);const ch=transportChip(t.transport,t);
   /* compact card (user, 8 Oct 2026): customer and location on one line */
   const where=[t.customer&&S.pf.by!=='cust'?esc(t.customer):'',t.location?`<b>${esc(t.location)}</b>`:''].filter(Boolean).join(' · ');
-  return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}" style="--c:${safeColor(ty.color)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
-    <span class="wc-top">${lineTag(t)}<span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
-    <span class="wc-sub"><span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
+  return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}${S.pickMode?' pickable':''}${S.pickMode&&S.picked.has(t.id)?' picked':''}" style="--c:${planColor(t)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
+    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span><i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
+    <span class="wc-sub">${lineTag(t)}<span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${where?`<span class="wc-where" title="${esc([t.customer,t.location].filter(Boolean).join(' · '))}">${where}</span>`:''}
     ${det?`<span class="wc-det">${esc(det)}</span>`:''}
-    ${ch?`<span class="wc-chips">${ch}</span>`:''}
+    ${t.remark?`<span class="wc-note" title="หมายเหตุ: ${esc(t.remark)}">📝 ${esc(t.remark)}</span>`:''}
+    ${(()=>{/* Weekly Plan redesign (user, 9 Oct 2026): the small counters sit with the car chip, so Plan No. gets the whole top line */
+      const ic=`${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}`;
+      return ch||ic?`<span class="wc-chips">${ch}${ic}</span>`:''})()}
     <span class="wc-pp">${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}" title="${esc(staffName(id))}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest" title="${esc(g)} (แผนกอื่น)">${esc(g)}</span>`).join('')}${!(t.staffIds||[]).length&&!(t.guests||[]).length&&!isLeave(t)?'<span class="pp noteam">ยังไม่จัดคน</span>':''}</span>
     ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
     ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
@@ -135,7 +143,7 @@ function renderPlan(){
   let ci=0;
   let h=S.staff.length?'':`<div class="banner warn"><b>ยังไม่มีรายชื่อพนักงาน</b> เพิ่มรายชื่อก่อนเพื่อเลือก Team Service ในแผน <button type="button" class="lnk" data-go="settings">ไปที่จัดการข้อมูล</button></div>`;
   h+=`<section class="wp-panel" aria-label="แผนงานสัปดาห์ ${esc(weekName(S.week))}${scopeName()?' · '+esc(scopeName()):''}"><header class="wp-head">
-    <div class="wp-brand">BU1 · Weekly Planning${S.line?`<span class="wp-line" style="--lc:${LINE[S.line].color}">${esc(lineName())}</span>`:''}${S.team?`<span class="wp-line" style="--lc:${TEAM[S.team].color}">${esc(teamName(S.team))}</span>`:''}</div>
+    <div class="wp-brand"><span class="wp-bt">BU1 · Weekly Planning</span>${S.line?`<span class="wp-line" style="--lc:${LINE[S.line].color}">${esc(lineName())}</span>`:''}${S.team?`<span class="wp-line" style="--lc:${TEAM[S.team].color}">${esc(teamName(S.team))}</span>`:''}</div>
     <div class="wp-nav"><button type="button" class="icon-btn" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
       <div class="wp-wk"><b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b><span>สัปดาห์ที่ ${isoWeek(S.week)} · ${esc(weekName(S.week))} · ${isThis?'สัปดาห์นี้':'<button type="button" class="lnk" data-action="thisweek">กลับสัปดาห์นี้</button>'}</span></div>
       <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>

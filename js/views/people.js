@@ -3,7 +3,7 @@
 /* ---------- view: per-person daily summary ---------- */
 function miniChip(t,c){
   const ty=typeOf(t);
-  return `<button type="button" class="mc${c?' has-conf':''}" style="--c:${safeColor(ty.color)}" data-edit="${esc(t.id)}" title="${esc([typeLabel(t),t.planNo,t.customer,pName(t)].filter(Boolean).join(' · '))}"><i></i><span>${esc(typeLabel(t))}${t.customer?' · '+esc(t.customer):''}</span><em>${c?'⚠ ':''}${esc(pName(t))}</em></button>`;
+  return `<button type="button" class="mc${c?' has-conf':''}" style="--c:${planColor(t)}" data-edit="${esc(t.id)}" title="${esc([typeLabel(t),t.planNo,t.customer,pName(t)].filter(Boolean).join(' · '))}"><i></i><span>${esc(typeLabel(t))}${t.customer?' · '+esc(t.customer):''}</span><em>${c?'⚠ ':''}${esc(pName(t))}</em></button>`;
 }
 function daySummary(list){
   const jobs=list.filter(t=>!isLeave(t));const lv=list.filter(isLeave);

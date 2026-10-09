@@ -175,3 +175,46 @@ function syncLineField(fromType){
   $('#lblLine small').textContent=own?`หัวข้องานนี้เป็นของ ${LINE[own].short}`:'ไม่บังคับ · หัวข้องานนี้ใช้ได้ทั้งสองสาย';
 }
 $('#f-type').addEventListener('change',()=>syncLineField(true));
+
+/* สีของแผน (user, 9 Oct 2026): "ตาม Plan No." (the colour the Plan No. gives, '' saved) · the palette · any colour.
+   attr = data-pc (the form) or data-pcv (the plan view, saved at once) */
+function colorPickHtml(cur,pn,attr){/* cur null = nothing marked (several plans with different colours) */
+  const auto=planNoColor(pn)||NEUTRAL_COLOR;const own=/^#[0-9a-f]{6}$/i.test(cur||'')?String(cur).toLowerCase():'';const custom=own&&!PLAN_COLORS.includes(own);const isAuto=!own&&cur!==null;
+  return `<button type="button" class="pc-sw pc-auto${isAuto?' on':''}" ${attr}="" style="--sw:${auto}" aria-pressed="${isAuto}" title="สีตาม Plan No.${pn?' '+esc(pn):''} · แผนที่ Plan No. เดียวกันได้สีเดียวกัน"><i></i>ตาม Plan No.</button>`
+    +PLAN_COLORS.map(c=>`<button type="button" class="pc-sw${own===c?' on':''}" ${attr}="${c}" style="--sw:${c}" aria-pressed="${own===c}" aria-label="สี ${c}"><i></i></button>`).join('')
+    +`<label class="pc-sw pc-custom${custom?' on':''}" style="--sw:${custom?own:'transparent'}" title="เลือกสีเอง"><input type="color" ${attr}-custom value="${custom?own:'#2a78d6'}" aria-label="เลือกสีเอง"><i></i></label>`;
+}
+function renderColorPick(){const el=$('#pcPick');if(el)el.innerHTML=colorPickHtml($('#f-color').value,$('#f-planno').value.trim(),'data-pc');if(typeof syncDrawerColor==='function')syncDrawerColor()}
+/* หัวข้องาน typed or picked (user, 9 Oct 2026: "พิมพ์เองได้ ถ้าไม่เจอในข้อมูลหลักกดเพิ่มได้"): #f-typeQ is the field people see,
+   #f-type (hidden select) still holds the type id for the rest of the form. A name in the list selects that type; a new
+   name is saved as อื่นๆ with that text, and people with master-data rights can add it to ข้อมูลหลัก › หัวข้องาน at once */
+const typeByName=q=>{const k=norm(q);return k?activeTypes().find(t=>norm(t.name)===k)||jobTypes().find(t=>norm(t.name)===k)||null:null};
+function fillTypeQ(){
+  const tid=$('#f-type').value;const ty=jobTypes().find(x=>x.id===tid);
+  $('#f-typeQ').value=tid==='other'?$('#f-typeOther').value||(ty?ty.name:''):ty?ty.name:'';
+  $('#dl-types').innerHTML=activeTypes().map(t=>`<option value="${esc(t.name)}">`).join('');
+  syncTypeQ();
+}
+function syncTypeQ(){
+  const q=$('#f-typeQ').value.trim();const hit=typeByName(q);
+  const id=!q?'':hit?hit.id:'other';
+  $('#f-typeOther').value=!q||(hit&&hit.id==='other')?'':hit?'':q;
+  if(id&&![...$('#f-type').options].some(o=>o.value===id))$('#f-type').innerHTML=typeOptions(id,'— เลือกหัวข้องาน —');
+  if($('#f-type').value!==id){$('#f-type').value=id;$('#f-type').dispatchEvent(new Event('change',{bubbles:true}))}
+  const isNew=!!q&&!hit;const b=$('#typeAdd');b.hidden=!(isNew&&can('master'));
+  if(!b.hidden)b.textContent=`+ เพิ่ม “${q.slice(0,30)}” เข้าข้อมูลหลัก`;
+  const h=$('#typeHint');h.hidden=!isNew;
+  h.textContent=can('master')?'ยังไม่มีในข้อมูลหลัก · กดเพิ่มเพื่อเลือกได้ครั้งต่อไป หรือบันทึกได้เลย (เก็บเป็น อื่นๆ)':'ยังไม่มีในข้อมูลหลัก · จะบันทึกเป็น อื่นๆ ด้วยชื่อนี้';
+}
+async function addTypeFromForm(){
+  if(!can('master'))return;const name=$('#f-typeQ').value.trim().replace(/\s+/g,' ').slice(0,40);if(!name||typeByName(name))return syncTypeQ();
+  const l=typesCopy();const id=newId('ty');const line=curLine();
+  l.splice(Math.max(0,l.findIndex(t=>t.id==='leave')),0,{id,name,color:NEUTRAL_COLOR,line:LINE[line]?line:'',active:true});
+  const btn=$('#typeAdd');btn.disabled=true;
+  try{await saveCfg({jobTypes:l},`เพิ่มหัวข้องาน “${name}” เข้าข้อมูลหลักแล้ว`);S.cfg=Object.assign({},S.cfg,{jobTypes:l})}
+  finally{btn.disabled=false}
+  $('#f-type').innerHTML=typeOptions(id,'— เลือกหัวข้องาน —');$('#f-type').value=id;$('#f-typeOther').value='';fillTypeQ();
+  $('#f-type').dispatchEvent(new Event('change',{bubbles:true}));
+}
+$('#f-typeQ').addEventListener('input',syncTypeQ);
+$('#typeAdd').addEventListener('click',addTypeFromForm);

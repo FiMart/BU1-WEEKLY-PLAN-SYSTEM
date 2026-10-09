@@ -17,12 +17,12 @@ async function exportXlsx(btn){
   try{
     const X=await loadXLSX();const wb=X.utils.book_new();const days=weekDays();const all=shownTasks().slice().sort(byTime);const tasks=all.filter(lineMatch);
     const title=[`BU1 Lab · Weekly Plan${lineTitle()} ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`];
-    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','จัดชน'];
+    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','หมายเหตุ','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','จัดชน'];
     /* ทีม of the plan's people: "Lab On-Site, Lab" when both */
     const planTeams=t=>TEAMS.filter(tm=>(t.staffIds||[]).some(id=>teamOf(S.staff.find(s=>s.id===id))===tm.id)).map(tm=>tm.name).join(', ');
     const conf=allConflicts();
-    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
-    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,14,20,14,32,16,12,26].map(w=>({wch:w}));
+    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',t.remark||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
+    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,30,14,20,14,32,16,12,26].map(w=>({wch:w}));
     X.utils.book_append_sheet(wb,ws1,'แผนงาน');
     /* per person: every line (one shared team), so "ว่าง" is true */
     const staff=visibleStaff(all.filter(isWorking));
@@ -59,11 +59,11 @@ async function exportReport(){
   const work=tasks.filter(t=>isWorking(t)&&!isLeave(t));const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
   const cardH=t=>{const ty=typeOf(t);const c=conf.get(t.id);const st=t.status||'planned';
     const det=detailOf(t).split('\n').map(x=>x.trim()).filter(Boolean).slice(0,3).join('\n');const tr=transportText(t);
-    return `<div class="cd st-${esc(st)}" style="--c:${safeColor(ty.color)}">
+    return `<div class="cd st-${esc(st)}" style="--c:${planColor(t)}">
       <div class="ct"><b class="pn">${!S.line&&LINE[lineOf(t)]?`<span class="ln" style="background:${LINE[lineOf(t)].color}">${LINE[lineOf(t)].tag}</span>`:''}${esc(t.planNo||typeLabel(t))}</b><i class="dot" title="${esc(stTh(st))}"></i></div>
       <div class="cs"><span class="per">${esc(pName(t))}</span>${esc([t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · '))}</div>
       ${t.location?`<div class="cl">L : <b>${esc(t.location)}</b></div>`:''}${t.customer&&S.pf.by!=='cust'?`<div class="cc">${esc(t.customer)}</div>`:''}
-      ${det?`<div class="cdet">${esc(det)}</div>`:''}${tr?`<div class="ctr">🚗 ${esc(tr)}</div>`:''}
+      ${det?`<div class="cdet">${esc(det)}</div>`:''}${t.remark?`<div class="cnote">📌 ${esc(t.remark)}</div>`:''}${tr?`<div class="ctr">🚗 ${esc(tr)}</div>`:''}
       ${teamNames(t).length?`<div class="cpp">${teamNames(t).map(n=>`<span>${esc(n)}</span>`).join('')}</div>`:''}
       ${NEEDS_REASON.has(st)?`<div class="w">${esc(statusFlag(st))}${t.statusNote?': '+esc(t.statusNote):''}</div>`:''}${c?`<div class="w">⚠ ${esc(confLabel(c))}</div>`:''}</div>`};
   const head=days.map(d=>{const k=ymd(d);const n=tasks.filter(t=>t.date===k).length;const hol=holidayOf(k);
@@ -92,7 +92,7 @@ table.wp{border-collapse:collapse;width:100%;table-layout:fixed}
 .ln{display:inline-block;margin-right:3px;padding:0 3px;border-radius:3px;color:#fff;font-size:8px;font-weight:700;vertical-align:1px}
 .dot{width:7px;height:7px;border-radius:50%;background:#8a979c;flex:none}.st-done .dot{background:#0ca30c}.st-postponed .dot{background:#fab219}.st-notdone .dot{background:#d03b3b}.st-cancelled .dot{background:#c6d3e4}
 .cs{color:#34496b;font-size:9px}.per{display:inline-block;margin-right:4px;padding:0 4px;border-radius:3px;background:#e6f1fd;color:#1462d0;font-weight:600}
-.cl{font-size:9px}.cc{font-weight:600;font-size:9.5px}.cdet{white-space:pre-line;font-size:9px;color:#34496b;overflow-wrap:anywhere}.ctr{font-size:9px;color:#6d46c8}
+.cl{font-size:9px}.cc{font-weight:600;font-size:9.5px}.cdet{white-space:pre-line;font-size:9px;color:#34496b;overflow-wrap:anywhere}.ctr{font-size:9px;color:#6d46c8}.cnote{font-size:9px;color:#875800;background:#fff6dd;border-radius:3px;padding:0 3px;white-space:pre-line;overflow-wrap:anywhere}
 .cpp{display:flex;flex-wrap:wrap;gap:2px;margin-top:1px}.cpp span{padding:0 4px;border-radius:3px;background:#eef3fa;font-size:9px}
 .w{margin-top:1px;background:#fbeae9;color:#b42323;font-weight:600;padding:1px 3px;border-radius:3px;font-size:8.5px}
 .cwt{font-size:18px;text-align:center;margin:0 0 2px}.cws{text-align:center;margin:0 0 6px;color:#34496b}

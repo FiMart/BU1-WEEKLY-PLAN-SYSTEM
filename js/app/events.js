@@ -22,8 +22,11 @@ document.addEventListener('click',e=>{
   const pe=t.closest('[data-proj-edit]');if(pe){S.projEdit=pe.dataset.projEdit;render();setTimeout(()=>{const f=$('#pj-name');if(f){f.focus();f.scrollIntoView({block:'center'})}},30);return}
   const pdb=t.closest('[data-pday]');if(pdb){S.pday=pdb.dataset.pday;S.anim=null;render();return}
   const mdb=t.closest('[data-mday]');if(mdb){S.mday=mdb.dataset.mday;S.anim=null;render();return}
+  /* เลือกหลายแผน: a card click ticks the plan instead of opening it (js/features/plan-select.js) */
+  if(S.pickMode&&S.view==='plan'){const pc=t.closest('#view .wc[data-edit]');if(pc){togglePick(pc.dataset.edit,pc);return}}
   const ed=t.closest('[data-edit]');if(ed){openTask(ed.dataset.edit);return}
   const a=t.closest('[data-action]');if(!a)return;
+  if(a.dataset.action.startsWith('pick-'))return;/* handled in js/features/plan-select.js */
   switch(a.dataset.action){
     case 'prev':S.week=addDays(S.week,-7);if(S.pday)S.pday=ymd(addDays(parseD(S.pday),-7));S.anim='prev';subscribeWeek();break;
     case 'next':S.week=addDays(S.week,7);if(S.pday)S.pday=ymd(addDays(parseD(S.pday),7));S.anim='next';subscribeWeek();break;
@@ -39,6 +42,8 @@ document.addEventListener('click',e=>{
     case 'edit-task':setMode('edit');setTimeout(()=>{const f=$('#f-type');if(f)f.focus()},30);break;
     case 'add-vehicle':if(can('master'))addVehicle(a);break;
     case 'copy-card':if(editing)copyText(cardText(editing),'คัดลอกแผนแล้ว วางใน LINE ได้เลย');break;
+    case 'save-vremark':saveViewRemark(($('#v-remark')||{}).value);break;
+    case 'clear-vremark':saveViewRemark('');break;
     case 'save-vreason':{const r=dlg.querySelector('input[name="v-status"]:checked');if(r&&editing)saveViewStatus(r.value,$('#v-reason').value.trim());break}
     case 'copy-day':$('#copyMenu').open=false;copyText(dayText(a.dataset.date),`คัดลอกแผน${fmtDay(a.dataset.date)}แล้ว วางใน LINE ได้เลย`);break;
     case 'shot':takeShot(a);break;
@@ -132,7 +137,7 @@ document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)retu
   if(f.dataset.addType!==undefined){e.preventDefault();
     const fd=new FormData(f);const name=String(fd.get('name')||'').trim();if(!name)return;const l=typesCopy();
     if(l.some(t=>norm(t.name)===norm(name))){toast(`มี ${name} อยู่แล้ว`);return}
-    l.splice(Math.max(0,l.findIndex(t=>t.id==='leave')),0,{id:newId('ty'),name,color:safeColor(String(fd.get('color'))),line:LINE[fd.get('line')]?String(fd.get('line')):'',active:true});f.reset();saveCfg({jobTypes:l},`เพิ่ม ${name} แล้ว`);return}
+    l.splice(Math.max(0,l.findIndex(t=>t.id==='leave')),0,{id:newId('ty'),name,color:NEUTRAL_COLOR,line:LINE[fd.get('line')]?String(fd.get('line')):'',active:true});f.reset();saveCfg({jobTypes:l},`เพิ่ม ${name} แล้ว`);return}
   if(f.dataset.addPos!==undefined){e.preventDefault();
     const name=String(new FormData(f).get('name')||'').trim();if(!name)return;const l=positions().slice();if(l.includes(name)){toast(`มี ${name} อยู่แล้ว`);return}
     l.push(name);f.reset();saveCfg({positions:l},`เพิ่ม ${name} แล้ว`);return}
