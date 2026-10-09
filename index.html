@@ -2,13 +2,13 @@
 <title>BU1 Lab Weekly Plan</title>
 <!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
 <script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
-add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.8.0'});
-add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.8.0'});
-add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.8.0'});
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.9.0'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.9.0'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.9.0'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
 <script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
-<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.8.0"></noscript>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.9.0"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -33,6 +33,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/safety.css">
 <link rel="stylesheet" href="css/master-plan.css">
 <link rel="stylesheet" href="css/layout-fit.css">
+<link rel="stylesheet" href="css/help.css">
 <link rel="stylesheet" href="css/compact.css">
 
 <aside class="side" id="side" aria-label="เมนูหลัก">
@@ -58,7 +59,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.8.0 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.9.0 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -91,11 +92,12 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="ph-main"><div class="crumb" id="pageCrumb">BU1 Lab</div><h2 id="pageTitle">Weekly Plan</h2><p id="pageSub"></p><div class="gchips" id="gchips" role="group" aria-label="กรองแถวของตาราง"></div></div>
     <div class="ph-actions">
       <button type="button" class="btn primary" data-action="add" id="btnAddTop"><span class="plus">+</span> เพิ่มแผนงาน</button>
-      <details class="menu" id="copyMenu"><summary class="btn" title="คัดลอกแผนของวันที่เลือกเป็นข้อความ เพื่อวางใน LINE"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg> คัดลอกแผนส่ง LINE</summary><div class="menu-pop" id="copyPop"></div></details>
+      <!-- เลือกหลายแผน sits next to เพิ่มแผนงาน (user, 10 Oct 2026: "ตำแหน่งที่เหมาะสมต่อการหาปุ่ม"): the two plan-editing buttons first, then sharing / export -->
+      <button type="button" class="btn" data-action="pick-mode" id="btnPick" aria-pressed="false" hidden title="ติ๊กเลือกหลายแผน แล้วย้ายวัน เปลี่ยนสี หรือลบพร้อมกัน"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12.5 3 3 5.5-6"/></svg> <span id="btnPickTxt">เลือกหลายแผน</span></button>
+      <details class="menu" id="copyMenu"><summary class="btn" title="คัดลอกแผนของวันที่เลือกเป็นข้อความ เพื่อวางใน LINE"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg> <span class="lbl-long">คัดลอกแผนส่ง LINE</span><span class="lbl-short">ส่ง LINE</span></summary><div class="menu-pop" id="copyPop"></div></details>
       <button type="button" class="btn" data-action="shot" id="btnShot" title="บันทึกตารางสัปดาห์นี้เป็นรูป PNG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg> Screenshot</button>
       <button type="button" class="btn" data-action="report" id="btnPrint" title="พิมพ์ Weekly Plan ของสัปดาห์นี้ (A3 แนวนอน) หรือบันทึกเป็น PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></svg> Print / PDF</button>
       <button type="button" class="btn" data-action="xlsx" id="btnXlsx">Excel</button>
-      <button type="button" class="btn" data-action="pick-mode" id="btnPick" aria-pressed="false" hidden title="ติ๊กเลือกหลายแผน แล้วย้ายวันหรือลบพร้อมกัน"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12.5 3 3 5.5-6"/></svg> <span id="btnPickTxt">เลือกหลายแผน</span></button>
     </div>
   </div>
   <div id="banners" class="banners"></div>
@@ -119,7 +121,12 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 
   <section class="planbar" id="planbar" aria-label="ตัวกรอง" hidden>
     <input type="search" id="pf-q" placeholder="ค้นหา" aria-label="ค้นหาในหน้านี้" autocomplete="off">
-    <select id="pf-type" aria-label="กรองตามหัวข้องาน"></select>
+    <select id="pf-type" aria-label="กรองตามหัวข้องาน" hidden></select>
+    <!-- หัวข้องาน / ลูกค้า filters as dropdowns (user, 10 Oct 2026); filled by renderChips in js/views/plan.js -->
+    <details class="dd" id="pfTypeDD" hidden><summary class="dd-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/></svg><span class="dd-k">หัวข้องาน</span><b class="dd-v" id="pfTypeV">ทุกหัวข้องาน</b></summary>
+      <div class="dd-pop" role="group" aria-label="กรองตามหัวข้องาน"><div class="dd-list" id="pfTypeList"></div><div class="dd-foot"><button type="button" class="lnk" data-dd-clear="types">ล้าง</button><button type="button" class="btn sm primary" data-dd-close>ตกลง</button></div></div></details>
+    <details class="dd" id="pfCustDD" hidden><summary class="dd-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/></svg><span class="dd-k">ลูกค้า</span><b class="dd-v" id="pfCustV">ทุกลูกค้า</b></summary>
+      <div class="dd-pop" role="group" aria-label="กรองตามลูกค้า"><input type="search" class="dd-q" id="pfCustQ" placeholder="ค้นหาลูกค้า" autocomplete="off" aria-label="ค้นหาลูกค้า"><div class="dd-list" id="pfCustList"></div><div class="dd-foot"><button type="button" class="lnk" data-dd-clear="custs">ล้าง</button><button type="button" class="btn sm primary" data-dd-close>ตกลง</button></div></div></details>
     <select id="pf-staff" aria-label="กรองตามพนักงาน"></select>
     <div class="seg" id="pf-mode" role="radiogroup" aria-label="มุมมองแผนงาน"><label><input type="radio" name="pf-mode" id="pf-mode-day" value="day"><span>รายวัน</span></label><label><input type="radio" name="pf-mode" id="pf-mode-week" value="week"><span>ทั้งสัปดาห์</span></label></div>
     <div class="seg" id="pf-by" role="radiogroup" aria-label="จัดแถวตาม"><label><input type="radio" name="pf-by" id="pf-by-type" value="type"><span>แถวตามหัวข้องาน</span></label><label><input type="radio" name="pf-by" id="pf-by-cust" value="cust"><span>แถวตามลูกค้า</span></label></div>
@@ -484,6 +491,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/settings.js"></script>
 <script src="js/views/help.js"></script>
+<script src="js/views/help-clips.js"></script>
 <script src="js/dialog/picker.js"></script>
 <script src="js/dialog/fields.js"></script>
 <script src="js/dialog/attachments.js"></script>

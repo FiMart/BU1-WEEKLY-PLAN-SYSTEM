@@ -38,6 +38,7 @@ index.html              entry point: markup, then loads CSS and JS in order
 assets/favicon.svg      browser tab icon (vector, modern browsers)
 assets/favicon-32.png   tab icon fallback (Safari / older browsers)
 assets/apple-touch-icon.png  180px home-screen icon for iPhone / iPad
+assets/help/*.jpg       frames of the help clips (js/views/help-clips.js); rebuilt by tools/help-clips/gen.ps1
 supabase/schema.sql     tables in schema bu1wp, RLS by dept_id, realtime (for the system owner to review and run)
 supabase/HANDOFF.md     hand-off to the central Supabase owner (entities, data layer, volume, realtime)
 css/                    loaded in this order (later files override earlier ones)

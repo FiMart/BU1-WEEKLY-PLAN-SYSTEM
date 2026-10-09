@@ -1,0 +1,86 @@
+<style>#banners,#pickFab{display:none!important}.sb-foot>*:not(.me){display:none!important}</style>
+<script>
+(function(){
+var FID=(new URLSearchParams(location.search)).get('f');if(!FID)return;
+var w=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+var q=function(s){return document.querySelector(s)};
+var ev=function(el,t){el.dispatchEvent(new Event(t,{bubbles:true}))};
+function seed(){
+  var base=S.tasks.find(function(t){return !isLeave(t)&&t.planNo});var ty=jobTypes().filter(function(x){return x.id!=='leave'&&x.active!==false});
+  var st=S.staff.map(function(s){return s.id});
+  var rows=[
+    ['cl1',0,'PN-26-10012','บจก. ตัวอย่างเคมี','มาบตาพุด ระยอง',0,[st[0],st[1]],2,'done','#1baf7a','1กข-1234','Work Order: WO-26-1001'],
+    ['cl3',1,'PN-26-10018','บจก. ตัวอย่างพลาสติก','บางปู สมุทรปราการ',0,[st[2]],1,'planned','','2ขค-5678','Tag No. FT-201'],
+    ['cl2',2,'PN-26-10015','โรงงานตัวอย่าง ชลบุรี','นิคมฯ อมตะ',1,[st[0]],3,'planned','','1กข-1234','ติดตั้ง Flowmeter 2 จุด'],
+    ['cl6',2,'PN-26-10027','โรงงานตัวอย่าง ชลบุรี','นิคมฯ อมตะ',0,[st[1]],0,'planned','','2ขค-5678','Disconnect FT-305'],
+    ['cl4',3,'PN-26-10021','บจก. ตัวอย่างเคมี','มาบตาพุด ระยอง',2,[],2,'planned','','','Cal On Site 4 เครื่อง'],
+    ['cl5',4,'PN-26-10024','บจก. ตัวอย่างอาหาร','ศรีราชา ชลบุรี',1,[st[1],st[2]],2,'planned','#7148c9','1กข-1234','ติดตั้งและทดสอบระบบ']];
+  L.tasks.clear();/* a clean week: no clashes in the pictures */
+  S.week=addDays(mondayOf(new Date()),7);/* next week: no "เลยวันแล้ว" flags */
+  rows.forEach(function(r){L.tasks.set(r[0],Object.assign({},base,{id:r[0],date:ymd(addDays(S.week,r[1])),period:'full',timeNote:'ถึงหน้างาน 08.30 น.',planNo:r[2],customer:r[3],location:r[4],jobType:(ty[r[5]]||ty[0]).id,line:'',
+    staffIds:r[6],guests:[],teamNeed:r[7],status:r[8],statusNote:'',color:r[9],remark:r[0]==='cl2'?'โทรแจ้งลูกค้าก่อนเข้า 1 วัน':'',transport:r[10],needGA:false,selfDrive:false,detail:r[11],request:'',history:[],calItems:[],insItems:[],reports:[],photoIds:[],fileIds:[],files:[],prep:[],ncrId:'',sample:true}))});
+  if(typeof localPublish==='function')localPublish();else S.tasks=[...L.tasks.values()];S.anim=null;render();
+  if(typeof syncThemeLbl==='function')syncThemeLbl();
+}
+async function form(level){
+  openTask(null,{date:ymd(addDays(S.week,2))});await w(250);
+  var tq=q('#f-typeQ');tq.value=jobTypes()[0].name;ev(tq,'input');ev(tq,'change');
+  if(level>=2){var pn=q('#f-planno');pn.value='PN-26-10030';ev(pn,'input');}
+  if(level>=3){q('#f-customer').value='บจก. ตัวอย่างเคมี';q('#f-location').value='มาบตาพุด ระยอง';q('#f-timeNote').value='ถึงหน้างาน 08.30 น.';}
+  if(level>=4){var r=q('.car-mode input[value="dept"]');r.checked=true;ev(r,'change');}
+  if(level>=5){q('#f-teamNeed').value='3';ev(q('#f-teamNeed'),'input');pickSel.add(S.staff[0].id);renderPickSel();renderPickerList();}
+  await w(200);
+}
+async function view(){openTask('cl2');await w(300)}
+async function pick(){setPickMode(true);await w(100);S.picked.add('cl2');S.picked.add('cl6');render();await w(200)}
+var F={
+  'add-1':{sel:'#btnAddTop'},
+  'add-2':{run:function(){return form(1)},sel:'#f-typeQ'},
+  'add-3':{run:function(){return form(2)},sel:'#f-planno'},
+  'add-4':{run:function(){return form(3)},sel:function(){return q('#f-date').closest('.fv')}},
+  'add-5':{run:function(){return form(4)},sel:'.car-mode'},
+  'add-6':{run:function(){return form(5)},sel:'#teamNeedRow'},
+  'add-7':{run:function(){return form(5)},sel:'#btnSave'},
+  'view-1':{sel:'#view .wc[data-edit="cl2"]'},
+  'view-2':{run:view,sel:'.dv-status .seg'},
+  'view-3':{run:view,sel:'#vReport'},
+  'view-4':{run:view,sel:'.v-remark'},
+  'view-5':{run:view,sel:'#btnEdit'},
+  'pick-1':{sel:'#btnPick'},
+  'pick-2':{run:pick,sel:'#view .wc.picked'},
+  'pick-3':{run:pick,sel:'#pickBar .pk-move'},
+  'pick-4':{run:pick,sel:'#pickBar .pk-color'},
+  'pick-5':{run:pick,sel:'#pickBar [data-action="pick-del"]'},
+  'filter-1':{sel:'#lineBar .line-tabs'},
+  'filter-2':{sel:'#lineBar .team-tabs'},
+  'filter-3':{run:async function(){S.pf.custs=['บจก. ตัวอย่างเคมี'];S.anim=null;render();q('#pfCustDD').open=true;await w(150)},sel:'#pfCustDD .dd-pop'},
+  'filter-4':{run:async function(){S.pf.q='PN-26-1001';q('#pf-q').value=S.pf.q;S.anim=null;render();await w(150)},sel:'#pf-q'},
+  'share-1':{run:async function(){q('#copyMenu').open=true;await w(250)},sel:'#copyPop'},
+  'share-2':{sel:'#btnShot'},
+  'share-3':{sel:'#btnPrint'},
+  'share-4':{sel:'#btnXlsx'},
+  'pages-1':{run:async function(){goView('booking');await w(500)},sel:'.bk-bar'},
+  'pages-2':{run:async function(){goView('booking');await w(500)},sel:'#bkBody tr.bk-row'},
+  'pages-3':{run:async function(){goView('people');await w(500)},sel:function(){return q('#view table')}},
+  'pages-4':{run:async function(){goView('dash');await w(700)},sel:function(){var t=q('#view .tile');return t&&t.parentElement}},
+  'phone-1':{sel:'.ph-actions'},
+  'phone-2':{sel:'#view .pd-strip'},
+  'phone-3':{run:async function(){var d=document.querySelectorAll('#view .pd-day')[2];if(d)d.click();await w(300)},sel:'#view .pd-cards .wc'},
+  'phone-4':{sel:'nav.bottom-nav'}
+};
+setTimeout(async function(){
+  try{seed();await w(300);var f=F[FID];if(!f)throw new Error('no frame '+FID);if(f.run)await f.run();await w(350);
+    var el=typeof f.sel==='function'?f.sel():q(f.sel);
+    if(el){if(!el.closest('#pickBar'))el.scrollIntoView({block:'nearest'});await w(400);
+      /* web fonts change the width of centred / right-aligned parts: wait for them */
+      try{await Promise.race([document.fonts.ready,w(4000)]);for(var j=0;j<20&&document.fonts.status!=='loaded';j++)await w(200)}catch(e){}
+      window.__FONTS=document.fonts.status+' '+[...document.fonts].filter(function(f){return f.status==='loaded'}).length;
+      var pb=q('#pickBar');if(pb&&!pb.hidden){var br=pb.getBoundingClientRect();var cs=getComputedStyle(pb);window.__FONTS+=' bar '+Math.round(br.left)+','+Math.round(br.width)+' tf '+cs.transform+' an '+cs.animationName+' anims '+document.getAnimations().length+' iw '+innerWidth}
+      /* measure only once every finite animation has ended (the boxes must match the final picture) */
+      /* the animation clock may not run in this frame: jump every finite animation to its end state */
+      for(var k=0;k<3;k++){document.getAnimations().forEach(function(a){try{var t=a.effect&&a.effect.getComputedTiming();if(t&&t.iterations!==Infinity)a.finish()}catch(e){}});await w(150)}var r=el.getBoundingClientRect();window.__RECT={x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}}else window.__RECT=null;
+  }catch(e){window.__ERR=e.message}
+  window.__READY=true;
+},1500);
+})();
+</script>
