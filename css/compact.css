@@ -517,3 +517,30 @@ body.has-pickbar .app{padding-bottom:110px}
 .dd-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px 0;border-top:1px solid var(--line-2)}
 .dd-foot .lnk:disabled{opacity:.4;cursor:default}
 #gchips:empty{display:none}
+
+/* ---------- เฉพาะแผนที่จองรถ GA (user, 11 Oct 2026; #pfGa, renderChips in js/views/plan.js) ---------- */
+.pf-ga{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:500 13px/1 var(--f-body);cursor:pointer;white-space:nowrap}
+.pf-ga[hidden]{display:none}
+.pf-ga svg{width:16px;height:16px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pf-ga b{min-width:20px;padding:0 6px;border-radius:999px;font-size:11.5px;line-height:1.6;text-align:center;color:var(--ink-2);background:var(--surface-2)}
+.pf-ga:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.pf-ga.on{border-color:#0e8fa3;background:color-mix(in srgb,#0e8fa3 12%,var(--surface));color:#0b6f7f;font-weight:600}
+.pf-ga.on svg{stroke:#0e8fa3}
+.pf-ga.on b{color:#fff;background:#0e8fa3}
+:root[data-theme="dark"] .pf-ga.on{color:#7fd6e2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pf-ga.on{color:#7fd6e2}}
+/* ไม่ใช้รถ chip (v4.10.1) */
+.tchip.nocar{color:var(--ink-2);background:var(--surface-2);border-style:dashed}
+.tchip.nocar svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#f-noneNote{margin-top:8px;width:100%}
+/* รถแผนก คันที่ 1 / 2 (v4.10.0) */
+.tr-row .tr-slot{display:grid;gap:3px;flex:1 1 200px;min-width:0}
+.tr-row .tr-slot>span{font-size:12px;font-weight:600;color:var(--ink-2)}
+.tr-row .tr-slot>span small{font-weight:400;color:var(--muted)}
+.tr-row .tr-slot input{width:100%;flex:none}
+.tr-row>.btn{align-self:flex-end}
+@media (max-width:760px){
+  body[data-page="plan"] #pf-q{grid-column:1/3}
+  body[data-page="plan"] #pfGa{grid-column:3;justify-content:center;padding:0 6px;min-width:0}
+  body[data-page="plan"] #pfGa span{overflow:hidden;text-overflow:ellipsis}
+}
