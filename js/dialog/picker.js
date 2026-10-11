@@ -122,19 +122,22 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='tr-per'){$('#f-period').value=t.value;renderPickerList();renderTrGrid();return}
   if(t.id==='f-date'||t.id==='f-period'){renderPickerList();renderTrGrid()}
   if(t.id==='f-type'){syncTypeOther();syncDrawerColor()}
-  if(t.name==='car-mode'){syncCarMode();checkConflicts()}
+  if(t.id==='f-carDept'&&t.checked&&carMode()==='none')setCarMode('');/* รถแผนก and ไม่ใช้รถ do not go together */
+  if(t.name==='none-why'){syncCarMode();if(t.value==='อื่นๆ')setTimeout(()=>$('#f-noneNote').focus(),30)}
+  if(t.name==='car-mode'||t.id==='f-carDept'){syncCarMode();checkConflicts();if(t.id==='f-carDept'&&t.checked)setTimeout(()=>$('#f-transport').focus(),30)}
   if(t.id==='f-gaCargo'){syncCarMode();if(t.checked)setTimeout(()=>$('#f-gaCargoSize').focus(),30)}
   if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30)}
   if(t.id==='f-sale')syncSaleTel();
 });
-form.addEventListener('input',e=>{if(e.target.id==='tpQ')renderPickerList();if(e.target.id==='f-planno')renderColorPick();if(e.target.id==='f-transport'){syncTrAdd();renderTrGrid()}});
+form.addEventListener('input',e=>{if(e.target.id==='tpQ')renderPickerList();if(e.target.id==='f-planno')renderColorPick();if(e.target.id==='f-transport'||e.target.id==='f-transport2'){trSlot='#'+e.target.id;syncTrAdd();renderTrGrid();checkConflicts()}});
+form.addEventListener('focusin',e=>{if(e.target.id==='f-transport'||e.target.id==='f-transport2'){trSlot='#'+e.target.id;syncTrAdd();renderTrGrid()}});
 form.addEventListener('keydown',e=>{
-  if((e.target.id==='tpQ'||e.target.id==='f-transport')&&e.key==='Enter')e.preventDefault();
+  if((e.target.id==='tpQ'||e.target.id==='f-transport'||e.target.id==='f-transport2')&&e.key==='Enter')e.preventDefault();
   if(e.target.id==='tpGuest'&&e.key==='Enter'){e.preventDefault();addGuest()}
 });
 form.addEventListener('click',e=>{
   const tr=e.target.closest('[data-tr]');if(tr){if(tr.getAttribute('aria-disabled')==='true'){toast(`${tr.dataset.tr} ถูกใช้แล้วในช่วงเวลานี้ เลือกคันอื่น หรือเปลี่ยนช่วงเวลา`);return}pickTransport(tr.dataset.tr);return}
-  if(e.target.id==='trClear'){$('#f-transport').value='';syncTrAdd();renderTrGrid();checkConflicts();$('#f-transport').focus();return}
+  if(e.target.id==='trClear'){$('#f-transport').value='';$('#f-transport2').value='';trSlot='#f-transport';syncTrAdd();renderTrGrid();checkConflicts();$('#f-transport').focus();return}
   const tt=e.target.closest('[data-tp-team]');if(tt){pickTeam=tt.dataset.tpTeam;renderPickerList();return}
   /* สีของแผน: in the form it waits for บันทึก; in the plan view it is saved at once */
   const pc=e.target.closest('[data-pc]');if(pc){$('#f-color').value=pc.dataset.pc;renderColorPick();return}

@@ -17,7 +17,10 @@ function planGroups(list){
   if(leave)out.push(leave);
   return out;
 }
-const planBase=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
+const planCore=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
+/* เฉพาะแผนที่จองรถ GA (user, 11 Oct 2026: "Filter … แผนงานไหนมีจองรถ ga"): รถ GA / ขอรถไปเอง asked, or GA has answered */
+const hasGA=t=>!isLeave(t)&&(!!t.needGA||!!gaInfo(t));
+const planBase=t=>planCore(t)&&(!S.pf.ga||hasGA(t));
 /* หัวข้องาน / ลูกค้า filters (user, 10 Oct 2026: "filter ของ หัวข้องาน กับ ลูกค้า ให้เป็น Drop Down"; were the row chips under the
    page title): two dropdowns in the filter bar, several picks each, both apply together. S.pf.types = job type ids ('__x' = a
    deleted type), S.pf.custs = custKey values. They narrow the board, the week sheets and "เลือกทั้งหมดที่แสดง". */
@@ -39,8 +42,11 @@ const ddValue=(picked,opts,all)=>!picked.length?all:picked.length===1?((opts.fin
 let pfDdHtml={types:'',custs:''};
 function renderChips(){
   $('#gchips').innerHTML='';/* the old row chips: replaced by the dropdowns */
-  const show=S.view==='plan'&&!notReady();$('#pfTypeDD').hidden=$('#pfCustDD').hidden=!show;
+  const show=S.view==='plan'&&!notReady();$('#pfTypeDD').hidden=$('#pfCustDD').hidden=$('#pfGa').hidden=!show;
   if(!show){$('#pfTypeDD').open=$('#pfCustDD').open=false;return}
+  {const n=S.tasks.filter(t=>planCore(t)&&typeFilterOk(t)&&custFilterOk(t)&&hasGA(t)).length;const b=$('#pfGa');
+    $('#pfGaN').textContent=n;b.classList.toggle('on',!!S.pf.ga);b.setAttribute('aria-pressed',String(!!S.pf.ga));
+    b.title=S.pf.ga?'กำลังแสดงเฉพาะแผนที่จองรถ GA · กดอีกครั้งเพื่อแสดงทุกแผน':`แสดงเฉพาะแผนที่จองรถ GA (${n} แผน)`}
   const o=planFilterOpts();
   [['types',o.types,'#pfTypeList','#pfTypeV','#pfTypeDD','ทุกหัวข้องาน'],['custs',o.custs,'#pfCustList','#pfCustV','#pfCustDD','ทุกลูกค้า']].forEach(([k,opts,list,val,dd,all])=>{
     const html=opts.length?opts.map(x=>`<label class="dd-opt"><input type="checkbox" data-dd="${k}" value="${esc(x.v)}"${S.pf[k].includes(x.v)?' checked':''}><span>${esc(x.label)}</span><b>${x.n}</b></label>`).join(''):'<p class="dd-none">ไม่มีแผนในสัปดาห์นี้</p>';
@@ -56,6 +62,7 @@ document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closes
 document.addEventListener('input',e=>{if(e.target.id==='pfCustQ')ddSearch()});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-dd-clear]');if(c){S.pf[c.dataset.ddClear]=[];S.anim=null;render();return}
+  if(e.target.closest('#pfGa')){S.pf.ga=!S.pf.ga;S.anim=null;render();return}
   if(e.target.closest('[data-dd-close]')){e.target.closest('details').open=false;return}
   document.querySelectorAll('#planbar details.dd[open]').forEach(d=>{if(!d.contains(e.target))d.open=false});/* one open at a time; a click outside closes */
 });
@@ -76,15 +83,21 @@ function renderActions(){
 }
 const CLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg>';
 const CAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
+const WALK_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="1.8"/><path d="m10 21 2-5.5 2.5 2.2V21M8 12.5l1.8-4 3.4-1.2 2.3 3.4 2.8 1"/><path d="m12 15.5 1.2-5.3"/></svg>';
+/* the plan's cars as chips: each department vehicle (up to 2), then the GA car (user, 11 Oct 2026: both on one plan) */
 function transportChip(v,t){
-  const note=t?gaNoteText(t):'';
-  if(t&&t.selfDrive){const tip=[ownCarText(t),gaTimes(t),gaInfo(t)?gaInfo(t).map(([k,x])=>k+": "+x).join(" · "):"รอ GA ระบุรถ",note].filter(Boolean).join(" · ");
-    return `<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc(tip)}">${CAR_ICON}ขอรถไปเอง · ${gaInfo(t)?esc(gaSummary(t)):"รอ GA"}</span>`}
-  if(t&&gaInfo(t))return `<span class="tchip gaok" title="${esc([gaInfo(t).map(([k,x])=>k+": "+x).join(" · "),gaTimes(t),note].filter(Boolean).join(" · "))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
-  if(t&&gaWaiting(t))return `<span class="tchip gawait${t.gaUrgent?' urgent':''}" title="${esc(['ขอรถ GA แล้ว GA จะระบุรถและทะเบียนให้ภายหลัง',gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA · ${t.gaUrgent?'ด่วน · ':''}รอทะเบียน${t.gaGo?' · ออก '+esc(t.gaGo):''}</span>`;
-  if(!v||v==='ไม่ใช้รถ')return '';
-  const cls=v==='GA'?'ga':v==='รถลูกค้า'?'cust':OWN_CAR.includes(v)?'own':'car';
-  return `<span class="tchip ${cls}"${cls==='own'&&t&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${v==='GA'?'รถ GA':v==='รถลูกค้า'?v:cls==='own'?'รถส่วนตัว':esc(v)/* the car icon says it is a vehicle: no "รถ" before every plate (user, 10 Oct 2026) */}${t&&t.needGA&&cls==='car'?' · GA':''}</span>`;
+  t=t||{transport:v};const note=gaNoteText(t);
+  if(t.transport===NO_CAR&&!t.needGA)return `<span class="tchip nocar" title="${esc(noCarWhy(t)||NO_CAR)}">${WALK_ICON}${NO_CAR}${noCarWhy(t)?' · '+esc(noCarWhy(t)):''}</span>`;
+  const one=n=>{const cls=n==='รถลูกค้า'?'cust':OWN_CAR.includes(n)?'own':'car';
+    return `<span class="tchip ${cls}"${cls==='own'&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${n==='รถลูกค้า'?n:cls==='own'?'รถส่วนตัว':esc(n)/* the car icon says it is a vehicle: no "รถ" before every plate (user, 10 Oct 2026) */}</span>`};
+  let h=OWN_CAR.includes(t.transport)&&!t.needGA?one(t.transport):deptCars(t).concat(carNames(t).filter(n=>n==='รถลูกค้า')).map(one).join('');
+  if(t.selfDrive){const tip=[ownCarText(t),gaTimes(t),gaInfo(t)?gaInfo(t).map(([k,x])=>k+": "+x).join(" · "):"รอ GA ระบุรถ",note].filter(Boolean).join(" · ");
+    h+=`<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc(tip)}">${CAR_ICON}ขอรถไปเอง · ${gaInfo(t)?esc(gaSummary(t)):"รอ GA"}</span>`}
+  else if(gaInfo(t))h+=`<span class="tchip gaok" title="${esc([gaInfo(t).map(([k,x])=>k+": "+x).join(" · "),gaTimes(t),note].filter(Boolean).join(" · "))}">${CAR_ICON}รถ GA · ${esc(gaSummary(t))}</span>`;
+  /* waiting: no time on the card (user, 11 Oct 2026) — once GA Fleet saves the trip, the chip above shows what GA sent */
+  else if(gaWaiting(t))h+=`<span class="tchip gawait${t.gaUrgent?' urgent':''}" title="${esc(['ขอรถ GA แล้ว · แอปจองรถ GA จะส่งข้อมูลรถ (ทะเบียน คนขับ เวลา) มาที่แผนนี้เมื่อจัดรถ',gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA · ${t.gaUrgent?'ด่วน · ':''}รอ GA จัดรถ</span>`;
+  else if(t.needGA||t.transport==='GA')h+=`<span class="tchip ga" title="${esc([gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA${gaPlateOf(t)?' · '+esc(gaPlateOf(t)):''}</span>`;
+  return h;
 }
 function wcard(t,conf,i){
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);

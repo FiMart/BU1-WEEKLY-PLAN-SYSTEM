@@ -146,7 +146,7 @@ function card(t,conf,i){
       ${t.planNo?`<span class="pn">${esc(t.planNo)}</span>`:''}
       ${t.customer?`<span class="jc-cust">${esc(t.customer)}</span>`:''}
       ${jr('Location',t.location)}${jr('Time',t.timeNote)}${jr('Detail',detailOf(t).trim(),'clamp')}${jr('Request',t.request,'clamp')}${jr('หมายเหตุ',t.remark,'clamp')}
-      ${jr('Transport',t.transport)}${jr('Sale',t.sale)}${jr('Team',teamNames(t).join(', '))}${teamNeedChip(t)?`<span class="jr"><span class="k">ทีม</span><span class="v">${teamNeedChip(t)}</span></span>`:''}
+      ${jr('Transport',t.transport||t.needGA?transportText(t):'')}${jr('Sale',t.sale)}${jr('Team',teamNames(t).join(', '))}${teamNeedChip(t)?`<span class="jr"><span class="k">ทีม</span><span class="v">${teamNeedChip(t)}</span></span>`:''}
       ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
       ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
     </span>

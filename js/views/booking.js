@@ -8,7 +8,7 @@ S.bk={cust:'',st:'',from:'',to:'',veh:'',q:''};
 const BK_MAX=500;
 
 function renderBooking(){
-  const vs=[...new Set(vehicles().map(v=>v.name).concat((allTasks()||[]).map(t=>t.transport).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'th'));
+  const vs=[...new Set(vehicles().map(v=>v.name).concat((allTasks()||[]).flatMap(t=>deptCars(t))))].sort((a,b)=>a.localeCompare(b,'th'));
   return `<div class="toolbar bk-bar">
       <div class="seg bk-st" role="radiogroup" aria-label="สถานะ">${[['','ทุกสถานะ']].concat(STATUSES.map(s=>[s.id,s.th])).map(([v,l])=>`<label><input type="radio" name="bk-st" value="${v}"${S.bk.st===v?' checked':''}><span>${l}</span></label>`).join('')}</div>
       <div class="bk-dates" role="group" aria-label="ช่วงวันที่ และรถ"><label class="wk-jump">ตั้งแต่ <input type="date" id="bk-from" value="${esc(S.bk.from)}"></label>
@@ -24,7 +24,7 @@ function renderBooking(){
 function bkFiltered(all,skipCust){
   const q=norm(S.bk.q);const {from,to,st,veh,cust}=S.bk;
   return all.filter(t=>!isLeave(t)&&lineMatch(t)&&(!from||t.date>=from)&&(!to||t.date<=to)&&(!st||(t.status||'planned')===st)
-    &&(!veh||norm(t.transport).split(/\s*,\s*/).includes(norm(veh))||norm(t.transport)===norm(veh))
+    &&(!veh||deptCars(t).some(n=>norm(n)===norm(veh))||norm(gaPlateOf(t))===norm(veh))
     &&(skipCust||!cust||norm(t.customer)===norm(cust))
     &&(!q||norm([t.planNo,t.customer,t.location,t.remark,t.areaId&&typeof areaName==='function'?areaName(t.areaId):'',detailOf(t),typeLabel(t)].join(' ')).includes(q)));
 }

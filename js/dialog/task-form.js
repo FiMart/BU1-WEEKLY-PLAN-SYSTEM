@@ -139,7 +139,7 @@ function renderDrawerView(t){
       ${calViewHtml(t,9)}${insViewHtml(t,9)}
       ${f('Request',t.request)}
       ${prepViewHtml(t,10)}
-      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${(t.selfDrive||OWN_CAR.includes(t.transport)&&!t.needGA)&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaNoteText(t)?`<small class="car-why">📝 ${esc(gaNoteText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ต้องการรถส่วนกลาง GA จะระบุรถและทะเบียนให้ภายหลัง กด "แก้ไข" เพื่อกรอกทะเบียนเมื่อได้รับแจ้ง</small>':''}</dd></div>
+      <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${(t.selfDrive||OWN_CAR.includes(t.transport)&&!t.needGA)&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaNoteText(t)?`<small class="car-why">📝 ${esc(gaNoteText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ขอรถ GA แล้ว · แอปจองรถส่วนกลาง GA จะส่งข้อมูลรถ (ทะเบียน รถ คนขับ เวลาออก) มาที่แผนนี้เองเมื่อ GA จัดรถ</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน${teamNeedOf(t)?` จาก ${teamNeedOf(t)} คน`:''})${teamNeedOf(t)?` <span class="tneed-v ${teamShort(t)?'short':'ok'}">${esc(teamNeedText(t))}</span>`:''}</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
@@ -230,6 +230,7 @@ function validate(v,copy){
   /* วิธีเดินทาง is optional (user, 9 Oct 2026; was required since 8 Oct) */
   if(v.selfDrive){if(!v.gaGo)return ['ใส่เวลารับรถ (ขอรถไปเอง)','#f-ownGo'];if(!v.carReason)return ['เลือกเหตุผลที่ขอรถไปเอง','#selfWhy input'];
     if(v.carReason==='อื่นๆ'&&!v.carNote)return ['ใส่รายละเอียดเมื่อเลือกเหตุผล "อื่นๆ"','#f-carNote']}
+  if(v.transport===NO_CAR&&v.carReason==='อื่นๆ'&&!v.carNote)return ['ระบุเหตุผลที่ไม่ใช้รถ (อื่นๆ)','#f-noneNote'];
   if(v.needGA&&!v.selfDrive&&v.gaCargo&&!v.gaCargo.size)return ['ใส่ของที่ขน / ขนาด (มีของต้องขน)','#f-gaCargoSize'];
   return null;
 }

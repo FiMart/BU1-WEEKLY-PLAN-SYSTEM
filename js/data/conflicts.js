@@ -35,15 +35,24 @@ const sameArea=(a,b)=>a.areaId&&b.areaId?a.areaId===b.areaId:!!locKey(a.location
 const teamShared=(a,b)=>!!a.sharedTeam&&!!b.sharedTeam&&!isLeave(a)&&!isLeave(b)&&sameArea(a,b);
 
 /* ---------- conflicts: same person in overlapping periods, person on leave, same vehicle ---------- */
-function vehKey(t){const k=norm(t.transport);if(!k)return null;return S.resources.some(r=>r.kind==='vehicle'&&norm(r.name)===k)?k:null}
+/* รถของแผน (user, 11 Oct 2026: "เลือกรถได้อีก 1 คัน และจองรถ GA ได้อีกคัน"): task.transport = the department vehicles, up to 2,
+   "1กข-1234, 2ขค-5678" (data.crane holds their ids); the GA car is the request itself (needGA / selfDrive) and its plate
+   task.gaPlate (↔ bu1wp.gaPlate). Plans saved before kept the GA plate in transport: gaPlateOf / deptCars read those too. */
+const carNames=t=>String(t&&t.transport||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean);
+const isVehicleName=n=>{const k=norm(n);return !!k&&S.resources.some(r=>r.kind==='vehicle'&&norm(r.name)===k)};
+const legacyGaPlate=t=>!!t&&t.gaPlate==null&&t.needGA&&!t.selfDrive&&!!t.transport&&!FIXED_TRANSPORT.includes(t.transport)&&!carNames(t).some(isVehicleName)?t.transport:'';
+const gaPlateOf=t=>t?(t.gaPlate||legacyGaPlate(t)):'';
+const deptCars=t=>legacyGaPlate(t)?[]:carNames(t).filter(n=>!FIXED_TRANSPORT.includes(n));
+/* registered vehicles only clash (keys = normalised names) */
+const vehKeys=t=>deptCars(t).filter(isVehicleName).map(norm);
 function conflictsFor(task,pool){
-  const out=[];if(!isWorking(task))return out;const mv=vehKey(task);const tl=isLeave(task);
+  const out=[];if(!isWorking(task))return out;const mv=vehKeys(task);const tl=isLeave(task);
   for(const o of pool){
     if(o.id===task.id||o.date!==task.date||!isWorking(o)||!overlaps(task,o))continue;
     const ol=isLeave(o);if(tl&&ol)continue;
     const st=teamShared(task,o)?[]:(task.staffIds||[]).filter(x=>(o.staffIds||[]).includes(x));
-    const veh=!tl&&!ol&&mv&&vehKey(o)===mv;
-    if(st.length||veh)out.push({other:o,staff:st,veh:veh?task.transport:'',leave:tl||ol});
+    const ov=!tl&&!ol&&mv.length?vehKeys(o):[];const same=deptCars(task).filter(n=>ov.includes(norm(n)));
+    if(st.length||same.length)out.push({other:o,staff:st,veh:same.join(', '),leave:tl||ol});
   }
   return out;
 }

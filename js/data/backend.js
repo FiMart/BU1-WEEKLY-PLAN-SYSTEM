@@ -101,6 +101,7 @@ function supabaseBackend(client,{dept}){
       needGA:x.needGA!=null?!!x.needGA:!!d.needsGACar,
       /* วิธีเดินทาง: GA Fleet's own fields first (data.gaDepart / gaPattern / …, transport 'self'), then this app's older copies */
       gaGo:d.gaDepart||x.gaGo||'',gaBack:x.gaBack||'',gaPattern:d.gaPattern||'',gaUrgent:!!d.gaUrgent,gaCargo:d.gaCargo&&typeof d.gaCargo==='object'?d.gaCargo:null,gaNote:d.gaNote||'',gaRequestedAt:d.gaRequestedAt||'',
+      gaPlate:x.gaPlate,/* the plate GA gave (since 11 Oct 2026; older plans kept it in transport — gaPlateOf reads both) */
       selfDrive:!!x.selfDrive||d.transport==='self',carReason:d.selfReason||x.carReason||'',carNote:d.selfNote||x.carNote||'',
       gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
@@ -175,7 +176,7 @@ function supabaseBackend(client,{dept}){
   const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */color:t.color||'',/* สีของแผน, '' = ตาม Plan No. (user, 9 Oct 2026) */
-      detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
+      detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',/* รถแผนก, up to 2 "A, B" */gaPlate:t.gaPlate,needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       teamNeed:Math.max(0,Math.floor(Number(t.teamNeed)||0)),/* จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026) */
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,

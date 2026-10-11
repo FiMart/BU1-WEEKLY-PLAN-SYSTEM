@@ -27,7 +27,7 @@ function fillSearch(){
   body.innerHTML=shown.map(t=>{const ty=typeOf(t);return `<tr><td class="num"><button type="button" class="ttl" data-edit="${esc(t.id)}">${esc(fmtDayY(t.date))}</button><span class="sub">สัปดาห์ ${esc(weekName(mondayOf(parseD(t.date))))} · <button type="button" class="lnk" data-goweek="${esc(t.date)}">เปิดสัปดาห์</button></span></td>
     <td class="num">${esc(t.planNo||'–')}</td><td><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span></td>
     <td>${esc(t.customer||'–')}<span class="sub">${esc(t.location||'')}</span></td><td>${esc(pName(t))}${t.timeNote?`<span class="sub">${esc(t.timeNote)}</span>`:''}</td>
-    <td>${esc(teamNames(t).join(', ')||'–')}</td><td>${esc(t.transport||'–')}</td><td>${esc(t.sale||'–')}</td><td><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span>${NEEDS_REASON.has(t.status)&&t.statusNote?`<span class="sub">${esc(t.statusNote)}</span>`:''}</td></tr>`}).join('')
+    <td>${esc(teamNames(t).join(', ')||'–')}</td><td>${esc(t.transport||t.needGA?transportText(t):'–')}</td><td>${esc(t.sale||'–')}</td><td><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span>${NEEDS_REASON.has(t.status)&&t.statusNote?`<span class="sub">${esc(t.statusNote)}</span>`:''}</td></tr>`}).join('')
     ||`<tr><td colspan="9" style="color:var(--muted);padding:20px 12px">ไม่พบแผนงานที่ตรงกับคำค้น</td></tr>`;
   $('#srchCount').textContent=`พบ ${list.length.toLocaleString('th-TH')} แผน${list.length>300?' (แสดง 300 รายการล่าสุด)':''} จากทั้งหมด ${all.length.toLocaleString('th-TH')} แผนในระบบ`;
 }

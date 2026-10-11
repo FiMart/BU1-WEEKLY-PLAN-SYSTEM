@@ -28,8 +28,9 @@ document.addEventListener('click',e=>{
   const a=t.closest('[data-action]');if(!a)return;
   if(a.dataset.action.startsWith('pick-'))return;/* handled in js/features/plan-select.js */
   switch(a.dataset.action){
-    case 'prev':S.week=addDays(S.week,-7);if(S.pday)S.pday=ymd(addDays(parseD(S.pday),-7));S.anim='prev';subscribeWeek();break;
-    case 'next':S.week=addDays(S.week,7);if(S.pday)S.pday=ymd(addDays(parseD(S.pday),7));S.anim='next';subscribeWeek();break;
+    /* another week opens on its Monday (user, 11 Oct 2026: "กดปุ่มแผนงานสัปดาห์ถัดไป ให้เริ่มต้นที่วันจันทร์เสมอ") */
+    case 'prev':S.week=addDays(S.week,-7);S.pday=ymd(S.week);S.anim='prev';subscribeWeek();break;
+    case 'next':S.week=addDays(S.week,7);S.pday=ymd(S.week);S.anim='next';subscribeWeek();break;
     case 'pday-prev':stepPlanDay(-1);break;
     case 'pday-next':stepPlanDay(1);break;
     case 'mday-prev':stepMonthDay(-1);break;

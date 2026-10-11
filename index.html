@@ -2,13 +2,13 @@
 <title>BU1 Lab Weekly Plan</title>
 <!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
 <script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
-add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.9.0'});
-add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.9.0'});
-add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.9.0'});
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.10.2'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.10.2'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.10.2'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
 <script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
-<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.9.0"></noscript>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.10.2"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -59,7 +59,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.9.0 · BU1 Lab</button>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.10.2 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -121,6 +121,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 
   <section class="planbar" id="planbar" aria-label="ตัวกรอง" hidden>
     <input type="search" id="pf-q" placeholder="ค้นหา" aria-label="ค้นหาในหน้านี้" autocomplete="off">
+    <!-- เฉพาะแผนที่จองรถ GA (user, 11 Oct 2026); renderChips in js/views/plan.js -->
+    <button type="button" class="pf-ga" id="pfGa" aria-pressed="false" hidden title="แสดงเฉพาะแผนที่จองรถ GA (รถ GA หรือขอรถไปเอง)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg><span class="lbl-long">จองรถ GA</span><span class="lbl-short">รถ GA</span><b id="pfGaN">0</b></button>
     <select id="pf-type" aria-label="กรองตามหัวข้องาน" hidden></select>
     <!-- หัวข้องาน / ลูกค้า filters as dropdowns (user, 10 Oct 2026); filled by renderChips in js/views/plan.js -->
     <details class="dd" id="pfTypeDD" hidden><summary class="dd-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/></svg><span class="dd-k">หัวข้องาน</span><b class="dd-v" id="pfTypeV">ทุกหัวข้องาน</b></summary>
@@ -217,16 +219,17 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
           <button type="button" class="lnk prep-last" id="prepLast" hidden></button>
         </div>
 
-        <div class="fl fl-full" id="lblTr"><b>วิธีเดินทาง</b><small>ไม่บังคับ · กดอันที่เลือกอีกครั้งเพื่อยกเลิก</small></div>
+        <div class="fl fl-full" id="lblTr"><b>วิธีเดินทาง</b><small>ไม่บังคับ · รถแผนกได้ถึง 2 คัน และขอรถ GA เพิ่มได้ในแผนเดียวกัน · ข้อมูลรถ GA มาจากแอปจองรถ GA เอง · กดอันที่เลือกอีกครั้งเพื่อยกเลิก</small></div>
         <div class="fv fv-full tr-pick" role="group" aria-labelledby="lblTr">
           <div class="car-mode" role="radiogroup" aria-label="วิธีเดินทาง">
-            <label title="รถของแผนก (Lab)"><input type="radio" name="car-mode" value="dept"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2"/><circle cx="6.5" cy="17.2" r="1.8"/><circle cx="17" cy="17.2" r="1.8"/></svg><b>รถแผนก</b></span></label>
+            <label title="รถของแผนก (Lab) ได้ถึง 2 คัน · ใช้คู่กับรถ GA หรือขอรถไปเอง ได้"><input type="checkbox" id="f-carDept" value="dept"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2"/><circle cx="6.5" cy="17.2" r="1.8"/><circle cx="17" cy="17.2" r="1.8"/></svg><b>รถแผนก</b></span></label>
             <label title="ขอรถส่วนกลางจาก GA (มีคนขับ)"><input type="radio" name="car-mode" value="ga"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h7A1.5 1.5 0 0 1 15 4.5V21M15 9h3.5A1.5 1.5 0 0 1 20 10.5V21M3 21h18M8.5 7h3M8.5 11h3M8.5 15h3"/></svg><b>รถ GA</b></span></label>
             <label title="ขอรถส่วนกลางไปขับเอง"><input type="radio" name="car-mode" value="own"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12.5" r="2"/><path d="M3.7 11c2.7-1 5.5-1.5 8.3-1.5s5.6.5 8.3 1.5M10.3 13.7 8.5 20.2M13.7 13.7l1.8 6.5"/></svg><b>ขอรถไปเอง</b></span></label>
+            <label title="งานนี้ไม่ใช้รถ"><input type="radio" name="car-mode" value="none"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="1.8"/><path d="m10 21 2-5.5 2.5 2.2V21M8 12.5l1.8-4 3.4-1.2 2.3 3.4 2.8 1"/><path d="m12 15.5 1.2-5.3"/></svg><b>ไม่ใช้รถ</b></span></label>
           </div>
           <div class="car-pane" id="carDept" hidden>
             <div class="seg tr-per" role="radiogroup" aria-label="ช่วงเวลาที่ใช้รถ"><label><input type="radio" name="tr-per" value="full"><span>เต็มวัน</span></label><label><input type="radio" name="tr-per" value="am"><span>ครึ่งวันเช้า</span></label><label><input type="radio" name="tr-per" value="pm"><span>ครึ่งวันบ่าย</span></label></div>
-            <div class="tr-row"><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน ถ้าไม่มีในรายการ" aria-label="รถแผนกที่ใช้"><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
+            <div class="tr-row"><label class="tr-slot"><span>คันที่ 1</span><input id="f-transport" maxlength="60" autocomplete="off" placeholder="ค้นหา หรือพิมพ์ชื่อรถ / ทะเบียน" aria-label="รถแผนกคันที่ 1"></label><label class="tr-slot"><span>คันที่ 2 <small>ไม่บังคับ</small></span><input id="f-transport2" maxlength="60" autocomplete="off" placeholder="กดรถอีกคันในรายการ หรือพิมพ์" aria-label="รถแผนกคันที่ 2"></label><button type="button" class="btn sm" id="trAdd" data-action="add-vehicle" hidden>+ เพิ่มรถนี้เข้าข้อมูลหลัก</button><button type="button" class="btn sm ghost" id="trClear" hidden>ล้าง</button></div>
             <div class="tr-grid" id="trGrid"></div>
             <span class="hint">ห้ามซ้ำในวัน · ระบุครึ่งวันแล้วคันเดียวกันใช้ได้เช้า-บ่ายคนละงาน · สีเทา = ถูกใช้แล้วในช่วงเวลาที่ทับกัน · ถ้าไม่มีในรายการให้พิมพ์ชื่อรถหรือทะเบียน แล้วกดปุ่มเพิ่มเข้าข้อมูลรถ</span>
           </div>
@@ -243,7 +246,6 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
                 <label class="car-field"><span>ของที่ขน / ขนาด</span><input id="f-gaCargoSize" maxlength="80" autocomplete="off" placeholder="เช่น มิเตอร์ 2 ตัว · ขนาด 1×1 ม."></label>
                 <label class="car-field"><span>ข้อควรระวัง <small>ไม่บังคับ</small></span><input id="f-gaCargoCaution" maxlength="80" autocomplete="off" placeholder="เช่น ของแตกง่าย · ห้ามวางทับ"></label>
               </div>
-              <label class="car-field"><span>ทะเบียนรถที่ GA แจ้ง <small>ไม่บังคับ · กรอกเมื่อได้รับแจ้ง</small></span><input id="f-gaPlate" maxlength="60" autocomplete="off" placeholder="เช่น 1กข-1234"></label>
             </details>
             <div id="gaFromApp"></div>
           </div>
@@ -256,6 +258,13 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
               <label><input type="radio" name="self-why" value="ต้องใช้รถทั้งวัน"><span>ต้องใช้รถทั้งวัน</span></label><label><input type="radio" name="self-why" value="งานนอกเวลา"><span>งานนอกเวลา</span></label><label><input type="radio" name="self-why" value="ไปหลายที่"><span>ไปหลายที่</span></label><label><input type="radio" name="self-why" value="อื่นๆ"><span>อื่นๆ</span></label>
             </div>
             <input id="f-carNote" maxlength="200" autocomplete="off" placeholder="รายละเอียดเพิ่ม (ไม่บังคับ)" aria-label="รายละเอียดเพิ่ม">
+          </div>
+          <div class="car-pane car-none" id="carNone" hidden>
+            <div class="car-k">เหตุผลที่ไม่ใช้รถ</div>
+            <div class="car-chips" role="radiogroup" aria-label="เหตุผลที่ไม่ใช้รถ" id="noneWhy">
+              <label><input type="radio" name="none-why" value="เดินไป / อยู่ในพื้นที่"><span>เดินไป / อยู่ในพื้นที่</span></label><label><input type="radio" name="none-why" value="ไปกับรถ Hiab"><span>ไปกับรถ Hiab</span></label><label><input type="radio" name="none-why" value="ไปกับรถลูกค้า"><span>ไปกับรถลูกค้า</span></label><label><input type="radio" name="none-why" value="อื่นๆ"><span>อื่นๆ</span></label>
+            </div>
+            <input id="f-noneNote" maxlength="200" autocomplete="off" placeholder="ระบุเหตุผล" aria-label="เหตุผลอื่นที่ไม่ใช้รถ" hidden>
           </div>
           <label class="car-field car-ganote" id="gaNoteBox" hidden><span><b>หมายเหตุถึง GA</b> <small>— ไม่บังคับ · GA เห็นตอนจัดรถ</small></span><textarea id="f-gaNote" rows="2" maxlength="300" placeholder="เช่น ขอรถตู้ · ออกจากออฟฟิศ 07.00 · รับที่ไซต์"></textarea></label>
         </div>

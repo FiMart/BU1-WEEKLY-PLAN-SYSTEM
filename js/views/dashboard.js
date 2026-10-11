@@ -70,9 +70,9 @@ function dashCompute(){
   const knownIds=new Set(jobTypes().map(t=>t.id));const orphanN=jobs.filter(t=>!knownIds.has(typeIdOf(t))).length;if(orphanN)types.push({label:'ประเภทที่ถูกลบแล้ว',n:orphanN});
   const custKeyOf=t=>String(t.customer||'').trim()||'(ไม่ระบุลูกค้า)';
   const cust=new Map();jobs.forEach(t=>{const k=custKeyOf(t);cust.set(k,(cust.get(k)||0)+1)});const custList=[...cust].sort((a,b)=>b[1]-a[1]);
-  const veh=new Map();jobs.forEach(t=>{const v=String(t.transport||'').trim();if(!v||v==='ไม่ใช้รถ')return;if(!veh.has(v))veh.set(v,{n:0,d:new Set()});const x=veh.get(v);x.n++;x.d.add(t.date)});
+  const veh=new Map();jobs.forEach(t=>deptCars(t).forEach(v=>{if(!veh.has(v))veh.set(v,{n:0,d:new Set()});const x=veh.get(v);x.n++;x.d.add(t.date)}));/* each department vehicle of a plan (up to 2) */
   const vehList=[...veh].sort((a,b)=>b[1].n-a[1].n).map(([k,x])=>({label:k==='GA'?'รถ GA':k,n:x.n,days:x.d.size}));
-  const noCar=jobs.filter(t=>!t.transport||t.transport==='ไม่ใช้รถ').length;
+  const noCar=jobs.filter(t=>!deptCars(t).length&&!t.needGA).length;
   const sale=new Map();jobs.forEach(t=>{const k=String(t.sale||'').trim()||'(ไม่ระบุ Sale)';sale.set(k,(sale.get(k)||0)+1)});const saleList=[...sale].sort((a,b)=>b[1]-a[1]);
 
   /* สายงาน: each line's plans, completion and man-days; and the Flow Meter calibration rows (Weekly plan calibration) */
@@ -290,7 +290,7 @@ function renderDash(){
   h+=sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up','dashIssues');
   if(D.pairs.length){
     const overlapName=(a,b)=>{const am=pA(a)===0&&pA(b)===0,pm=pB(a)===1&&pB(b)===1;return am&&pm?'เช้า,บ่าย':am?'เช้า':'บ่าย'};
-    const planCell=t=>{const ty=typeOf(t);return `<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${planColor(t)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport?` · รถ: ${esc(t.transport)}`:''}</small></button>`};
+    const planCell=t=>{const ty=typeOf(t);return `<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${planColor(t)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport||t.needGA?` · รถ: ${esc(transportText(t))}`:''}</small></button>`};
     h+=`<section class="panel span-12" id="dashConf" style="--d:13"><header><h2>แผนงานที่จัดชน · ${D.pairs.length} คู่</h2><p>แต่ละแถวคือแผนงาน 2 แผน ซึ่งใช้คนหรือรถคันเดียวกันในช่วงเวลาที่ทับกัน หรือจัดคนที่ลาไปทำงาน กดที่แผนงานเพื่อเปิดแก้ไข</p></header>
       <div class="scroll-x plain"><table class="mini ctab"><thead><tr><th>วันที่</th><th>ช่วงที่ทับกัน</th><th>แผนงาน</th><th>ชนกับแผนงาน</th><th>สาเหตุ</th></tr></thead><tbody>
       ${D.pairs.map(p=>{const who=p.staff.map(staffName);

@@ -49,10 +49,10 @@ function renderPeople(){
     }
   }
   if(!staff.length)h+=`<tr class="no-match"><td colspan="${days.length+1}">ไม่พบคนที่ตรงกับตัวกรอง ลองล้างคำค้น หรือปิด "เฉพาะคนที่มีงาน"</td></tr>`;
-  const vs=vehicles().filter(v=>v.active!==false||tasks.some(t=>vehKey(t)===norm(v.name)));
+  const vs=vehicles().filter(v=>v.active!==false||tasks.some(t=>vehKeys(t).includes(norm(v.name))));
   if(vs.length&&!q){
     h+=`<tr class="team-row"><th scope="rowgroup" colspan="${days.length+1}"><b>รถ</b>${vs.length} คัน</th></tr>`;
-    for(const v of vs){const mine=tasks.filter(t=>vehKey(t)===norm(v.name));
+    for(const v of vs){const mine=tasks.filter(t=>vehKeys(t).includes(norm(v.name)));
       h+=`<tr><th scope="row"><div class="who"><span class="avatar sq" aria-hidden="true">รถ</span><div class="who-text"><span class="who-name">${esc(v.name)}</span>${v.code?`<span class="who-role">${esc(v.code)}</span>`:''}<span class="who-role">ใช้ ${mine.length} งาน</span></div></div></th>`;
       for(const d of days){const k=ymd(d);const list=mine.filter(t=>t.date===k).sort(byTime);
         h+=`<td class="${k===today?'is-today':''}"><div class="cell">${list.length?list.map(t=>miniChip(t,(conf.get(t.id)||[]).some(x=>x.veh))).join(''):'<span class="sc-free">ว่าง</span>'}</div></td>`}
@@ -82,10 +82,10 @@ function peopleDayHtml({days,tasks,conf,staff,groups,showGroups,busy,q,freeOn}){
     h+='</div></section>';
   }
   if(!staff.length)h+='<div class="pd-empty">ไม่พบคนที่ตรงกับตัวกรอง ลองล้างคำค้น หรือปิด "เฉพาะคนที่มีงาน"</div>';
-  const vs=vehicles().filter(v=>v.active!==false||tasks.some(t=>vehKey(t)===norm(v.name)));
+  const vs=vehicles().filter(v=>v.active!==false||tasks.some(t=>vehKeys(t).includes(norm(v.name))));
   if(vs.length&&!q){
     h+=`<section class="pd-grp"><h3>รถ<span class="pd-cnt">${vs.length} คัน</span></h3><div class="pp-list">`;
-    for(const v of vs){const list=dayT.filter(t=>vehKey(t)===norm(v.name)).sort(byTime);
+    for(const v of vs){const list=dayT.filter(t=>vehKeys(t).includes(norm(v.name))).sort(byTime);
       h+=`<div class="pp-row"><div class="pp-top"><span class="avatar sq" aria-hidden="true">รถ</span><div class="who-text"><span class="who-name">${esc(v.name)}</span>${v.code?`<span class="who-role">${esc(v.code)}</span>`:''}</div></div>
         <div class="pp-stat"><div class="sc">${list.length?list.map(t=>miniChip(t,(conf.get(t.id)||[]).some(x=>x.veh))).join(''):'<span class="sc-free">ว่าง</span>'}</div></div></div>`}
     h+='</div></section>';
