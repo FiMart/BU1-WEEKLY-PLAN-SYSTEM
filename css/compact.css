@@ -544,3 +544,86 @@ body.has-pickbar .app{padding-bottom:110px}
   body[data-page="plan"] #pfGa{grid-column:3;justify-content:center;padding:0 6px;min-width:0}
   body[data-page="plan"] #pfGa span{overflow:hidden;text-overflow:ellipsis}
 }
+
+/* ---------- date controls stay on screen while scrolling (user, 14 Oct 2026; planStick in js/views/plan.js) ----------
+   week ‹ › + calendar on top (under the phone's top bar), then the day strip (daily view) or the day row (week table) */
+#view .wp-panel>.wp-head{position:sticky;top:var(--stk0,0px);z-index:8}
+#view .wp-panel .wp thead th{top:calc(var(--stk0,0px) + var(--wph,0px))}
+#view .wp-panel>.pd-strip{position:sticky;top:calc(var(--stk0,0px) + var(--wph,0px));z-index:7;background:var(--surface);box-shadow:0 8px 12px -10px rgba(13,22,38,.35)}
+/* past the board: the fixed dock (#dateDock) takes over */
+.date-dock{position:fixed;left:var(--side-w,0px);right:0;z-index:25;display:grid;gap:0;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 8px 20px rgba(13,22,38,.14);animation:dockIn .18s ease-out both}
+.date-dock[hidden]{display:none}
+.date-dock .dd-nav{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 12px}
+.date-dock .dd-nav b{font-size:14px;white-space:nowrap}
+.date-dock .icon-btn{width:32px;height:32px;min-height:32px}
+.date-dock .dd-top{margin-left:8px;font-size:12.5px}
+.date-dock .pd-strip{border-top:1px solid var(--line-2);border-bottom:0;padding:6px 12px 8px}
+@keyframes dockIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@media (max-width:760px){.date-dock{left:0}.date-dock .dd-top{display:none}}
+@media (prefers-reduced-motion:reduce){.date-dock{animation:none}}
+/* ---------- สรุปงาน: confirms เสร็จแล้ว (user, 14 Oct 2026; js/dialog/done-sum.js) ---------- */
+.v-sum{display:grid;gap:5px;margin-top:10px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));border-left:4px solid var(--good);border-radius:10px;background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+.v-sum>b,.v-sum>label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--good-ink)}
+.v-sum svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.v-sum>span{font-size:14px;line-height:1.55;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere}
+.v-sum>span i{color:var(--muted)}
+.v-sum>small{font-size:12px;color:var(--muted)}
+.v-sum>small b{color:var(--ink-2);font-weight:600}
+.v-sum .lnk{font-size:12.5px}
+#dlg .v-sum textarea{width:100%;min-height:150px;font:inherit;font-size:14px;line-height:1.5;background:var(--surface)}
+.v-sum .v-row{display:flex;align-items:center;gap:12px}
+.v-sum .v-sum-warn{margin:0;font-size:13px;font-weight:600;color:var(--crit-ink)}
+.v-sum.miss{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));border-left-color:var(--crit);background:var(--crit-soft)}
+.v-sum.miss>b,.v-sum.miss>label{color:var(--crit-ink)}
+#f-sumWrap{margin-top:0}
+.pcount.sr svg{flex:none}
+
+/* ---------- สำรองอัตโนมัติในเบราว์เซอร์ (user, 14 Oct 2026; js/features/auto-backup.js) ---------- */
+.bk-step.abk>div{justify-items:stretch;flex:1}
+.bk-step.abk .abk-act{display:flex;gap:8px}
+.abk-st{margin:0;font-size:13.5px;color:var(--ink-2)}
+.abk-st b{font:600 13.5px var(--f-body,inherit)}
+.abk-st.bad{color:var(--crit-ink)}
+.abk-list{display:grid;gap:6px;max-height:320px;overflow:auto;padding-right:2px}
+.abk-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.abk-row .abk-t{flex:1;min-width:0;display:grid;gap:1px}
+.abk-row .abk-t b{font:600 13.5px var(--f-body,inherit)}
+.abk-row .abk-t small{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+@media (max-width:560px){.abk-row{flex-wrap:wrap}.abk-row .abk-t{flex-basis:100%}}
+
+/* ---------- the day picked in the calendar (user, 14 Oct 2026; S.jumpDay, js/app/events.js jumpWeek) ---------- */
+#view .wp thead th.is-jump{box-shadow:inset 0 -3px 0 var(--accent);animation:jumpDay 2.4s ease-out}
+#view .wp td.is-jump{animation:jumpDay 2.4s ease-out}
+@keyframes jumpDay{0%,35%{background-color:color-mix(in srgb,var(--accent) 22%,transparent)}100%{background-color:transparent}}
+@media (prefers-reduced-motion:reduce){#view .wp .is-jump{animation:none;background-color:color-mix(in srgb,var(--accent) 12%,transparent)}}
+
+/* ---------- this app's own calendar popup (user, 14 Oct 2026; replaces the browser date field; #calPop, js/views/plan.js) ---------- */
+button.wp-jump{padding:0;font:inherit;min-height:0}
+.wp-jump[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.cal-pop{position:fixed;z-index:60;width:296px;max-width:calc(100vw - 16px);padding:10px 10px 8px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 18px 44px rgba(13,22,38,.28);animation:calIn .14s ease-out}
+.cal-pop[hidden]{display:none}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.cal-hd b{font-size:14.5px;font-weight:700;color:var(--ink)}
+.cal-hd .icon-btn{width:32px;height:32px;min-height:32px}
+.cal-dn,.cal-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dn span{text-align:center;font-size:11.5px;font-weight:600;color:var(--muted);padding:2px 0 4px}
+.cal-dn span:last-child{color:var(--crit-ink)}
+.cal-grid{display:grid;gap:2px}
+.cal-wk{border-radius:9px}
+.cal-wk.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.cal-d{height:34px;border:0;border-radius:9px;background:transparent;color:var(--ink);font:600 13.5px/1 inherit;font-variant-numeric:tabular-nums;cursor:pointer;padding:0}
+.cal-d:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.cal-d:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-d.out{color:var(--muted);opacity:.55}
+.cal-d.off{color:var(--crit-ink)}
+.cal-d.td{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-d.sel{background:var(--accent);color:#fff}
+.cal-ft{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)}
+.cal-ft span{flex:1;font-size:11.5px;color:var(--muted)}
+.cal-ft .lnk{font-size:12.5px}
+@keyframes calIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.cal-pop{animation:none}}
+@media (max-width:760px){.cal-d{height:40px;font-size:15px}.cal-pop{width:320px}}
+
+/* ---------- ผู้ปฏิบัติงานที่ว่าง: freed by a เลื่อน plan (user, 14 Oct 2026; holdsTeam in js/core/utils.js) ---------- */
+.avp .avp-mv{color:var(--warn-ink);background:color-mix(in srgb,var(--warn) 16%,transparent);border-radius:999px;padding:1px 7px;font-weight:600;white-space:nowrap}
