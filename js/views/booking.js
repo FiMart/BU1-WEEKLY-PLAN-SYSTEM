@@ -57,7 +57,7 @@ function fillBooking(){
       <td class="c-car">${ch||esc(t.transport||'–')}</td>
       <td class="c-team"><div class="avstack">${av||'–'}</div>${teamNeedChip(t)}</td>
       <td class="booker c-by" title="${esc(creatorOf(t)||'ไม่ระบุ')}">${esc(bookerOf(t))}</td>
-      <td class="c-st"><span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span></td></tr>`}).join('')
+      <td class="c-st">${noStatus(t)?'<span class="sub">–</span>':`<span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span>`}</td></tr>`}).join('')
     ||`<tr><td colspan="9" class="hint" style="padding:20px 12px">ไม่พบงานที่ตรงกับตัวกรอง</td></tr>`;
   $('#bkCount').textContent=`${list.length.toLocaleString('th-TH')} แผน${list.length>BK_MAX?` (แสดง ${BK_MAX} รายการล่าสุด)`:''} จากทั้งหมด ${all.filter(t=>!isLeave(t)&&lineMatch(t)).length.toLocaleString('th-TH')} แผน${scopeName()?` ${scopeName()}`:''}ในระบบ · กดแถวเพื่อเปิดแผน`;
 }

@@ -25,7 +25,7 @@ function startLocal(){
     insItems:[{id:'i1',reqNo:'R-S1-2608061',lab:'1',plant:'HD4',tag:'ตามเอกสารแนบ',type:'PT,TT,TE',range:'Point Cal ตามเอกสารแนบ',remove:D(0),cal:D(1),install:D(1),bu:'-',plan:'3',actual:'7',remark:'Completed',
       certs:[{id:'k1',certNo:'CAL-26-1001',tagNo:'PT-101',desc:'Pressure Transmitter 0-10 bar',client:'',calDate:D(1),activity:'Calibration',note:''},{id:'k2',certNo:'CAL-26-1002',tagNo:'TT-201',desc:'Temperature Transmitter 0-200 °C',client:'',calDate:D(1),activity:'Calibration',note:''}]}],
     planNo:'PN-26-09002',customer:'ลูกค้าตัวอย่าง 2',location:'สมุทรปราการ',date:D(1),period:'am',detail:'สอบเทียบ Pressure Gauge',transport:'1กข-1234',staffIds:['s3'],status:'planned'},
-   {jobType:'leave',date:D(2),period:'full',detail:'ลาพักร้อน',staffIds:['s4'],status:'planned'}]
+   {jobType:'leave_vac',date:D(2),period:'full',detail:'',staffIds:['s4'],status:'planned'}]
    .forEach((t,i)=>L.tasks.set('d'+i,Object.assign({sample:true},t)));
   {const m=ymd(w).slice(0,7),n=k=>parseD(D(k)).getDate();/* Master Plan Flow Meter sample rows (this month) */
    [{reqNo:'PN-26-09001',cust:'ลูกค้าตัวอย่าง',tag:'FT-101',size:'2',type:'CORIOLIS',sale:'Rungnapa',fm:'1',days:{[n(0)]:'D',[n(1)]:'W',[n(2)]:'I'}},

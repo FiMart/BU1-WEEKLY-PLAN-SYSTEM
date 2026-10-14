@@ -35,13 +35,23 @@ function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.g
 /* ---------- master data lookups ---------- */
 /* saved types from before สายงาน existed (no line key at all) take the default type's line; '' = both lines */
 function jobTypes(){const l=S.cfg.jobTypes;if(!(Array.isArray(l)&&l.length))return DEFAULT_TYPES;
-  return l.map(t=>{if(!t||t.line!==undefined)return t;const d=DEFAULT_TYPES.find(x=>x.id===t.id);return d&&d.line?Object.assign({},t,{line:d.line}):t})}
+  const out=l.map(t=>{if(!t||t.line!==undefined)return t;const d=DEFAULT_TYPES.find(x=>x.id===t.id);return d&&d.line?Object.assign({},t,{line:d.line}):t});
+  /* system types added after a list was saved (ลาพักร้อน / ลาป่วย / ลากิจ, 14 Oct 2026) join it after the last leave type */
+  DEFAULT_TYPES.filter(d=>SYSTEM_TYPES.has(d.id)&&!out.some(t=>t&&t.id===d.id)).forEach(d=>{
+    let at=-1;out.forEach((t,i)=>{if(t&&isLeaveId(t.id))at=i});if(at<0)at=out.findIndex(t=>t&&t.id==='other')-1;out.splice(at<0?out.length:at+1,0,d)});
+  return out}
 const lineOptions=cur=>`<option value="">ใช้ได้ทั้งสองสาย</option>`+LINES.map(l=>`<option value="${l.id}"${cur===l.id?' selected':''}>${esc(l.name)}</option>`).join('');
 const activeTypes=()=>jobTypes().filter(t=>t.active!==false);
 const typeIdOf=t=>t.jobType||LEGACY[t.type]||'other';
 function typeOf(t){const id=typeIdOf(t);return jobTypes().find(x=>x.id===id)||DEFAULT_TYPES.find(x=>x.id===id)||{id,name:t.jobTypeName||id,color:'#8a979c'}}
 function typeLabel(t){const ty=typeOf(t);if(ty.id==='other')return String(t.jobTypeOther||'').trim()||LEGACY_NAME[t.type]||ty.name;return ty.name}
-const isLeave=t=>typeIdOf(t)==='leave';
+/* ประเภทระบบ = cannot be deleted or switched off: the built-in ones (SYSTEM_TYPES) + the ones ticked in ข้อมูลหลัก › หัวข้องาน (t.sys, user 14 Oct 2026) */
+const isSysType=t=>!!t&&(SYSTEM_TYPES.has(t.id)||!!t.sys);
+/* plans with no สถานะงาน (user, 14 Oct 2026: "ประเภทระบบ เวลาลงแผนงานไม่ต้องให้ปรับสถานะงาน"): the leave types and every job type
+   ticked ประเภทระบบ — except อื่นๆ, whose plans are real jobs typed by hand; saved as planned, no status shown anywhere */
+const noStatusId=id=>isLeaveId(id)||(id!=='other'&&!!(jobTypes().find(x=>x&&x.id===id)||{}).sys);
+const noStatus=t=>!!t&&noStatusId(typeIdOf(t));
+const isLeave=t=>isLeaveId(typeIdOf(t));/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ */
 /* สายงาน of a plan: its own, else its job type's; '' = not set (leave never has one) */
 const lineOf=t=>isLeave(t)?'':LINE[t.line]?t.line:LINE[typeOf(t).line]?typeOf(t).line:'';
 /* ทีม of a person ('' = not set) and the team filter (S.team): a plan shows when one of its people is in the open team;

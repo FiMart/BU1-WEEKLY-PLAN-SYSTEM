@@ -9,12 +9,12 @@ function planGroups(list){
     return [...m].sort((a,b)=>(a[0]===NO_CUST)-(b[0]===NO_CUST)||b[1].length-a[1].length||a[0].localeCompare(b[0],'th'))
       .map(([k,l])=>({key:'c:'+k,label:k,color:'#1462d0',tasks:l,preset:{customer:k===NO_CUST?'':k}}));
   }
-  /* job types in their set order, but ลา (leave) always as the last row */
-  const out=[];const seen=new Set();let leave=null;
+  /* job types in their set order, but the leave types always as the last rows */
+  const out=[];const seen=new Set();const leave=[];/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ rows */
   for(const ty of jobTypes()){seen.add(ty.id);const l=list.filter(t=>typeIdOf(t)===ty.id);if(!l.length)continue;
-    const g={key:'t:'+ty.id,label:ty.name,color:NEUTRAL_COLOR,tasks:l,preset:{type:ty.id}};/* หัวข้องาน has no colour (user, 9 Oct 2026) */if(ty.id==='leave')leave=g;else out.push(g)}
+    const g={key:'t:'+ty.id,label:ty.name,color:NEUTRAL_COLOR,tasks:l,preset:{type:ty.id}};/* หัวข้องาน has no colour (user, 9 Oct 2026) */if(isLeaveId(ty.id))leave.push(g);else out.push(g)}
   const rest=list.filter(t=>!seen.has(typeIdOf(t)));if(rest.length)out.push({key:'t:__x',label:'ประเภทที่ถูกลบแล้ว',color:'#8a979c',tasks:rest,preset:{}});
-  if(leave)out.push(leave);
+  out.push(...leave);
   return out;
 }
 const planCore=t=>{const q=norm(S.pf.q);return lineMatch(t)&&(!S.pf.staff||(t.staffIds||[]).includes(S.pf.staff))&&(!q||norm(searchText(t)).includes(q))};
@@ -107,7 +107,7 @@ function wcard(t,conf,i){
   /* compact card (user, 8 Oct 2026): customer and location on one line */
   const where=[t.customer&&S.pf.by!=='cust'?esc(t.customer):'',t.location?`<b>${esc(t.location)}</b>`:''].filter(Boolean).join(' · ');
   return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}${S.pickMode?' pickable':''}${S.pickMode&&S.picked.has(t.id)?' picked':''}" style="--c:${planColor(t)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
-    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span><i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i></span>
+    <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${noStatus(t)?'':`<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i>`}</span>
     <span class="wc-sub">${lineTag(t)}<span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${where?`<span class="wc-where" title="${esc([t.customer,t.location].filter(Boolean).join(' · '))}">${where}</span>`:''}
     ${det?`<span class="wc-det">${esc(det)}</span>`:''}
@@ -116,7 +116,7 @@ function wcard(t,conf,i){
       const ic=`${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${sumChip(t)}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}`;
       return ch||ic?`<span class="wc-chips">${ch}${ic}</span>`:''})()}
     <span class="wc-pp">${teamNeedChip(t)}${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}" title="${esc(staffName(id))}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest" title="${esc(g)} (แผนกอื่น)">${esc(g)}</span>`).join('')}${!(t.staffIds||[]).length&&!(t.guests||[]).length&&!isLeave(t)?'<span class="pp noteam">ยังไม่จัดคน</span>':''}</span>
-    ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
+    ${NEEDS_REASON.has(t.status)&&!noStatus(t)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
     ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
     ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
   </button>`;
@@ -195,7 +195,7 @@ function renderPlan(){
   const shown=S.pf.groups.length?groups.filter(g=>S.pf.groups.includes(g.key)):groups;
   /* counts follow the open สายงาน tab (LT); who is free and clashes stay across both lines (one team) */
   const LT=S.tasks.filter(lineMatch);
-  const work=LT.filter(t=>isWorking(t)&&!isLeave(t));const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
+  const work=LT.filter(t=>isWorking(t)&&!noStatus(t));/* leave / ประเภทระบบ have no status to count */const cnt=s=>work.filter(t=>(t.status||'planned')===s).length;
   const confN=LT.filter(t=>conf.has(t.id)).length;
   const last=days[6];const isThis=ymd(S.week)===ymd(mondayOf(new Date()));
   let ci=0;

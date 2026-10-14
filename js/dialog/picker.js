@@ -33,7 +33,7 @@ function renderPickSel(){
 /* แผนงานนี้ใช้ … คน (user, 9 Oct 2026): the number typed, and how many are still missing against the people picked */
 const teamNeedIn=()=>Math.max(0,Math.min(99,Math.floor(Number($('#f-teamNeed').value)||0)));
 function syncTeamNeed(){
-  const row=$('#teamNeedRow');if(!row)return;const leave=$('#f-type').value==='leave';row.hidden=leave;
+  const row=$('#teamNeedRow');if(!row)return;const leave=isLeaveId($('#f-type').value);row.hidden=leave;
   const st=$('#teamNeedSt');const n=teamNeedIn();const h=pickSel.size+pickGuests.length;
   row.classList.toggle('short',!!n&&h<n);row.classList.toggle('ok',!!n&&h>=n);
   st.innerHTML=leave||!n?'<span class="hint">ไม่บังคับ · ใส่จำนวนคนที่งานนี้ต้องใช้ ระบบจะบอกว่ายังขาดกี่คน</span>'

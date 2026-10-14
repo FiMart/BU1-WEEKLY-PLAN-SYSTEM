@@ -111,8 +111,10 @@ function supabaseBackend(client,{dept}){
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
   }
+  /* ลา · ลาพักร้อน · ลาป่วย · ลากิจ (14 Oct 2026): this app's type in bu1wp.jobType, else the row's kind when it names one (old app rows) */
+  const leaveTypeOf=(x,d)=>isLeaveId(x.jobType)?x.jobType:(DEFAULT_TYPES.find(ty=>isLeaveId(ty.id)&&ty.id!=='leave'&&norm(ty.name)===norm(d.kind))||{id:'leave'}).id;
   const leaveOf=r=>{const d=r.data||{};const x=d.bu1wp||{};
-    return {id:LEAVE_PREFIX+r.id,date:weekDate(d.week||r.week,d.day),period:x.period||'full',jobType:'leave',
+    return {id:LEAVE_PREFIX+r.id,date:weekDate(d.week||r.week,d.day),period:x.period||'full',jobType:leaveTypeOf(x,d),
       staffIds:d.personId?[d.personId]:[],detail:x.detail!=null?x.detail:d.kind||'ลา',status:x.status||'planned',statusNote:x.statusNote||'',history:asList(x.history),
       createdBy:x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,src:'leaves'}};
   /* one leave plan with several people (user, 9 Oct 2026: "แผนงานลาเลือกได้หลายคนใน 1 แผนงาน") = the row <id> (first person)
@@ -173,7 +175,7 @@ function supabaseBackend(client,{dept}){
   }
 
   /* ---------- write: app entities -> rows (merged with what is stored) ---------- */
-  const isLeaveTask=t=>t.jobType==='leave';
+  const isLeaveTask=t=>isLeaveId(t.jobType);/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ */
   const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */color:t.color||'',/* สีของแผน, '' = ตาม Plan No. (user, 9 Oct 2026) */
@@ -233,7 +235,7 @@ function supabaseBackend(client,{dept}){
   function leaveRows(t,baseId,olds){
     const people=asList(t.staffIds);const list=people.length?people:[''];
     return list.map((p,i)=>{const id=i?`${baseId}~${p}`:baseId;const old=olds.get(id);const d=Object.assign({},old?old.data||{}:{});
-      Object.assign(d,{id,week:weekOf(t.date),day:dayOf(t.date),personId:p,kind:String(t.detail||'ลา').split('\n')[0].slice(0,60)||'ลา',
+      Object.assign(d,{id,week:weekOf(t.date),day:dayOf(t.date),personId:p,kind:t.jobType!=='leave'&&isLeaveId(t.jobType)?typeOf(t).name:String(t.detail||'ลา').split('\n')[0].slice(0,60)||'ลา',/* ลาพักร้อน / ลาป่วย / ลากิจ by name */
         bu1wp:Object.assign(bu1wpOf(t,d.bu1wp),{detail:t.detail||'',statusNote:t.statusNote||''})});
       return {id,dept_id:dept,week:d.week,data:d}});
   }

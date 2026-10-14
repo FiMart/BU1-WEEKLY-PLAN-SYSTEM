@@ -67,7 +67,7 @@ document.addEventListener('click',e=>{
     case 'copy-range':copyRange();break;
     case 'del-row':deleteRow(a);break;
     case 'del-sale':saveCfg({sales:(S.cfg.sales||[]).filter((_,i)=>i!==Number(a.dataset.idx))},'ลบ Sale แล้ว');break;
-    case 'del-type':{const i=Number(a.dataset.idx);const l=typesCopy();if(!l[i]||SYSTEM_TYPES.has(l[i].id))break;if(!arm(a,'type/'+l[i].id,'ลบ'))break;saveCfg({jobTypes:l.filter((_,j)=>j!==i)},`ลบ ${l[i].name} แล้ว แผนเก่ายังแสดงชื่อเดิม`);break}
+    case 'del-type':{const i=Number(a.dataset.idx);const l=typesCopy();if(!l[i]||isSysType(l[i]))break;if(!arm(a,'type/'+l[i].id,'ลบ'))break;saveCfg({jobTypes:l.filter((_,j)=>j!==i)},`ลบ ${l[i].name} แล้ว แผนเก่ายังแสดงชื่อเดิม`);break}
     case 'del-pos':{const l=positions().slice();l.splice(Number(a.dataset.idx),1);saveCfg({positions:l},'ลบตำแหน่งแล้ว');break}
     case 'clear-sample':clearSample(a);break;
     case 'xlsx':exportXlsx(a);break;
@@ -121,6 +121,11 @@ document.addEventListener('change',async e=>{const t=e.target;
     return;
   }
   if(t.dataset.typeIdx!==undefined){const l=typesCopy();const i=Number(t.dataset.typeIdx);if(!l[i])return;const f=t.dataset.typeField;
+    /* ประเภทระบบ (user, 14 Oct 2026): ticked = cannot be deleted or switched off; the built-in ones (SYSTEM_TYPES) stay ticked */
+    if(f==='sys'){if(SYSTEM_TYPES.has(l[i].id)||!can('master')){render();return}
+      if(t.checked){l[i].sys=true;l[i].active=true}else delete l[i].sys;
+      saveCfg({jobTypes:l},t.checked?`ตั้ง ${l[i].name} เป็นประเภทระบบแล้ว (ลบไม่ได้)`:`${l[i].name} ไม่เป็นประเภทระบบแล้ว`);return}
+    if(f==='active'&&isSysType(l[i])){render();return}
     const v=f==='active'?t.checked:f==='color'?safeColor(t.value):t.value.trim();if(f==='name'&&!v){toast('ชื่อประเภทต้องไม่ว่าง');render();return}
     l[i][f]=v;saveCfg({jobTypes:l},'บันทึกแล้ว');return}
   if(t.dataset.posIdx!==undefined){const l=positions().slice();const v=t.value.trim();if(!v){toast('ชื่อตำแหน่งต้องไม่ว่าง');render();return}l[Number(t.dataset.posIdx)]=v;saveCfg({positions:l},'บันทึกแล้ว');return}

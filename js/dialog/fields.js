@@ -211,10 +211,11 @@ function typeOptions(cur,blank){
 /* สายงาน field of the plan form: hidden for leave; a job type that belongs to one line selects it.
    Not required (user, 6 Oct 2026): "ทั้งสองสาย" (value '') = no line, the plan shows on both tabs */
 $('#f-line').innerHTML=LINES.concat([LINE_BOTH]).map(l=>`<label style="--lc:${l.color}"><input type="radio" name="f-line" id="f-line-${l.id||'both'}" value="${l.id}"><span><span class="ls-ico">${l.icon}</span><span class="ls-t"><b>${esc(l.short)}</b><small>${esc(l.id?l.tag:'ไม่ระบุสาย')}</small></span></span></label>`).join('');
-const curLine=()=>($('#f-type').value==='leave'?'':((document.querySelector('input[name="f-line"]:checked')||{}).value||''));
+const curLine=()=>(isLeaveId($('#f-type').value)?'':((document.querySelector('input[name="f-line"]:checked')||{}).value||''));
 function setLine(id){const v=LINE[id]?id:'';document.querySelectorAll('input[name="f-line"]').forEach(r=>{r.checked=r.value===v})}
 function syncLineField(fromType){
-  const leave=$('#f-type').value==='leave';document.querySelectorAll('#formFields .line-row').forEach(el=>{el.hidden=leave});
+  const leave=isLeaveId($('#f-type').value);document.querySelectorAll('#formFields .line-row').forEach(el=>{el.hidden=leave});
+  $('#f-statusWrap').hidden=noStatusId($('#f-type').value);if(typeof syncReason==='function')syncReason();/* leave and ประเภทระบบ have no สถานะงาน (user, 14 Oct 2026) */
   if(typeof syncTeamNeed==='function')syncTeamNeed();/* no head count on leave */
   const ty=jobTypes().find(x=>x.id===$('#f-type').value);const own=ty&&LINE[ty.line]?ty.line:'';
   if(fromType&&own)setLine(own);

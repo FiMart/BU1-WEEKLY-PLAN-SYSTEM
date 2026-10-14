@@ -37,14 +37,20 @@ function docChip(t){
     return `<span class="pcount sr${ok?'':' miss'}" title="${ok?'เอกสารหลังจบงานครบ':'ยังไม่ได้ส่ง: '+esc(miss.join(', '))}">${REP_ICON}${s.have}/${s.need}</span>`}
   return n?`<span class="pcount sr" title="แนบเอกสารแล้ว ${n} ไฟล์">${REP_ICON}${n}</span>`:'';
 }
+/* who may delete a document file (user, 14 Oct 2026: "ลบไฟล์ได้เพียงคนที่อัปโหลดเท่านั้น"): only the person who uploaded it
+   (f.by = the e-mail saved at upload); a file with no uploader recorded (older ones) → ผู้ดูแลระบบ only; off the central DB
+   (no sign-in, f.by empty) anyone who may work on the plan */
+const canDelReport=f=>{if(!f||!canWork())return false;const me=String(S.me||'').trim().toLowerCase();
+  if(f.by)return !!me&&String(f.by).trim().toLowerCase()===me;return S.backend==='supabase'?S.level==='admin':true};
+const uploaderOf=f=>f&&f.by?String(f.by).split('@')[0]:'';
 /* one file; under a document row (kind) its label shows only when the file covers more than that document;
    เอกสารอื่น ๆ (files naming no document) keep an optional editable label (typing a document's name moves the file there) */
 function reportRow(f,edit,kind){
   const ext=fileExt(f.name);const when=f.at?new Date(f.at):null;const l=docLabel(f);
   const also=kind&&l&&l!==DOC_NAME[kind]?` · ไฟล์นี้มี ${esc(l)}`:'';
   const tag=kind?'':edit?`<input class="doc-lbl" list="dl-docKinds" data-rep-lbl="${esc(f.id)}" value="${esc(l)}" maxlength="80" placeholder="ชื่อเอกสาร (ไม่บังคับ)" aria-label="ชื่อเอกสารของ ${esc(f.name)}" autocomplete="off">`:l?`<span class="doc-tag">${esc(l)}</span>`:'';
-  return `<div class="fchip doc-file"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${when&&!isNaN(when)?` · แนบเมื่อ ${fmtShort(when)} ${when.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`:''}${also}</small></span>
-    ${tag}<button type="button" class="btn sm" data-rep-dl="${esc(f.id)}">ดาวน์โหลด</button>${edit?`<button type="button" class="ph-x2" data-rep-del="${esc(f.id)}" aria-label="ลบ ${esc(f.name)}">×</button>`:''}</div>`;
+  return `<div class="fchip doc-file"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><button type="button" class="fv-name" data-file-view="${esc(f.id)}" title="ดู ${esc(f.name)}">${esc(f.name)}</button><small>${fmtSize(f.size||0)}${when&&!isNaN(when)?` · แนบเมื่อ ${fmtShort(when)} ${when.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`:''}${uploaderOf(f)?` · โดย <span title="${esc(f.by)}">${esc(uploaderOf(f))}</span>`:''}${also}</small></span>
+    ${tag}<button type="button" class="btn sm fv-btn" data-file-view="${esc(f.id)}" aria-label="ดู ${esc(f.name)}">ดู</button><button type="button" class="btn sm" data-rep-dl="${esc(f.id)}">ดาวน์โหลด</button>${edit&&canDelReport(f)?`<button type="button" class="ph-x2" data-rep-del="${esc(f.id)}" aria-label="ลบ ${esc(f.name)}" title="ลบไฟล์ (เฉพาะคนที่อัปโหลด)">×</button>`:edit?`<span class="rep-lock" title="ลบได้เฉพาะคนที่อัปโหลด${f.by?' ('+esc(f.by)+')':' หรือผู้ดูแลระบบ'}" aria-label="ลบได้เฉพาะคนที่อัปโหลด">🔒</span>`:''}</div>`;
 }
 const UP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';
 const OTHER_DOC='other';/* upload row for any other document (user, 8 Oct 2026): label '', not counted in the 3 */
@@ -95,7 +101,7 @@ async function addReports(files,kind){
     for(const [k,file] of ok.entries()){
       const f={id:newId('f'),name:String(file.name||'document').slice(0,120),size:file.size,type:file.type||'',blob:file};
       await putFileChunks(f,(x,i,n)=>{const l=$('#vRepLbl-'+kind);if(l)l.textContent=`กำลังอัปโหลด ${ok.length>1?`ไฟล์ ${k+1}/${ok.length} · `:''}${Math.round((i+1)/n*100)}%`});
-      added.push({id:f.id,name:f.name,size:f.size,type:f.type,at:now,by:S.me||null,label:DOC_NAME[kind]||''});
+      added.push({id:f.id,name:f.name,size:f.size,type:f.type,at:now,by:S.me||null,label:DOC_NAME[kind]||''});fileCache.set(f.id,new Blob([file],{type:fileMime(f)}));/* Preview right away */
     }
     const reports=reportsOf(editing).concat(added);
     await Store.update('tasks',id,Object.assign({reports},meta()));
@@ -116,6 +122,7 @@ async function setReportLabel(fid,val){
 }
 async function removeReport(fid){
   if(!editing||!canWork())return;const f=reportsOf(editing).find(x=>x.id===fid);if(!f)return;
+  if(!canDelReport(f)){toast(`ลบไม่ได้ · ไฟล์นี้ลบได้เฉพาะคนที่อัปโหลด${f.by?` (${f.by})`:' หรือผู้ดูแลระบบ'}`);return}
   if(!await askConfirm('ลบไฟล์เอกสาร?',`ลบไฟล์ ${f.name}${docLabel(f)?` (${docLabel(f)})`:''} ออกจากแผนนี้\nลบแล้วกู้คืนไม่ได้`,'ลบไฟล์'))return;
   const id=editing.id;const reports=reportsOf(editing).filter(x=>x.id!==fid);
   try{await Store.update('tasks',id,Object.assign({reports},meta()));

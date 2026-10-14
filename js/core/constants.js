@@ -27,9 +27,16 @@ const DEFAULT_TYPES=[
   {id:'standby',name:'Stand by on-call',color:'#5b6b8c'},
   {id:'support',name:'Support รับ-ส่ง',color:'#9a6b3f'},
   {id:'leave',name:'ลา',color:'#8a979c'},
+  {id:'leave_vac',name:'ลาพักร้อน',color:'#8a979c'},
+  {id:'leave_sick',name:'ลาป่วย',color:'#8a979c'},
+  {id:'leave_biz',name:'ลากิจ',color:'#8a979c'},
   {id:'other',name:'อื่นๆ',color:'#0e8fa3'},
 ];
-const SYSTEM_TYPES=new Set(['leave','other']);
+/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ (user, 14 Oct 2026: "ให้เป็นประเภทระบบ … ตัดสถานะงานออก"): all are leave — saved in `leaves`,
+   no สถานะงาน, no สายงาน / Team Service count; ลา stays for older plans and any other kind of leave */
+const LEAVE_TYPES=new Set(['leave','leave_vac','leave_sick','leave_biz']);
+const isLeaveId=id=>LEAVE_TYPES.has(id);
+const SYSTEM_TYPES=new Set([...LEAVE_TYPES,'other']);
 const LEGACY={cal:'calonsite',ins:'installation',trn:'training',lv:'leave'};
 const LEGACY_NAME={svc:'ซ่อม / Service',pm:'บำรุงรักษา (PM)',tst:'ทดสอบ / ตรวจสอบ',off:'งานเอกสาร / รายงาน'};
 const PERIODS=[{id:'am',name:'เช้า',a:0,b:0},{id:'pm',name:'บ่าย',a:1,b:1},{id:'full',name:'เช้า,บ่าย',a:0,b:1}];
@@ -65,7 +72,7 @@ const STATUS=Object.fromEntries(STATUSES.map(s=>[s.id,s]));
 const NEEDS_REASON=new Set(['notdone','postponed','cancelled']);
 const reasonLabel=s=>s==='cancelled'?'เหตุผลที่ยกเลิก / ปัญหาที่หน้างาน':s==='notdone'?'สาเหตุที่งานไม่เสร็จ / ปัญหาที่หน้างาน':'เหตุผลที่เลื่อน / ปัญหาที่หน้างาน';
 const statusFlag=s=>s==='postponed'?'↻ เลื่อน':s==='notdone'?'⚠ ไม่เสร็จ':'✕ ยกเลิก';
-const statusText=t=>(STATUS[t.status]||STATUS.planned).th+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
+const statusText=t=>noStatus(t)?'':/* leave has no สถานะงาน */(STATUS[t.status]||STATUS.planned).th+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
 /* GA's car app (user, 8 Oct 2026): navbar button opens it in a new tab */
 const GA_FLEET_URL='https://ga-fleet.vercel.app/';/* opens GA Fleet (user, 14 Oct 2026; was its booking form ?form=1 since 11 Oct) */
 const VIEWS=['plan','booking','mplan','safety','people','projects','search','dash','ncr','settings','help'];

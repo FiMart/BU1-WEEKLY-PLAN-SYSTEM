@@ -66,7 +66,7 @@ function dashCompute(){
     .sort((a,b)=>((order.indexOf(a.k)+1)||999)-((order.indexOf(b.k)+1)||999)||a.k.localeCompare(b.k,'th'));
 
   /* job types, customers, vehicles, sales */
-  const types=jobTypes().filter(t=>t.id!=='leave').map(ty=>({label:ty.name,n:jobs.filter(t=>typeIdOf(t)===ty.id).length,id:ty.id})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+  const types=jobTypes().filter(t=>!isLeaveId(t.id)).map(ty=>({label:ty.name,n:jobs.filter(t=>typeIdOf(t)===ty.id).length,id:ty.id})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
   const knownIds=new Set(jobTypes().map(t=>t.id));const orphanN=jobs.filter(t=>!knownIds.has(typeIdOf(t))).length;if(orphanN)types.push({label:'ประเภทที่ถูกลบแล้ว',n:orphanN});
   const custKeyOf=t=>String(t.customer||'').trim()||'(ไม่ระบุลูกค้า)';
   const cust=new Map();jobs.forEach(t=>{const k=custKeyOf(t);cust.set(k,(cust.get(k)||0)+1)});const custList=[...cust].sort((a,b)=>b[1]-a[1]);

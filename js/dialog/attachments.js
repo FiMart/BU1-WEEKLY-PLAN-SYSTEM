@@ -76,7 +76,7 @@ const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n
 function fileExt(name){const e=(String(name).includes('.')?String(name).split('.').pop():'').toLowerCase();return e==='pdf'?'PDF':/^(xlsx?|xlsm|csv)$/.test(e)?'XLS':/^docx?$/.test(e)?'DOC':/^pptx?$/.test(e)?'PPT':/^(zip|rar|7z)$/.test(e)?'ZIP':(e.slice(0,4).toUpperCase()||'FILE')}
 function fileRow(f,i,editable){
   const ext=fileExt(f.name);
-  return `<div class="fchip"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${f.isNew?' · ใหม่ จะอัปโหลดตอนกดบันทึก':''}</small></span>${f.isNew?'':`<button type="button" class="btn sm" data-file-dl="${esc(f.id)}">ดาวน์โหลด</button>`}${editable?`<button type="button" class="ph-x2" data-file-remove="${i}" aria-label="เอา ${esc(f.name)} ออก">×</button>`:''}</div>`;
+  return `<div class="fchip"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${f.isNew?' · ใหม่ จะอัปโหลดตอนกดบันทึก':''}</small></span>${f.isNew?'':`<button type="button" class="btn sm fv-btn" data-file-view="${esc(f.id)}" aria-label="ดู ${esc(f.name)}">ดู</button><button type="button" class="btn sm" data-file-dl="${esc(f.id)}">ดาวน์โหลด</button>`}${editable?`<button type="button" class="ph-x2" data-file-remove="${i}" aria-label="เอา ${esc(f.name)} ออก">×</button>`:''}</div>`;
 }
 function renderFiles(){
   $('#fileList').innerHTML=fileItems.map((f,i)=>fileRow(f,i,S.canWrite)).join('');
@@ -95,18 +95,63 @@ async function putFileChunks(f,onProg){
 async function persistNewFiles(onProg){
   for(const f of fileItems.filter(x=>x.isNew)){await putFileChunks(f,onProg);f.isNew=false;delete f.blob}
 }
+/* a file's type from its own type, else its extension (Preview needs the right one: a PDF only shows inline as application/pdf) */
+const FILE_MIME={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',svg:'image/svg+xml',txt:'text/plain',csv:'text/csv'};
+const fileMime=f=>{const t=String(f&&f.type||'');if(t&&t!=='application/octet-stream')return t;const e=String(f&&f.name||'').split('.').pop().toLowerCase();return FILE_MIME[e]||'application/octet-stream'};
+/* the file's bytes, read once per session from its chunks (filechunks/<id>_<i>) */
+const fileCache=new Map();
+async function fileBlob(id,f){
+  if(fileCache.has(id))return fileCache.get(id);
+  const parts=(await Store.where('filechunks','fileId','==',id)).sort((a,b)=>a.i-b.i);
+  if(!parts.length||parts.length<(parts[0].n||1))throw new Error('missing');
+  const bufs=parts.map(p=>{const s=atob(p.data);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u});
+  const b=new Blob(bufs,{type:fileMime(f)});fileCache.set(id,b);return b;
+}
 async function downloadFile(id,btn,meta){
   const f=meta||fileItems.find(x=>x.id===id)||{name:'file'};
-  if(!downloads){toast('หน้านี้ดาวน์โหลดไฟล์ไม่ได้ในมุมมองนี้ เปิดผ่านลิงก์ claude.ai');return}
-  if(btn){btn.disabled=true;btn.textContent='กำลังโหลด…'}
-  try{
-    const parts=(await Store.where('filechunks','fileId','==',id)).sort((a,b)=>a.i-b.i);
-    if(!parts.length||parts.length<(parts[0].n||1))throw new Error('missing');
-    const bufs=parts.map(p=>{const s=atob(p.data);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u});
-    await saveFile(f.name,new Blob(bufs,{type:f.type||'application/octet-stream'}),`ส่งไฟล์ ${f.name} ให้ดาวน์โหลดแล้ว`);
-  }catch(e){toast('เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว')}
-  finally{if(btn){btn.disabled=false;btn.textContent='ดาวน์โหลด'}}
+  const dl=downloads||browserDownloads;/* the browser's own download when the host has none */
+  const txt=btn&&btn.textContent;if(btn){btn.disabled=true;btn.textContent='กำลังโหลด…'}
+  try{const b=await fileBlob(id,f);await dl.save({filename:f.name||'file',data:b});toast(`ดาวน์โหลด ${f.name} แล้ว`)}
+  catch(e){toast(e&&e.code==='declined'?'ยกเลิกการดาวน์โหลด':'เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว')}
+  finally{if(btn){btn.disabled=false;btn.textContent=txt||'ดาวน์โหลด'}}
 }
+/* Preview (user, 14 Oct 2026: "อัปโหลดเอกสารหลังจบงาน สามารถดาวน์โหลดได้และสามารถกดดู Preview ได้"): its own dialog #fileView
+   above the plan drawer — pictures and PDFs shown in the page, text as text; Word / Excel / PowerPoint cannot be shown by a browser,
+   so they offer ดาวน์โหลด. Also เปิดในแท็บใหม่ (phones that do not show a PDF inside a page). */
+let fvUrl='',fvFile=null;
+function fvDlg(){
+  let d=$('#fileView');if(d)return d;
+  d=document.createElement('dialog');d.id='fileView';d.className='fv';d.setAttribute('aria-labelledby','fvName');
+  d.innerHTML=`<div class="fv-head"><span class="fext" id="fvExt"></span><span class="fv-t"><b id="fvName"></b><small id="fvMeta"></small></span>
+    <a class="btn sm" id="fvTab" target="_blank" rel="noopener">เปิดในแท็บใหม่</a><button type="button" class="btn sm primary" id="fvDl">ดาวน์โหลด</button><button type="button" class="icon-btn" id="fvClose" aria-label="ปิด">×</button></div>
+    <div class="fv-body" id="fvBody"></div>`;
+  document.body.appendChild(d);
+  /* cleared at once on close (the close event comes later — after a quick reopen it must not wipe the new file) */
+  const clean=()=>{if(d.open)return;$('#fvBody').innerHTML='';if(fvUrl){URL.revokeObjectURL(fvUrl);fvUrl=''}fvFile=null};
+  const nativeClose=d.close.bind(d);d.close=v=>{nativeClose(v);clean()};d.addEventListener('close',clean);/* Esc */
+  d.addEventListener('click',e=>{if(e.target===d)d.close()});
+  $('#fvClose').addEventListener('click',()=>d.close());
+  $('#fvDl').addEventListener('click',e=>{if(fvFile)downloadFile(fvFile.id,e.currentTarget,fvFile)});
+  return d;
+}
+async function previewFile(id,meta){
+  const f=Object.assign({id},meta||fileItems.find(x=>x.id===id)||{name:'file'});const d=fvDlg();fvFile=f;
+  const ext=fileExt(f.name);$('#fvExt').textContent=ext;$('#fvExt').dataset.ext=ext;$('#fvName').textContent=f.name||'file';
+  $('#fvMeta').textContent=[f.size?fmtSize(f.size):'',f.label||''].filter(Boolean).join(' · ');
+  const body=$('#fvBody');body.innerHTML='<p class="fv-msg">กำลังโหลดไฟล์…</p>';$('#fvTab').hidden=true;
+  if(!d.open)d.showModal();
+  try{
+    const b=await fileBlob(id,f);if(fvFile!==f)return;
+    if(fvUrl)URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(b);const m=b.type;
+    $('#fvTab').href=fvUrl;$('#fvTab').hidden=!/^(image\/|application\/pdf|text\/)/.test(m);
+    if(/^image\//.test(m))body.innerHTML=`<img src="${fvUrl}" alt="${esc(f.name)}">`;
+    else if(m==='application/pdf')body.innerHTML=`<iframe src="${fvUrl}" title="${esc(f.name)}"></iframe>`;
+    else if(/^text\//.test(m)){const t=await b.text();body.innerHTML=`<pre>${esc(t.slice(0,200000))}</pre>`}
+    else body.innerHTML=`<div class="fv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>ไฟล์ ${esc(ext)} ดูตัวอย่างในเบราว์เซอร์ไม่ได้<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมในเครื่อง</p></div>`;
+  }catch(e){if(fvFile===f)body.innerHTML='<p class="fv-msg bad">เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว</p>'}
+}
+document.addEventListener('click',e=>{const v=e.target.closest('[data-file-view]');if(!v)return;e.preventDefault();
+  const id=v.dataset.fileView;const f=(editing&&typeof reportsOf==='function'?reportsOf(editing).find(x=>x.id===id):null)||fileItems.find(x=>x.id===id);previewFile(id,f)});
 async function cleanupFiles(ids){
   for(const id of ids){try{const refs=await Store.where('tasks','fileIds','array-contains',id);if(refs.length)continue;
     for(const p of await Store.where('filechunks','fileId','==',id))await Store.del('filechunks',p.id)}catch(e){}}

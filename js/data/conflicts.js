@@ -77,4 +77,4 @@ function confLabel(list){
   if(veh.size)parts.push('รถที่ใช้งานซ้ำกัน: '+[...veh].join(', '));
   return parts.join(' · ');
 }
-const isLate=t=>(!t.status||t.status==='planned')&&t.date<ymd(new Date());
+const isLate=t=>!noStatus(t)&&(!t.status||t.status==='planned')&&t.date<ymd(new Date());/* leave has no สถานะงาน to close */
