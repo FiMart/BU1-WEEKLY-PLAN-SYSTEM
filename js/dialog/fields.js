@@ -225,9 +225,26 @@ $('#f-type').addEventListener('change',()=>syncLineField(true));
 
 /* สีของแผน (user, 9 Oct 2026): "ตาม Plan No." (the colour the Plan No. gives, '' saved) · the palette · any colour.
    attr = data-pc (the form) or data-pcv (the plan view, saved at once) */
+/* สีที่ใช้ล่าสุด (user, 14 Oct 2026): the colours this browser saved on plans last (form, plan view, เลือกหลายแผน), newest first,
+   then the own colours of the plans edited most recently; up to 6, custom colours included */
+const RECENT_KEY='bu1wp.recentColors',RECENT_N=6;
+const isHex=c=>/^#[0-9a-f]{6}$/i.test(String(c||''));
+function noteRecentColor(c){
+  if(!isHex(c))return;c=String(c).toLowerCase();
+  try{const l=JSON.parse(localStorage.getItem(RECENT_KEY)||'[]').filter(x=>isHex(x)&&x!==c);l.unshift(c);localStorage.setItem(RECENT_KEY,JSON.stringify(l.slice(0,RECENT_N)))}catch(e){}
+}
+function recentColors(){
+  let mine=[];try{mine=JSON.parse(localStorage.getItem(RECENT_KEY)||'[]').filter(isHex)}catch(e){}
+  const seen=new Set(mine.map(c=>c.toLowerCase()));
+  const plans=S.tasks.concat([...known.values()]).filter(t=>ownColor(t)).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  for(const t of plans){const c=ownColor(t).toLowerCase();if(!seen.has(c)){seen.add(c);mine.push(c)}if(mine.length>=RECENT_N)break}
+  return mine.slice(0,RECENT_N);
+}
 function colorPickHtml(cur,pn,attr){/* cur null = nothing marked (several plans with different colours) */
   const auto=planNoColor(pn)||NEUTRAL_COLOR;const own=/^#[0-9a-f]{6}$/i.test(cur||'')?String(cur).toLowerCase():'';const custom=own&&!PLAN_COLORS.includes(own);const isAuto=!own&&cur!==null;
-  return `<button type="button" class="pc-sw pc-auto${isAuto?' on':''}" ${attr}="" style="--sw:${auto}" aria-pressed="${isAuto}" title="สีตาม Plan No.${pn?' '+esc(pn):''} · แผนที่ Plan No. เดียวกันได้สีเดียวกัน"><i></i>ตาม Plan No.</button>`
+  const rec=recentColors();
+  return (rec.length?`<span class="pc-recent" role="group" aria-label="สีที่ใช้ล่าสุด"><small>ใช้ล่าสุด</small>${rec.map(c=>`<button type="button" class="pc-sw${own===c?' on':''}" ${attr}="${c}" style="--sw:${c}" aria-pressed="${own===c}" title="ใช้ล่าสุด · ${c}" aria-label="สีที่ใช้ล่าสุด ${c}"><i></i></button>`).join('')}</span>`:'')
+    +`<button type="button" class="pc-sw pc-auto${isAuto?' on':''}" ${attr}="" style="--sw:${auto}" aria-pressed="${isAuto}" title="สีตาม Plan No.${pn?' '+esc(pn):''} · แผนที่ Plan No. เดียวกันได้สีเดียวกัน"><i></i>ตาม Plan No.</button>`
     +PLAN_COLORS.map(c=>`<button type="button" class="pc-sw${own===c?' on':''}" ${attr}="${c}" style="--sw:${c}" aria-pressed="${own===c}" aria-label="สี ${c}"><i></i></button>`).join('')
     +`<label class="pc-sw pc-custom${custom?' on':''}" style="--sw:${custom?own:'transparent'}" title="เลือกสีเอง"><input type="color" ${attr}-custom value="${custom?own:'#2a78d6'}" aria-label="เลือกสีเอง"><i></i></label>`;
 }

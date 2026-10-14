@@ -66,7 +66,7 @@ async function exportReport(){
       ${det?`<div class="cdet">${esc(det)}</div>`:''}${t.remark?`<div class="cnote">📌 ${esc(t.remark)}</div>`:''}${tr?`<div class="ctr">🚗 ${esc(tr)}</div>`:''}
       ${teamNames(t).length?`<div class="cpp">${teamNames(t).map(n=>`<span>${esc(n)}</span>`).join('')}</div>`:''}
       ${NEEDS_REASON.has(st)?`<div class="w">${esc(statusFlag(st))}${t.statusNote?': '+esc(t.statusNote):''}</div>`:''}${c?`<div class="w">⚠ ${esc(confLabel(c))}</div>`:''}</div>`};
-  const head=days.map(d=>{const k=ymd(d);const n=tasks.filter(t=>t.date===k).length;const hol=holidayOf(k);
+  const head=days.map(d=>{const k=ymd(d);const n=dayJobs(tasks,k);/* without leave */const hol=holidayOf(k);
     return `<th class="${isOffDay(d)?'we':''}${k===today?' td':''}"><b>${EN_DAY[d.getDay()]}</b><span>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</span>${hol?`<em>${esc(hol)}</em>`:''}<small>${n} แผน</small></th>`}).join('');/* no "/20" by the date (user, 14 Oct 2026) */
   const body=groups.map(g=>`<tr><th class="gh" style="--c:${safeColor(g.color)}"><b>${esc(g.label)}</b><small>${g.tasks.length} แผน</small></th>${days.map(d=>{const k=ymd(d);
     return `<td class="${isOffDay(d)?'we':''}">${g.tasks.filter(t=>t.date===k).sort(byTime).map(cardH).join('')}</td>`}).join('')}</tr>`).join('')

@@ -136,6 +136,10 @@ function availOn(k,team){
 }
 /* "ว่าง n คน" by each date counts ทีม Lab On-Site only (user, 14 Oct 2026; All Team people are in it too), whatever ทีม tab is open;
    null when nobody is in that team yet. The Available panel below still follows the open ทีม. */
+/* plans a day (user, 14 Oct 2026: "วันนี้มีกี่แผน ไม่นับ หัวข้องานลา, ลาป่วย, ลากิจ, ลาพักร้อน"): every leave type left out */
+/* + not เลื่อน · ยกเลิก · ไม่เสร็จ (user, 14 Oct 2026); a plan with no สถานะงาน (ประเภทระบบ) always counts */
+const DAY_SKIP=new Set(['postponed','cancelled','notdone']);
+const dayJobs=(list,k)=>list.filter(t=>t.date===k&&!isLeave(t)&&(noStatus(t)||!DAY_SKIP.has(t.status))).length;
 const FREE_TEAM='onsite';
 const freeOn=k=>S.staff.some(s=>s.active!==false&&inTeamId(s,FREE_TEAM))?availOn(k,FREE_TEAM):null;
 const freeTitle=a=>`${TEAM[FREE_TEAM].name} · ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}`;
@@ -213,9 +217,9 @@ function renderPlan(){
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
     return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+calWeekHtml()+insWeekHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
-  /* the date only: no "n/20" plans a day any more (user, 14 Oct 2026) */
-  days.forEach(d=>{const k=ymd(d);const we=isOffDay(d);const hol=holidayOf(k);const a=freeOn(k);
-    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}${k===S.jumpDay?' is-jump':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}${a?`<span class="dfree" title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}</th>`});
+  /* the date only: no "n/20" plans a day any more (user, 14 Oct 2026); then "n แผน" without the leave types */
+  days.forEach(d=>{const k=ymd(d);const we=isOffDay(d);const hol=holidayOf(k);const a=freeOn(k);const nj=dayJobs(LT,k);
+    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}${k===S.jumpDay?' is-jump':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<span class="dcount${nj?'':' zero'}" title="แผนงานวันนี้ ${nj} แผน (ไม่นับลา · เลื่อน · ยกเลิก · ไม่เสร็จ)">${nj} แผน</span>${a?`<span class="dfree" title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}</th>`});
   h+='</tr></thead><tbody>';
   if(!shown.length)h+=`<tr class="no-rows"><td colspan="8">${LT.length?'ไม่มีแผนงานที่ตรงกับตัวกรอง':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในสัปดาห์นี้`:'ยังไม่มีแผนในสัปดาห์นี้'}${S.canWrite?' · <button type="button" class="lnk" data-action="add">+ เพิ่มแผนงาน</button>':''}</td></tr>`;
   for(const g of shown){
@@ -252,7 +256,7 @@ function renderDateDock(){
     <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
     ${calBtn('dock')}
     <button type="button" class="lnk dd-top" data-action="dock-top">ขึ้นบนสุด</button></div>
-    ${planDayMode()?dayStrip(days,planDay(),xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,!xn?'zero':'',`${xn} แผน`]},'pday'):''}`;
+    ${planDayMode()?dayStrip(days,planDay(),xk=>{const xn=dayJobs(LT,xk);return [xn,!xn?'zero':'',`${xn} แผน`]},'pday'):''}`;
   syncDateDock();
 }
 function syncDateDock(){
@@ -350,8 +354,8 @@ function pdHead(d,sub,act){
 }
 function planDayHtml({days,today,conf,shown,avail,showAv}){
   const k=planDay();const idx=days.findIndex(d=>ymd(d)===k);const d=days[idx];const a=freeOn(k);
-  const LT=S.tasks.filter(lineMatch);const n=LT.filter(t=>t.date===k).length;
-  let h=dayStrip(days,k,xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,!xn?'zero':'',`${xn} แผน`]},'pday');
+  const LT=S.tasks.filter(lineMatch);const n=dayJobs(LT,k);
+  let h=dayStrip(days,k,xk=>{const xn=dayJobs(LT,xk);return [xn,!xn?'zero':'',`${xn} แผน`]},'pday');
   h+=pdHead(d,`${n} แผน${a?` · <span title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
   const groups=shown.map(g=>({g,list:g.tasks.filter(t=>t.date===k).sort(byTime)})).filter(x=>x.list.length);
   if(!groups.length)h+=`<div class="pd-empty">${n?'ไม่มีแผนงานที่ตรงกับตัวกรองในวันนี้':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในวันนี้`:'ยังไม่มีแผนในวันนี้'}</div>`;

@@ -76,7 +76,7 @@ const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n
 function fileExt(name){const e=(String(name).includes('.')?String(name).split('.').pop():'').toLowerCase();return e==='pdf'?'PDF':/^(xlsx?|xlsm|csv)$/.test(e)?'XLS':/^docx?$/.test(e)?'DOC':/^pptx?$/.test(e)?'PPT':/^(zip|rar|7z)$/.test(e)?'ZIP':(e.slice(0,4).toUpperCase()||'FILE')}
 function fileRow(f,i,editable){
   const ext=fileExt(f.name);
-  return `<div class="fchip"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${f.isNew?' · ใหม่ จะอัปโหลดตอนกดบันทึก':''}</small></span>${f.isNew?'':`<button type="button" class="btn sm fv-btn" data-file-view="${esc(f.id)}" aria-label="ดู ${esc(f.name)}">ดู</button><button type="button" class="btn sm" data-file-dl="${esc(f.id)}">ดาวน์โหลด</button>`}${editable?`<button type="button" class="ph-x2" data-file-remove="${i}" aria-label="เอา ${esc(f.name)} ออก">×</button>`:''}</div>`;
+  return `<div class="fchip"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><span class="fmeta"><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size||0)}${f.isNew?' · ใหม่ จะอัปโหลดตอนกดบันทึก':''}</small></span>${f.isNew?'':`<button type="button" class="btn sm fpv-btn" data-file-view="${esc(f.id)}" aria-label="ดู ${esc(f.name)}">ดู</button><button type="button" class="btn sm" data-file-dl="${esc(f.id)}">ดาวน์โหลด</button>`}${editable?`<button type="button" class="ph-x2" data-file-remove="${i}" aria-label="เอา ${esc(f.name)} ออก">×</button>`:''}</div>`;
 }
 function renderFiles(){
   $('#fileList').innerHTML=fileItems.map((f,i)=>fileRow(f,i,S.canWrite)).join('');
@@ -121,10 +121,10 @@ async function downloadFile(id,btn,meta){
 let fvUrl='',fvFile=null;
 function fvDlg(){
   let d=$('#fileView');if(d)return d;
-  d=document.createElement('dialog');d.id='fileView';d.className='fv';d.setAttribute('aria-labelledby','fvName');
-  d.innerHTML=`<div class="fv-head"><span class="fext" id="fvExt"></span><span class="fv-t"><b id="fvName"></b><small id="fvMeta"></small></span>
+  d=document.createElement('dialog');d.id='fileView';d.className='fpv';d.setAttribute('aria-labelledby','fvName');
+  d.innerHTML=`<div class="fpv-head"><span class="fext" id="fvExt"></span><span class="fpv-t"><b id="fvName"></b><small id="fvMeta"></small></span>
     <a class="btn sm" id="fvTab" target="_blank" rel="noopener">เปิดในแท็บใหม่</a><button type="button" class="btn sm primary" id="fvDl">ดาวน์โหลด</button><button type="button" class="icon-btn" id="fvClose" aria-label="ปิด">×</button></div>
-    <div class="fv-body" id="fvBody"></div>`;
+    <div class="fpv-body" id="fvBody"></div>`;
   document.body.appendChild(d);
   /* cleared at once on close (the close event comes later — after a quick reopen it must not wipe the new file) */
   const clean=()=>{if(d.open)return;$('#fvBody').innerHTML='';if(fvUrl){URL.revokeObjectURL(fvUrl);fvUrl=''}fvFile=null};
@@ -138,7 +138,7 @@ async function previewFile(id,meta){
   const f=Object.assign({id},meta||fileItems.find(x=>x.id===id)||{name:'file'});const d=fvDlg();fvFile=f;
   const ext=fileExt(f.name);$('#fvExt').textContent=ext;$('#fvExt').dataset.ext=ext;$('#fvName').textContent=f.name||'file';
   $('#fvMeta').textContent=[f.size?fmtSize(f.size):'',f.label||''].filter(Boolean).join(' · ');
-  const body=$('#fvBody');body.innerHTML='<p class="fv-msg">กำลังโหลดไฟล์…</p>';$('#fvTab').hidden=true;
+  const body=$('#fvBody');body.innerHTML='<p class="fpv-msg">กำลังโหลดไฟล์…</p>';$('#fvTab').hidden=true;
   if(!d.open)d.showModal();
   try{
     const b=await fileBlob(id,f);if(fvFile!==f)return;
@@ -146,9 +146,11 @@ async function previewFile(id,meta){
     $('#fvTab').href=fvUrl;$('#fvTab').hidden=!/^(image\/|application\/pdf|text\/)/.test(m);
     if(/^image\//.test(m))body.innerHTML=`<img src="${fvUrl}" alt="${esc(f.name)}">`;
     else if(m==='application/pdf')body.innerHTML=`<iframe src="${fvUrl}" title="${esc(f.name)}"></iframe>`;
-    else if(/^text\//.test(m)){const t=await b.text();body.innerHTML=`<pre>${esc(t.slice(0,200000))}</pre>`}
-    else body.innerHTML=`<div class="fv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>ไฟล์ ${esc(ext)} ดูตัวอย่างในเบราว์เซอร์ไม่ได้<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมในเครื่อง</p></div>`;
-  }catch(e){if(fvFile===f)body.innerHTML='<p class="fv-msg bad">เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว</p>'}
+    else if(/^text\//.test(m)){/* shown by the browser itself, read as UTF-8 (Thai) */
+      URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(new Blob([b],{type:m.split(';')[0]+';charset=utf-8'}));$('#fvTab').href=fvUrl;
+      body.innerHTML=`<iframe class="txt" src="${fvUrl}" title="${esc(f.name)}"></iframe>`}
+    else body.innerHTML=`<div class="fpv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>ไฟล์ ${esc(ext)} ดูตัวอย่างในเบราว์เซอร์ไม่ได้<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมในเครื่อง</p></div>`;
+  }catch(e){if(fvFile===f)body.innerHTML='<p class="fpv-msg bad">เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว</p>'}
 }
 document.addEventListener('click',e=>{const v=e.target.closest('[data-file-view]');if(!v)return;e.preventDefault();
   const id=v.dataset.fileView;const f=(editing&&typeof reportsOf==='function'?reportsOf(editing).find(x=>x.id===id):null)||fileItems.find(x=>x.id===id);previewFile(id,f)});

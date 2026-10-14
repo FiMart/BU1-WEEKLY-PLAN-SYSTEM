@@ -93,7 +93,7 @@ function syncReason(){const s=curStatus();$('#f-reasonWrap').hidden=!NEEDS_REASO
 async function setPlanColor(c){
   if(!editing||!S.canWrite)return;const color=/^#[0-9a-f]{6}$/i.test(c||'')?String(c).toLowerCase():'';if(color===ownColor(editing))return;
   const id=editing.id;
-  try{await Store.update('tasks',id,Object.assign({color},meta()));editing=Object.assign({},editing,{color});
+  try{await Store.update('tasks',id,Object.assign({color},meta()));editing=Object.assign({},editing,{color});noteRecentColor(color);
     renderDrawerView(editing);renderPhotos();renderFiles();syncDrawerColor();toast(color?'เปลี่ยนสีของแผนแล้ว':'ใช้สีตาม Plan No. แล้ว')}
   catch(err){toast(errText(err));noteWriteError(err)}
 }
@@ -276,6 +276,7 @@ form.addEventListener('submit',async e=>{
       if(S.sel.size){S.sel.clear();syncRowPicks()}
       toast(dates.length>1?`สร้าง ${name} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:(inWeek(dates[0])?`สร้าง ${name} แล้ว`:`สร้าง ${name} แล้ว ในวัน${fmtDay(dates[0])}`));
     }
+    noteRecentColor(v.color);/* สีที่ใช้ล่าสุด */
     dlg.close();
     if(ncrFor)openNcr(null,ncrFor);
   }catch(err){formError(errText(err));noteWriteError(err)}

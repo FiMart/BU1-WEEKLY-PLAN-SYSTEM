@@ -53,7 +53,7 @@ async function recolorPicked(c){
   const all=pickedTasks();if(!all.length){toast('ติ๊กเลือกแผนก่อน');return}
   const list=all.filter(t=>!isLeave(t)&&ownColor(t)!==color);if(!list.length)return;
   let ok=0;S.bulk=true;
-  try{for(const t of list){await Store.update('tasks',t.id,Object.assign({color},meta()));ok++}}
+  try{for(const t of list){await Store.update('tasks',t.id,Object.assign({color},meta()));ok++}if(ok)noteRecentColor(color)}
   catch(err){toast(errText(err));noteWriteError(err)}
   finally{S.bulk=false;invalidate();if(!db)localPublish();else render()}
   toast(`${color?'เปลี่ยนสี':'ใช้สีตาม Plan No.'} ${ok} แผนแล้ว${all.some(isLeave)?' · แผนลาใช้สีเทาเสมอ':''}`);
