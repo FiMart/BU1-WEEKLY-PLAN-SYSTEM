@@ -113,7 +113,7 @@ function wcard(t,conf,i){
     ${det?`<span class="wc-det">${esc(det)}</span>`:''}
     ${t.remark?`<span class="wc-note" title="หมายเหตุ: ${esc(t.remark)}">📝 ${esc(t.remark)}</span>`:''}
     ${(()=>{/* Weekly Plan redesign (user, 9 Oct 2026): the small counters sit with the car chip, so Plan No. gets the whole top line */
-      const ic=`${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}`;
+      const ic=`${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${sumChip(t)}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}`;
       return ch||ic?`<span class="wc-chips">${ch}${ic}</span>`:''})()}
     <span class="wc-pp">${teamNeedChip(t)}${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}" title="${esc(staffName(id))}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest" title="${esc(g)} (แผนกอื่น)">${esc(g)}</span>`).join('')}${!(t.staffIds||[]).length&&!(t.guests||[]).length&&!isLeave(t)?'<span class="pp noteam">ยังไม่จัดคน</span>':''}</span>
     ${NEEDS_REASON.has(t.status)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
@@ -122,9 +122,11 @@ function wcard(t,conf,i){
   </button>`;
 }
 /* who is free on a day: no working plan at all (ทั้งวัน), or only one half taken; full-day leave is not free */
-function availOn(k){
-  const work=S.tasks.filter(t=>t.date===k&&isWorking(t));const out={full:[],am:[],pm:[],leave:0};
-  for(const s of S.staff.filter(s=>s.active!==false&&inTeam(s)).sort(sortPeople)){/* the open ทีม only */
+function availOn(k,team){
+  const work=S.tasks.filter(t=>t.date===k&&holdsTeam(t));const out={full:[],am:[],pm:[],leave:0,moved:new Map()};
+  /* people of a เลื่อน plan that day are free again (user, 14 Oct 2026); moved = id → that plan, for the "งานเลื่อน" tag */
+  S.tasks.filter(t=>t.date===k&&t.status==='postponed'&&!isLeave(t)).forEach(t=>(t.staffIds||[]).forEach(id=>{if(!out.moved.has(id))out.moved.set(id,t)}));
+  for(const s of S.staff.filter(s=>s.active!==false&&(team?inTeamId(s,team):inTeam(s))).sort(sortPeople)){/* the open ทีม only, or the asked one */
     const mine=work.filter(t=>(t.staffIds||[]).includes(s.id));
     const am=mine.some(t=>pA(t)===0),pm=mine.some(t=>pB(t)===1);
     if(am&&pm){if(mine.some(t=>isLeave(t)&&periodOf(t)==='full'))out.leave++;continue}
@@ -132,8 +134,17 @@ function availOn(k){
   }
   return out;
 }
+/* "ว่าง n คน" by each date counts ทีม Lab On-Site only (user, 14 Oct 2026; All Team people are in it too), whatever ทีม tab is open;
+   null when nobody is in that team yet. The Available panel below still follows the open ทีม. */
+const FREE_TEAM='onsite';
+const freeOn=k=>S.staff.some(s=>s.active!==false&&inTeamId(s,FREE_TEAM))?availOn(k,FREE_TEAM):null;
+const freeTitle=a=>`${TEAM[FREE_TEAM].name} · ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}`;
+const freeText=a=>`On-Site ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}`;
 /* ผู้ปฏิบัติงานที่ว่าง (Available): a panel below the board, one column per day, people grouped by ตำแหน่ง,
    every name in full; half-day free people carry a ว่างเช้า / ว่างบ่าย tag; a name opens a new plan for that person */
+/* "งานเลื่อน" beside a person freed by a เลื่อน plan that day (user, 14 Oct 2026) */
+const movedOf=(a,id)=>{const t=a&&a.moved&&a.moved.get(id);return t?`${t.planNo||typeLabel(t)}${t.customer?' · '+t.customer:''}`:''};
+const movedTag=(a,id)=>movedOf(a,id)?`<small class="avp-mv" title="ว่างเพราะแผน ${esc(movedOf(a,id))} เลื่อน">งานเลื่อน</small>`:'';
 const PERSON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.7 3.6-5.8 7-5.8s6.2 2.1 7 5.8"/></svg>';
 function availDay(d,a,today){
   const k=ymd(d);const hol=holidayOf(k);const we=isOffDay(d);const order=positions();
@@ -144,8 +155,8 @@ function availDay(d,a,today){
   for(const [role,list] of roleGroups(people)){
     const ci=order.indexOf(roleOfKey(role));const color=POS_COLORS[(ci>=0?ci:order.length)%POS_COLORS.length];
     h+=`<div class="avp-grp" style="--pc:${color}"><p>${esc(role)}</p>${list.map(s=>{const p=per.get(s.id);const tag=p==='am'?'ว่างเช้า':p==='pm'?'ว่างบ่าย':'';
-      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}</span>${tag?`<small>${tag}</small>`:''}`;
-      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}">${inner}</button>`
+      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}</span>${tag?`<small>${tag}</small>`:''}${movedTag(a,s.id)}`;
+      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}${movedOf(a,s.id)?' · ว่างเพราะแผน '+esc(movedOf(a,s.id))+' เลื่อน':''}">${inner}</button>`
         :`<div class="avp-row">${inner}</div>`}).join('')}</div>`;
   }
   if(a.leave)h+=`<p class="avp-leave">ลาทั้งวัน ${a.leave} คน</p>`;
@@ -164,8 +175,8 @@ function availTable(days,avail,today){
     return `<th class="${cls(d)}" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<i class="${n?'':'zero'}">${n} ว่าง${a.am.length+a.pm.length?` <small>ครึ่งวัน ${a.am.length+a.pm.length}</small>`:''}</i></th>`}).join('');
   const row=role=>`<tr style="--pc:${color(role)}"><th scope="row" class="avp-role"><b>${esc(role)}</b><small>${team(role)} คน</small></th>${days.map((d,i)=>{const k=ymd(d);const list=byDay[i].g.get(role)||[];
     return `<td class="${cls(d)}">${list.length?list.map(s=>{const p=byDay[i].per.get(s.id);const tag=p==='am'?'ว่างเช้า':p==='pm'?'ว่างบ่าย':'';
-      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}${tag?`<small>${tag}</small>`:''}</span>`;
-      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}">${inner}</button>`:`<div class="avp-row">${inner}</div>`}).join(''):'<span class="avp-dash" aria-label="ไม่มีคนว่าง">–</span>'}</td>`}).join('')}</tr>`;
+      const inner=`<span class="avatar xs" aria-hidden="true">${esc(initialOf(s.name))}</span><span class="avp-name">${esc(s.name)}${tag?`<small>${tag}</small>`:''}${movedTag(avail[i],s.id)}</span>`;
+      return S.canWrite?`<button type="button" class="avp-row" data-action="add" data-date="${k}" data-staff="${esc(s.id)}" data-period="${p}" title="ลงแผนให้ ${esc(s.name)} · วัน${TH_DAY_FULL[d.getDay()]} ${esc(fmtShort(d))}${tag?' · '+tag:''}${movedOf(avail[i],s.id)?' · ว่างเพราะแผน '+esc(movedOf(avail[i],s.id))+' เลื่อน':''}">${inner}</button>`:`<div class="avp-row">${inner}</div>`}).join(''):'<span class="avp-dash" aria-label="ไม่มีคนว่าง">–</span>'}</td>`}).join('')}</tr>`;
   const leave=avail.some(a=>a.leave)?`<tr class="avp-lv"><th scope="row" class="avp-role"><b>ลาทั้งวัน</b></th>${days.map((d,i)=>`<td class="${cls(d)}">${avail[i].leave?`${avail[i].leave} คน`:''}</td>`).join('')}</tr>`:'';
   return `<div class="avp-scroll"><table class="avp-tbl"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup>
     <thead><tr><th class="corner">ตำแหน่ง \\ วัน</th>${head}</tr></thead>
@@ -194,7 +205,7 @@ function renderPlan(){
     <div class="wp-nav"><button type="button" class="icon-btn" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
       <div class="wp-wk"><b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b><span>สัปดาห์ที่ ${isoWeek(S.week)} · ${esc(weekName(S.week))} · ${isThis?'สัปดาห์นี้':'<button type="button" class="lnk" data-action="thisweek">กลับสัปดาห์นี้</button>'}</span></div>
       <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
-      <label class="wp-jump" title="สร้าง / ไปสัปดาห์ของวันที่เลือก"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><input type="date" id="wkJump2" value="${ymd(S.week)}" aria-label="สร้าง / ไปสัปดาห์ของวันที่เลือก"></label></div>
+      ${calBtn('board')}</div>
     <div class="wp-legend">${[['planned','var(--muted)','วางแผน'],['done','var(--good)','เสร็จ'],['postponed','var(--warn)','เลื่อน'],['notdone','var(--crit)','ไม่เสร็จ']].filter(([s])=>s!=='notdone'||cnt(s)).map(([s,c,l])=>`<span><i style="background:${c}"></i>${l} <b data-n="${cnt(s)}">${cnt(s)}</b></span>`).join('')}${confN?`<span class="alert">⚠ จัดชน <b data-n="${confN}">${confN}</b></span>`:''}</div>
   </header>`;
   const total=LT.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
@@ -202,14 +213,15 @@ function renderPlan(){
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
     return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+calWeekHtml()+insWeekHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
-  days.forEach((d,i)=>{const k=ymd(d);const n=LT.filter(t=>t.date===k).length;const we=isOffDay(d);const hol=holidayOf(k);const a=avail[i];
-    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}" title="แผนของวันนี้ ${n} จาก ${MAX_CARDS} แผน">${n}/${MAX_CARDS}</span>${S.staff.length?`<span class="dfree" title="ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}">ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}</span>`:''}</th>`});
+  /* the date only: no "n/20" plans a day any more (user, 14 Oct 2026) */
+  days.forEach(d=>{const k=ymd(d);const we=isOffDay(d);const hol=holidayOf(k);const a=freeOn(k);
+    h+=`<th class="${we?'wkend':''}${k===today?' is-today':''}${k===S.jumpDay?' is-jump':''}"><b>${EN_DAY[d.getDay()]}</b><span>${fmtShort(d)}${k===today?' · วันนี้':''}</span>${hol?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}${a?`<span class="dfree" title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}</th>`});
   h+='</tr></thead><tbody>';
   if(!shown.length)h+=`<tr class="no-rows"><td colspan="8">${LT.length?'ไม่มีแผนงานที่ตรงกับตัวกรอง':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในสัปดาห์นี้`:'ยังไม่มีแผนในสัปดาห์นี้'}${S.canWrite?' · <button type="button" class="lnk" data-action="add">+ เพิ่มแผนงาน</button>':''}</td></tr>`;
   for(const g of shown){
     h+=`<tr><th class="gh" scope="row" style="--c:${safeColor(g.color)}"><span class="gh-name"><i></i>${esc(g.label)}</span><span class="gh-sub">${g.tasks.length} แผน</span></th>`;
     for(const d of days){const k=ymd(d);const list=g.tasks.filter(t=>t.date===k).sort(byTime);const we=isOffDay(d);
-      h+=`<td class="${we?'wkend':''}${k===today?' is-today':''}"><div class="wcell">${list.map(t=>wcard(t,conf,ci++)).join('')}${S.canWrite?`<button type="button" class="wadd" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)} วัน${TH_DAY_FULL[d.getDay()]}">+ เพิ่ม</button>`:''}</div></td>`}
+      h+=`<td class="${we?'wkend':''}${k===today?' is-today':''}${k===S.jumpDay?' is-jump':''}"><div class="wcell">${list.map(t=>wcard(t,conf,ci++)).join('')}${S.canWrite?`<button type="button" class="wadd" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)} วัน${TH_DAY_FULL[d.getDay()]}">+ เพิ่ม</button>`:''}</div></td>`}
     h+='</tr>';
   }
   h+='</tbody></table></div></section>';
@@ -219,7 +231,101 @@ function renderPlan(){
   return h;
 }
 
-/* ---------- daily plan view: one day at a time, the default on tablet and phone (≤1180px) ---------- */
+/* the date controls stay on screen while the plans scroll (user, 14 Oct 2026: "scroll … เลือกวันที่ได้ … ไม่ต้องเลื่อนไปข้างบน"):
+   the board head (week ‹ › · calendar) sticks to the top — under the phone's own top bar — and the day strip (daily view) or
+   the day row of the table sticks under it; --stk0 / --wph = those heights (css "date controls stay on screen") */
+function planStick(){
+  const p=document.querySelector('#view .wp-panel');if(!p)return;const h=p.querySelector(':scope>.wp-head');
+  const m=document.querySelector('.mtop');const top=m&&getComputedStyle(m).position==='sticky'&&m.offsetHeight?m.offsetHeight:0;
+  p.style.setProperty('--stk0',top+'px');p.style.setProperty('--wph',(h?h.offsetHeight:0)+'px');
+}
+window.addEventListener('resize',()=>{if(S.view==='plan'){planStick();syncDateDock()}});
+/* below the board (calibration / instrument sheets, ผู้ปฏิบัติงานที่ว่าง) the panel — and its sticky head — has scrolled away:
+   #dateDock (fixed, same place) then shows the week ‹ › + calendar, and the day strip in the daily view */
+function renderDateDock(){
+  if(S.view!=='plan')calClose(false);else setTimeout(calPlace,0);/* the calendar popup follows its button after a redraw */
+  const el=$('#dateDock');if(!el)return;
+  if(S.view!=='plan'||notReady()){el.hidden=true;el.innerHTML='';return}
+  const days=Array.from({length:7},(_,i)=>addDays(S.week,i));const last=days[6];const LT=S.tasks.filter(lineMatch);
+  el.innerHTML=`<div class="dd-nav"><button type="button" class="icon-btn" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
+    <b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b>
+    <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
+    ${calBtn('dock')}
+    <button type="button" class="lnk dd-top" data-action="dock-top">ขึ้นบนสุด</button></div>
+    ${planDayMode()?dayStrip(days,planDay(),xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,!xn?'zero':'',`${xn} แผน`]},'pday'):''}`;
+  syncDateDock();
+}
+function syncDateDock(){
+  const el=$('#dateDock');if(!el||!el.innerHTML)return;
+  const p=document.querySelector('#view .wp-panel');const h=p&&p.querySelector(':scope>.wp-head');
+  const top=parseFloat((p&&p.style.getPropertyValue('--stk0'))||0)||0;
+  const z=parseFloat(getComputedStyle(document.body).zoom)||1;/* rects are screen pixels, the sticky top page pixels */
+  const gone=!!h&&h.getBoundingClientRect().top<top*z-2;/* the sticky head is being pushed up by the end of the panel */
+  el.style.top=top+'px';if(el.hidden===gone)el.hidden=!gone;
+}
+window.addEventListener('scroll',()=>{if(S.view==='plan')syncDateDock()},{passive:true});
+document.addEventListener('click',e=>{if(e.target.closest('[data-action="dock-top"]'))window.scrollTo({top:0,behavior:reduceMotion()?'auto':'smooth'})});
+/* the calendar button (user, 14 Oct 2026): the browser's own date field (an invisible <input type="date"> over the button) did not
+   reliably move the board in real browsers ("เลือกวันที่แล้ว ยังอยู่ที่สัปดาห์เดิม"), so it was replaced (user: "เปลี่ยนเป็นแบบอื่นได้")
+   by this app's own month calendar: #calPop lives in <body>, outside #view, so the page redrawing itself (auto refresh, realtime)
+   cannot close it or lose the pick. A day → jumpWeek(day) (js/app/events.js): its week opens on that day. */
+const PICK_DATE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+const calBtn=from=>`<button type="button" class="wp-jump" data-cal="${from}" aria-haspopup="dialog" aria-expanded="${CAL.el&&!CAL.el.hidden&&CAL.from===from}" title="เลือกวันที่ (เปิดแผนงานของวันนั้น)" aria-label="เลือกวันที่ (เปิดแผนงานของวันนั้น)">${PICK_DATE_ICON}</button>`;
+const CAL={el:null,month:null,from:''};
+function calHtml(){
+  const m=CAL.month,y=m.getFullYear(),mo=m.getMonth(),last=new Date(y,mo+1,0);
+  const today=ymd(new Date()),sel=planDay(),wk=ymd(S.week);const fk=sel.slice(0,7)===ymd(m).slice(0,7)?sel:ymd(m);/* the day Tab lands on */
+  let rows='';
+  for(let ws=mondayOf(new Date(y,mo,1));ws<=last;ws=addDays(ws,7)){
+    rows+=`<div class="cal-wk${ymd(ws)===wk?' on':''}">`+Array.from({length:7},(_,i)=>{const d=addDays(ws,i);const k=ymd(d);const hol=holidayOf(k);
+      return `<button type="button" class="cal-d${d.getMonth()!==mo?' out':''}${k===today?' td':''}${k===sel?' sel':''}${i===6||hol?' off':''}" data-cal-day="${k}" tabindex="${k===fk?0:-1}" aria-label="${esc(`วัน${TH_DAY_FULL[d.getDay()]} ${d.getDate()} ${TH_MON_FULL[d.getMonth()]} ${be(d)}${hol?' · '+hol:''}`)}"${hol?` title="${esc(hol)}"`:''}${k===sel?' aria-current="date"':''}>${d.getDate()}</button>`}).join('')+'</div>';
+  }
+  return `<div class="cal-hd"><button type="button" class="icon-btn" data-cal-mon="-1" aria-label="เดือนก่อน">‹</button><b>${TH_MON_FULL[mo]} ${be(m)}</b><button type="button" class="icon-btn" data-cal-mon="1" aria-label="เดือนถัดไป">›</button></div>
+    <div class="cal-dn" aria-hidden="true">${['จ','อ','พ','พฤ','ศ','ส','อา'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-grid">${rows}</div>
+    <div class="cal-ft"><button type="button" class="btn sm" data-cal-day="${today}">วันนี้</button><span>สัปดาห์ที่เปิดอยู่มีแถบสี</span><button type="button" class="lnk" data-cal-close>ปิด</button></div>`;
+}
+const calBtnEl=()=>document.querySelector(CAL.from==='dock'?'#dateDock [data-cal]':'#view .wp-head [data-cal]');
+/* under the button (above it when there is no room); the body is zoomed on desktop, so screen px are turned into page px */
+function calPlace(){
+  const p=CAL.el;if(!p||p.hidden)return;const b=calBtnEl();
+  const z=parseFloat(getComputedStyle(document.body).zoom)||1;const r=b&&b.getBoundingClientRect();
+  if(!r||!r.width||r.bottom<0||r.top>window.innerHeight){calClose(false);return}
+  const vw=window.innerWidth/z,vh=window.innerHeight/z,w=p.offsetWidth,h=p.offsetHeight;
+  const left=Math.max(8,Math.min(r.left/z+r.width/z/2-w/2,vw-w-8));let top=r.bottom/z+6;if(top+h>vh-8&&r.top/z-h-6>=8)top=r.top/z-h-6;
+  p.style.left=left+'px';p.style.top=Math.max(8,top)+'px';
+}
+function calDraw(focusKey){
+  const p=CAL.el;p.innerHTML=calHtml();calPlace();
+  const f=focusKey&&p.querySelector(`[data-cal-day="${focusKey}"]`)||p.querySelector('.cal-d[tabindex="0"]')||p.querySelector('.cal-d:not(.out)');if(f)f.focus({preventScroll:true});
+}
+function calOpen(from){
+  if(!CAL.el){CAL.el=document.createElement('div');CAL.el.id='calPop';CAL.el.className='cal-pop';CAL.el.setAttribute('role','dialog');CAL.el.setAttribute('aria-label','เลือกวันที่');CAL.el.hidden=true;document.body.appendChild(CAL.el)}
+  CAL.from=from;const d=parseD(planDay());CAL.month=new Date(d.getFullYear(),d.getMonth(),1);CAL.el.hidden=false;calDraw(planDay());
+  document.querySelectorAll('[data-cal]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.cal===from)));
+}
+function calClose(focusBtn){
+  if(!CAL.el||CAL.el.hidden)return;CAL.el.hidden=true;document.querySelectorAll('[data-cal]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(focusBtn){const b=calBtnEl();if(b)b.focus()}
+}
+function calMonth(n,focusKey){CAL.month=new Date(CAL.month.getFullYear(),CAL.month.getMonth()+n,1);calDraw(focusKey)}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cal]');if(b){if(CAL.el&&!CAL.el.hidden&&CAL.from===b.dataset.cal)calClose(false);else calOpen(b.dataset.cal);return}
+  if(!CAL.el||CAL.el.hidden||!CAL.el.contains(e.target))return;
+  const mo=e.target.closest('[data-cal-mon]');if(mo){calMonth(Number(mo.dataset.calMon));return}
+  const d=e.target.closest('[data-cal-day]');if(d){calClose(false);jumpWeek(d.dataset.calDay);return}
+  if(e.target.closest('[data-cal-close]'))calClose(true);
+});
+document.addEventListener('pointerdown',e=>{if(CAL.el&&!CAL.el.hidden&&!CAL.el.contains(e.target)&&!e.target.closest('[data-cal]'))calClose(false)});
+/* keys: Esc closes, arrows move a day / a week, PageUp / PageDown a month */
+document.addEventListener('keydown',e=>{
+  if(!CAL.el||CAL.el.hidden)return;if(e.key==='Escape'){e.preventDefault();calClose(true);return}
+  const d=e.target.closest&&e.target.closest('.cal-d');if(!d||!CAL.el.contains(d))return;
+  const step={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7}[e.key];const pg={PageUp:-1,PageDown:1}[e.key];if(!step&&!pg)return;e.preventDefault();
+  const cur=parseD(d.dataset.calDay);const nx=step?addDays(cur,step):new Date(cur.getFullYear(),cur.getMonth()+pg,Math.min(cur.getDate(),28));const k=ymd(nx);
+  const diff=(nx.getFullYear()-CAL.month.getFullYear())*12+nx.getMonth()-CAL.month.getMonth();
+  if(diff)calMonth(diff,k);else{const f=CAL.el.querySelector(`[data-cal-day="${k}"]`);if(f)f.focus()}
+});
+window.addEventListener('scroll',calPlace,{passive:true});window.addEventListener('resize',calPlace);/* ---------- daily plan view: one day at a time, the default on tablet and phone (≤1180px) ---------- */
 /* phones (≤760px) are locked to the daily view; tablets default to it and can switch; desktops default to the week */
 const isPhoneW=()=>window.innerWidth<=760;
 const planDayMode=()=>isPhoneW()||(S.pmode?S.pmode==='day':window.innerWidth<=1180);
@@ -243,10 +349,10 @@ function pdHead(d,sub,act){
     <button type="button" class="icon-btn" data-action="${act}-next" aria-label="วันถัดไป">›</button></div>`;
 }
 function planDayHtml({days,today,conf,shown,avail,showAv}){
-  const k=planDay();const idx=days.findIndex(d=>ymd(d)===k);const d=days[idx];const a=avail[idx];
+  const k=planDay();const idx=days.findIndex(d=>ymd(d)===k);const d=days[idx];const a=freeOn(k);
   const LT=S.tasks.filter(lineMatch);const n=LT.filter(t=>t.date===k).length;
-  let h=dayStrip(days,k,xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,xn>MAX_CARDS?'over':!xn?'zero':'',`${xn} แผน`]},'pday');
-  h+=pdHead(d,`<span class="cap${n>MAX_CARDS?' over':n===MAX_CARDS?' full':''}">${n}/${MAX_CARDS}</span> แผน${S.staff.length?` · ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
+  let h=dayStrip(days,k,xk=>{const xn=LT.filter(t=>t.date===xk).length;return [xn,!xn?'zero':'',`${xn} แผน`]},'pday');
+  h+=pdHead(d,`${n} แผน${a?` · <span title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
   const groups=shown.map(g=>({g,list:g.tasks.filter(t=>t.date===k).sort(byTime)})).filter(x=>x.list.length);
   if(!groups.length)h+=`<div class="pd-empty">${n?'ไม่มีแผนงานที่ตรงกับตัวกรองในวันนี้':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในวันนี้`:'ยังไม่มีแผนในวันนี้'}</div>`;
   let ci=0;

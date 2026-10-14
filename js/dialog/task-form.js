@@ -22,7 +22,7 @@ function openTask(id,preset){
   if(t)renderDrawerView(t);else $('#dView').innerHTML='';
   loadPhotos(v.photoIds||[]);loadFiles(t);
   const st=form.querySelector(`#f-st-${v.status||'planned'}`);if(st)st.checked=true;
-  $('#f-reason').value=v.statusNote||'';syncReason();
+  $('#f-reason').value=v.statusNote||'';$('#f-doneSum').value=v.doneSum||'';syncReason();
   $('#f-teamNeed').value=v.teamNeed>0?v.teamNeed:'';
   pickSel=new Set(v.staffIds||[]);pickPool=null;pickTeam=null;$('#tpQ').value='';$('#tpFree').checked=false;$('#tpAllowBusy').checked=false;
   renderPickSel();renderPickerList();
@@ -86,7 +86,8 @@ function setMode(m){
   checkConflicts();
 }
 const curStatus=()=>(form.querySelector('input[name="f-status"]:checked')||{}).value||'planned';
-function syncReason(){const s=curStatus();$('#f-reasonWrap').hidden=!NEEDS_REASON.has(s);$('#f-reasonLbl').textContent=reasonLabel(s)}
+function syncReason(){const s=curStatus();$('#f-reasonWrap').hidden=!NEEDS_REASON.has(s);$('#f-reasonLbl').textContent=reasonLabel(s);
+  $('#f-sumWrap').hidden=s!=='done'||$('#f-type').value==='leave'}/* สรุปงาน (js/dialog/done-sum.js) */
 /* สีของแผน from the plan view (user, 9 Oct 2026: "แก้ไขสีที่แผนงานได้เลย"): '' = ตาม Plan No. */
 async function setPlanColor(c){
   if(!editing||!S.canWrite)return;const color=/^#[0-9a-f]{6}$/i.test(c||'')?String(c).toLowerCase():'';if(color===ownColor(editing))return;
@@ -95,14 +96,16 @@ async function setPlanColor(c){
     renderDrawerView(editing);renderPhotos();renderFiles();syncDrawerColor();toast(color?'เปลี่ยนสีของแผนแล้ว':'ใช้สีตาม Plan No. แล้ว')}
   catch(err){toast(errText(err));noteWriteError(err)}
 }
-async function saveViewStatus(val,note){
-  if(!editing)return;const id=editing.id;
-  try{await Store.update('tasks',id,Object.assign({status:val,statusNote:NEEDS_REASON.has(val)?note:''},meta()));
-    editing=Object.assign({},editing,{status:val,statusNote:NEEDS_REASON.has(val)?note:''});
-    const r=$('#f-st-'+val);if(r)r.checked=true;$('#f-reason').value=editing.statusNote;syncReason();
+/* extra = more fields saved with it (สรุปงาน when it becomes เสร็จแล้ว, js/dialog/done-sum.js); msg = the toast instead of the status one */
+async function saveViewStatus(val,note,extra,msg){
+  if(!editing)return;const id=editing.id;const ch=Object.assign({status:val,statusNote:NEEDS_REASON.has(val)?note:''},extra||{});
+  try{await Store.update('tasks',id,Object.assign({},ch,meta()));
+    editing=Object.assign({},editing,ch);
+    const r=$('#f-st-'+val);if(r)r.checked=true;$('#f-reason').value=editing.statusNote;$('#f-doneSum').value=editing.doneSum||'';syncReason();
     renderDrawerView(editing);renderPhotos();renderFiles();
-    if(val==='done'&&docMissing(editing).length){toast(`บันทึกสถานะ “เสร็จแล้ว” แล้ว · ส่งเอกสารหลังจบงานด้านล่าง: ${docMissing(editing).map(k=>DOC_NAME[k]).join(', ')}`);const b=$('#vReport');if(b)b.scrollIntoView({block:'nearest',behavior:reduceMotion()?'auto':'smooth'})}
-    else toast(`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`)}
+    const what=msg||(val==='done'&&extra&&extra.doneSum?'ยืนยันงานเสร็จพร้อมสรุปงานแล้ว':`บันทึกสถานะ “${stTh(val)}”${NEEDS_REASON.has(val)&&note?' พร้อมเหตุผล':''} แล้ว`);
+    if(val==='done'&&docMissing(editing).length){toast(`${what} · ส่งเอกสารหลังจบงานด้านล่าง: ${docMissing(editing).map(k=>DOC_NAME[k]).join(', ')}`);const b=$('#vReport');if(b)b.scrollIntoView({block:'nearest',behavior:reduceMotion()?'auto':'smooth'})}
+    else toast(what)}
   catch(err){toast(errText(err));noteWriteError(err);renderDrawerView(editing);renderPhotos()}
 }
 /* หมายเหตุ in the plan view (user, 9 Oct 2026): last section, right above ประวัติการแก้ไข (ISO 9001); read-only for people without status rights (GA) */
@@ -144,11 +147,14 @@ function renderDrawerView(t){
       <div class="wide" style="--k:13"><dt>Team Service (${people.length} คน${teamNeedOf(t)?` จาก ${teamNeedOf(t)} คน`:''})${teamNeedOf(t)?` <span class="tneed-v ${teamShort(t)?'short':'ok'}">${esc(teamNeedText(t))}</span>`:''}</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}</dd></div>
     </dl>
     ${canWork()?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
+      <div id="vSumSlot">${sumViewHtml(t,true)}</div>
       ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
+    ${canWork()?'':sumViewHtml(t,false)}
     ${canWork()?remarkEdit(t):remarkBox(t)}
     ${isoHistoryHtml(t)}`;
+  sumWho(t);
   const by=$('#dvBy');whoLabel(creatorOf(t)).then(w=>{if(w&&by.isConnected){by.textContent=w;by.classList.remove('dash')}});
 }
 /* the car fields come from carForm(): only the open วิธีเดินทาง choice keeps its fields */
@@ -161,7 +167,9 @@ function readForm(){
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     ...carForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
     prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),teamNeed:typeId==='leave'?0:teamNeedIn(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
-    status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():''};
+    status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():'',
+    /* สรุปงาน: written while เสร็จแล้ว is picked; another status keeps the stored one */
+    ...(curStatus()==='done'&&typeId!=='leave'?sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing):{})};
 }
 form.addEventListener('change',e=>{
   if(e.target.id==='f-customer'&&!$('#f-contact').value.trim()){const c=norm(e.target.value);const hit=S.tasks.concat(ALL.data||[]).filter(t=>norm(t.customer)===c&&t.contact).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
@@ -232,6 +240,8 @@ function validate(v,copy){
     if(v.carReason==='อื่นๆ'&&!v.carNote)return ['ใส่รายละเอียดเมื่อเลือกเหตุผล "อื่นๆ"','#f-carNote']}
   if(v.transport===NO_CAR&&v.carReason==='อื่นๆ'&&!v.carNote)return ['ระบุเหตุผลที่ไม่ใช้รถ (อื่นๆ)','#f-noneNote'];
   if(v.needGA&&!v.selfDrive&&v.gaCargo&&!v.gaCargo.size)return ['ใส่ของที่ขน / ขนาด (มีของต้องขน)','#f-gaCargoSize'];
+  /* เสร็จแล้ว needs สรุปงาน (user, 14 Oct 2026); a copy starts as วางแผน */
+  if(!copy&&v.status==='done'&&v.jobType!=='leave'&&!v.doneSum)return ['เขียนสรุปงานก่อนบันทึกว่าเสร็จแล้ว','#f-doneSum'];
   return null;
 }
 const meta=()=>({updatedAt:new Date().toISOString(),updatedBy:S.me||null});
@@ -286,7 +296,7 @@ async function copyTo(dates,typeId){
   const bad=validate(Object.assign({},v,extra,{jobTypeOther:typeId==='other'?(v.jobTypeOther||'อื่นๆ'):v.jobTypeOther}),true);if(bad){formError(bad[0]);return false}
   const now=new Date().toISOString();
   try{await persistNewPhotos();await persistNewFiles();
-    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],docNA:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
+    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',doneSum:'',doneBy:null,doneAt:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],docNA:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
     dlg.close();const nm=v.planNo||typeLabel(Object.assign({},v,extra));
     toast(dates.length>1?`ก๊อป ${nm} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:`ก๊อป ${nm} ไป${fmtDay(dates[0])}แล้ว`);return true}
   catch(err){formError(errText(err));noteWriteError(err);return false}

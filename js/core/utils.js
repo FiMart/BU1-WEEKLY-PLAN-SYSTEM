@@ -27,6 +27,9 @@ const planNoColor=pn=>{const k=String(pn||'').trim().toUpperCase();if(!k)return 
 const ownColor=t=>t&&/^#[0-9a-fA-F]{6}$/.test(String(t.color||''))?t.color:'';
 const planColor=t=>!t||isLeave(t)?NEUTRAL_COLOR:ownColor(t)||planNoColor(t.planNo)||NEUTRAL_COLOR;
 const isWorking=t=>t.status!=='cancelled';
+/* a plan that holds its people and vehicles that day: not cancelled and not เลื่อน (user, 14 Oct 2026: the team of a postponed
+   plan goes back to ผู้ปฏิบัติงานที่ว่าง so the planner can send them to another job that day; no clash with it either) */
+const holdsTeam=t=>isWorking(t)&&t.status!=='postponed';
 function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.getDate()} ${EN_MON[sun.getMonth()]} ${String(sun.getFullYear()).slice(-2)}`}
 
 /* ---------- master data lookups ---------- */

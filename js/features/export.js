@@ -17,12 +17,12 @@ async function exportXlsx(btn){
   try{
     const X=await loadXLSX();const wb=X.utils.book_new();const days=weekDays();const all=shownTasks().slice().sort(byTime);const tasks=all.filter(lineMatch);
     const title=[`BU1 Lab · Weekly Plan${lineTitle()} ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`];
-    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','หมายเหตุ','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','จัดชน'];
+    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','หมายเหตุ','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','สรุปงาน','จัดชน'];
     /* ทีม of the plan's people: "Lab On-Site, Lab" when both */
     const planTeams=t=>TEAMS.filter(tm=>(t.staffIds||[]).some(id=>teamOf(S.staff.find(s=>s.id===id))===tm.id)).map(tm=>tm.name).join(', ');
     const conf=allConflicts();
-    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',t.remark||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
-    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,30,14,20,14,32,16,12,26].map(w=>({wch:w}));
+    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',t.remark||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),sumNeeded(t)?t.doneSum||'(ยังไม่สรุป)':'',conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
+    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,30,14,20,14,32,16,12,44,26].map(w=>({wch:w}));
     X.utils.book_append_sheet(wb,ws1,'แผนงาน');
     /* per person: every line (one shared team), so "ว่าง" is true */
     const staff=visibleStaff(all.filter(isWorking));
@@ -67,7 +67,7 @@ async function exportReport(){
       ${teamNames(t).length?`<div class="cpp">${teamNames(t).map(n=>`<span>${esc(n)}</span>`).join('')}</div>`:''}
       ${NEEDS_REASON.has(st)?`<div class="w">${esc(statusFlag(st))}${t.statusNote?': '+esc(t.statusNote):''}</div>`:''}${c?`<div class="w">⚠ ${esc(confLabel(c))}</div>`:''}</div>`};
   const head=days.map(d=>{const k=ymd(d);const n=tasks.filter(t=>t.date===k).length;const hol=holidayOf(k);
-    return `<th class="${isOffDay(d)?'we':''}${k===today?' td':''}"><b>${EN_DAY[d.getDay()]}</b><span>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</span>${hol?`<em>${esc(hol)}</em>`:''}<small>${n}/${MAX_CARDS} แผน</small></th>`}).join('');
+    return `<th class="${isOffDay(d)?'we':''}${k===today?' td':''}"><b>${EN_DAY[d.getDay()]}</b><span>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}</span>${hol?`<em>${esc(hol)}</em>`:''}<small>${n} แผน</small></th>`}).join('');/* no "/20" by the date (user, 14 Oct 2026) */
   const body=groups.map(g=>`<tr><th class="gh" style="--c:${safeColor(g.color)}"><b>${esc(g.label)}</b><small>${g.tasks.length} แผน</small></th>${days.map(d=>{const k=ymd(d);
     return `<td class="${isOffDay(d)?'we':''}">${g.tasks.filter(t=>t.date===k).sort(byTime).map(cardH).join('')}</td>`}).join('')}</tr>`).join('')
     ||`<tr><td colspan="${days.length+1}" class="empty">ยังไม่มีแผนในสัปดาห์นี้</td></tr>`;

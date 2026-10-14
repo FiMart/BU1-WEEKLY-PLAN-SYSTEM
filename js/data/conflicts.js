@@ -46,9 +46,9 @@ const deptCars=t=>legacyGaPlate(t)?[]:carNames(t).filter(n=>!FIXED_TRANSPORT.inc
 /* registered vehicles only clash (keys = normalised names) */
 const vehKeys=t=>deptCars(t).filter(isVehicleName).map(norm);
 function conflictsFor(task,pool){
-  const out=[];if(!isWorking(task))return out;const mv=vehKeys(task);const tl=isLeave(task);
+  const out=[];if(!holdsTeam(task))return out;const mv=vehKeys(task);const tl=isLeave(task);/* เลื่อน / ยกเลิก hold nobody */
   for(const o of pool){
-    if(o.id===task.id||o.date!==task.date||!isWorking(o)||!overlaps(task,o))continue;
+    if(o.id===task.id||o.date!==task.date||!holdsTeam(o)||!overlaps(task,o))continue;
     const ol=isLeave(o);if(tl&&ol)continue;
     const st=teamShared(task,o)?[]:(task.staffIds||[]).filter(x=>(o.staffIds||[]).includes(x));
     const ov=!tl&&!ol&&mv.length?vehKeys(o):[];const same=deptCars(task).filter(n=>ov.includes(norm(n)));

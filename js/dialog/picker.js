@@ -8,7 +8,9 @@ $('#f-period').innerHTML=PERIODS.map(p=>`<option value="${p.id}">${p.name}</opti
 let pickSel=new Set(),pickPool=null,lastPicked=null;
 function availOf(id){
   const v={date:$('#f-date').value,period:$('#f-period').value,sharedTeam:$('#f-sharedTeam').checked,location:$('#f-location').value,areaId:($('#f-area')||{}).value||''};if(!v.date)return null;
-  const mine=(pickPool||S.tasks).filter(o=>o.date===v.date&&isWorking(o)&&(!editing||o.id!==editing.id)&&(o.staffIds||[]).includes(id));
+  const all=(pickPool||S.tasks).filter(o=>o.date===v.date&&isWorking(o)&&(!editing||o.id!==editing.id)&&(o.staffIds||[]).includes(id));
+  const mine=all.filter(holdsTeam);const moved=all.find(o=>o.status==='postponed');/* a เลื่อน plan holds nobody (user, 14 Oct 2026) */
+  if(!mine.length&&moved)return {cls:'free',txt:`ว่าง · ${moved.planNo||typeLabel(moved)} เลื่อน`};
   const over=mine.filter(o=>overlaps(v,o));const hit=over.find(o=>!teamShared(v,o));
   if(!hit&&over.length)return {cls:'part',txt:`ทีมร่วม · ${pName(over[0])} ${typeLabel(over[0])}${over[0].planNo?' '+over[0].planNo:''}`};
   if(hit&&isLeave(hit))return {cls:'leave',txt:`ลา${pName(hit)}`};
@@ -126,7 +128,9 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='none-why'){syncCarMode();if(t.value==='อื่นๆ')setTimeout(()=>$('#f-noneNote').focus(),30)}
   if(t.name==='car-mode'||t.id==='f-carDept'){syncCarMode();checkConflicts();if(t.id==='f-carDept'&&t.checked)setTimeout(()=>$('#f-transport').focus(),30)}
   if(t.id==='f-gaCargo'){syncCarMode();if(t.checked)setTimeout(()=>$('#f-gaCargoSize').focus(),30)}
-  if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30)}
+  if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30);
+    if(t.value==='done'&&!$('#f-sumWrap').hidden){const ta=$('#f-doneSum');/* สรุปงาน starts from the Detail, then Completed */
+      if(!ta.value.trim())ta.value=[$('#f-detail').value.trim(),'Completed'].filter(Boolean).join('\n');setTimeout(()=>ta.focus(),30)}}
   if(t.id==='f-sale')syncSaleTel();
 });
 form.addEventListener('input',e=>{if(e.target.id==='tpQ')renderPickerList();if(e.target.id==='f-planno')renderColorPick();if(e.target.id==='f-transport'||e.target.id==='f-transport2'){trSlot='#'+e.target.id;syncTrAdd();renderTrGrid();checkConflicts()}});

@@ -44,9 +44,9 @@ async function runImport(btn){
 function backupSection(){
   const n=importData?Object.entries(importData.collections).map(([c,l])=>`${c} ${(l||[]).length}`).join(' · '):'';
   const where=S.backend==='supabase'?'Supabase':S.mode==='live'?'claude.ai':'เครื่องนี้ (ออฟไลน์)';
-  return {id:'backup',title:'สำรอง / ย้ายข้อมูล',sub:'ไฟล์ JSON · ย้ายไป Supabase',count:'JSON',
-    desc:`ข้อมูลตอนนี้อยู่ที่ ${where} · สำรองข้อมูลทั้งหมด (พนักงาน รถ แผนงาน โปรเจกต์ รูป ไฟล์แนบ ข้อมูลหลัก) เป็นไฟล์เดียว แล้วนำเข้าที่ระบบ Supabase เพื่อย้ายข้อมูล หรือเก็บไว้เป็นไฟล์สำรองประจำเดือน`,
-    body:`<div class="bk">
+  return {id:'backup',title:'สำรอง / ย้ายข้อมูล',sub:'สำรองอัตโนมัติ · ไฟล์ JSON',count:'JSON',
+    desc:`ข้อมูลตอนนี้อยู่ที่ ${where} · ระบบสำรองข้อมูลไว้ในเบราว์เซอร์นี้อัตโนมัติตลอดเวลา และดาวน์โหลดข้อมูลทั้งหมด (พนักงาน รถ แผนงาน โปรเจกต์ รูป ไฟล์แนบ ข้อมูลหลัก) เป็นไฟล์เดียวได้ เพื่อเก็บไว้หรือนำเข้าระบบอื่น`,
+    body:`<div class="bk">${abkBoxHtml()/* js/features/auto-backup.js (user, 14 Oct 2026) */}
       <div class="bk-step"><span class="step">1</span><div><b>สำรองข้อมูล</b><p class="hint">ดาวน์โหลดข้อมูลทั้งหมดจากระบบที่เปิดอยู่เป็นไฟล์ .json</p><button type="button" class="btn primary" data-action="backup-export"${downloads?'':' disabled'}>ดาวน์โหลดไฟล์สำรอง</button></div></div>
       <div class="bk-step"><span class="step">2</span><div><b>นำเข้าข้อมูล</b><p class="hint">เลือกไฟล์สำรอง แล้วกดนำเข้า รายการที่มี id เดียวกันจะถูกเขียนทับ รายการอื่นไม่ถูกลบ${can('import')?'':' · บัญชีนี้ไม่มีสิทธิ์นำเข้าข้อมูล'}</p>
         <label class="btn" for="bkFile">เลือกไฟล์สำรอง (.json)</label><input type="file" id="bkFile" class="sr-only" accept=".json,application/json"${can('import')?'':' disabled'}>

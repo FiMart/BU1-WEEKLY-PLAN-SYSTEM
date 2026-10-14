@@ -30,7 +30,10 @@ function render(){
   const ready=!notReady();const anim=ready&&!reduceMotion()?S.anim:null;
   const sc=main.querySelector('.scroll-x');const sl=sc?sc.scrollLeft:0;const st=sc?sc.scrollTop:0;
   main.className=anim?'anim-'+anim:'';
-  main.innerHTML=VIEW_FN()[S.view]();  const sc2=main.querySelector('.scroll-x');if(sc2&&!anim){sc2.scrollLeft=sl;sc2.scrollTop=st}
+  main.innerHTML=VIEW_FN()[S.view]();
+  if(S.view==='plan')planStick();
+  renderDateDock();
+  const sc2=main.querySelector('.scroll-x');if(sc2&&!anim){sc2.scrollLeft=sl;sc2.scrollTop=st}
   if(S.view==='search')fillSearch();
   if(S.view==='booking')fillBooking();
   if(S.view==='safety')fillSafety();
@@ -243,4 +246,4 @@ function askConfirm(title,msg,okLabel){
 function initialOf(name){const m=String(name||'').match(/[ก-ฮA-Za-z0-9]/);return m?m[0].toUpperCase():'?'}
 function dayHead(d,today,meta){const k=ymd(d);const isT=k===today;const hol=holidayOf(k);
   return `<th class="${isT?'is-today':''}${hol?' hol-day':''}"><div class="dh"><span class="dname">${TH_DAY_FULL[d.getDay()]}</span><span class="dnum">${d.getDate()}<small>${TH_MON[d.getMonth()]}</small></span><div class="dmeta">${isT?'<span class="today-pill">วันนี้</span>':''}${hol?`<span class="hol-pill" title="${esc(hol)}">${esc(hol)}</span>`:''}${meta||''}</div></div></th>`}
-const searchText=t=>[t.planNo,typeLabel(t),...calOf(t).map(x=>[x.reqNo,x.tag,x.type,x.size].join(' ')),...insOf(t).map(x=>[x.reqNo,x.tag,x.type,x.plant,x.remark,...x.certs.map(c=>c.certNo+' '+c.tagNo)].join(' ')),LINE[lineOf(t)]?LINE[lineOf(t)].name:'',t.customer,t.location,detailOf(t),t.request,t.remark,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');
+const searchText=t=>[t.planNo,typeLabel(t),...calOf(t).map(x=>[x.reqNo,x.tag,x.type,x.size].join(' ')),...insOf(t).map(x=>[x.reqNo,x.tag,x.type,x.plant,x.remark,...x.certs.map(c=>c.certNo+' '+c.tagNo)].join(' ')),LINE[lineOf(t)]?LINE[lineOf(t)].name:'',t.customer,t.location,detailOf(t),t.request,t.remark,t.doneSum,t.transport,t.timeNote,t.sale,t.contact,t.statusNote,teamNames(t).join(' ')].join(' ');

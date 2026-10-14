@@ -13,7 +13,7 @@ function subscribeWeek(){
 }
 function startLocal(){
   S.mode='local';const w=S.week;const D=n=>ymd(addDays(w,n));
-  [['s1','วิศวกร A','Engineer',1],['s2','ช่างเทคนิค B','Technician',2],['s3','ช่างเทคนิค C','Technician',3],['s4','สญจ D','Special Contract',4]].forEach(([id,name,role,order])=>L.staff.set(id,{name,role,order,active:true,sample:true}));
+  [['s1','วิศวกร A','Engineer',1,'onsite'],['s2','ช่างเทคนิค B','Technician',2,'onsite'],['s3','ช่างเทคนิค C','Technician',3,'lab'],['s4','สญจ D','Special Contract',4,'all']].forEach(([id,name,role,order,team])=>L.staff.set(id,{name,role,order,team,active:true,sample:true}));
   L.resources.set('r1',{name:'1กข-1234',code:'กระบะ (ตัวอย่าง)',group:'รถกระบะ',kind:'vehicle',order:1,active:true,sample:true});
   L.resources.set('r2',{name:'รถ Hiab เช่า 1',code:'HIAB (ตัวอย่าง)',group:'HIAB เช่าเพิ่ม',kind:'vehicle',order:2,active:true,sample:true});
   L.config.set('main',{sales:[{name:'Sale ตัวอย่าง',tel:'08x-xxx-0001'}]});

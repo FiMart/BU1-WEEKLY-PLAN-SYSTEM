@@ -13,7 +13,8 @@ function jobLines(t,withPeriod){
   const when=[workDate(t.date),withPeriod?`(${LINE_PERIOD[periodOf(t)]||pName(t)})`:'',t.timeNote?`· ${t.timeNote}`:''].filter(Boolean).join(' ');
   return [
     ...lineBlock('🏢','ลูกค้า',t.customer),...lineBlock('🏭','สถานที่',t.location),`🕘 Work Date : ${when}`,
-    ...lineBlock('✍️','รายละเอียด',detailOf(t)),...lineBlock('📝','Request',t.request),...lineBlock('📌','หมายเหตุ',t.remark),
+    /* a confirmed done plan reports its สรุปงาน as รายละเอียด (user, 14 Oct 2026: the team's "Completed" message) */
+    ...lineBlock('✍️','รายละเอียด',sumNeeded(t)&&!sumMissing(t)?t.doneSum:detailOf(t)),...lineBlock('📝','Request',t.request),...lineBlock('📌','หมายเหตุ',t.remark),
     ...(t.transport||t.needGA?[`🚗 รถ : ${transportText(t)}`]:[]),
     ...((t.contact||t.contactTel)?[`☎️ ติดต่อ : ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`]:[]),
     ...calLines(t),...insLines(t),

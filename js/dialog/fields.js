@@ -18,7 +18,7 @@ const vehGroup=r=>String(r.group||'').trim()||VEH_NO_GROUP;
 const TRUCK_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5h11v9h-11zM13.5 9.5h4l3 3v3h-7"/><circle cx="6.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
 function vehBusy(name){
   const v={date:$('#f-date').value,period:$('#f-period').value};if(!v.date)return null;const k=norm(name);
-  return (pickPool||S.tasks).find(o=>o.date===v.date&&isWorking(o)&&(!editing||o.id!==editing.id)&&deptCars(o).some(n=>norm(n)===k)&&overlaps(v,o))||null;
+  return (pickPool||S.tasks).find(o=>o.date===v.date&&holdsTeam(o)&&(!editing||o.id!==editing.id)&&deptCars(o).some(n=>norm(n)===k)&&overlaps(v,o))||null;
 }
 /* รถแผนก has two slots (คันที่ 1 / 2, user 11 Oct 2026); the tiles fill them, the last slot typed in is the one searched */
 let trSlot='#f-transport';

@@ -45,6 +45,9 @@ document.addEventListener('click',e=>{
     case 'copy-card':if(editing)copyText(cardText(editing),'คัดลอกแผนแล้ว วางใน LINE ได้เลย');break;
     case 'save-vremark':saveViewRemark(($('#v-remark')||{}).value);break;
     case 'clear-vremark':saveViewRemark('');break;
+    case 'save-vsum':saveViewSum();break;
+    case 'edit-vsum':openSumEdit(false);break;
+    case 'cancel-vsum':if(editing){renderDrawerView(editing);renderPhotos();renderFiles()}break;
     case 'save-vreason':{const r=dlg.querySelector('input[name="v-status"]:checked');if(r&&editing)saveViewStatus(r.value,$('#v-reason').value.trim());break}
     case 'copy-day':$('#copyMenu').open=false;copyText(dayText(a.dataset.date),`คัดลอกแผน${fmtDay(a.dataset.date)}แล้ว วางใน LINE ได้เลย`);break;
     case 'shot':takeShot(a);break;
@@ -76,9 +79,12 @@ document.addEventListener('click',e=>{
   }
 });
 $('#optSun').addEventListener('change',e=>{S.showSun=e.target.checked;remember('bu1wp.sun7',S.showSun?'1':'0');S.anim='view';render()});
-function jumpWeek(v){if(!v)return;const d=parseD(v);const m=mondayOf(d);
-  if(d.getDay()!==1)toast(`เปิดสัปดาห์ ${weekName(m)} (เริ่มวันจันทร์ ${fmtShort(m)})`);
-  S.anim=m>S.week?'next':m<S.week?'prev':'view';S.week=m;subscribeWeek()}
+/* the calendar goes to the picked DATE (user, 14 Oct 2026): its week opens on that day — the daily view shows it,
+   the week table marks its column (S.jumpDay, cleared after the highlight) */
+function jumpWeek(v){if(!v||!/^\d{4}-\d{2}-\d{2}$/.test(v))return;const d=parseD(v);const m=mondayOf(d);
+  S.pday=ymd(d);S.jumpDay=ymd(d);clearTimeout(jumpWeek.t);jumpWeek.t=setTimeout(()=>{S.jumpDay=null},2600);
+  S.anim=m>S.week?'next':m<S.week?'prev':'view';S.week=m;subscribeWeek();
+  toast(`ไปที่วัน${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)} ${be(d)}`)}
 $('#wkJump').addEventListener('change',e=>jumpWeek(e.target.value));
 $('#pf-q').addEventListener('input',e=>{S.pf.q=e.target.value;render()});
 $('#pf-type').addEventListener('change',e=>{S.pf.type=e.target.value;render()});
@@ -95,12 +101,13 @@ document.addEventListener('input',e=>{const t=e.target;
 });
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.name==='srch-by'){S.srch.by=t.value;fillSearch();return}
-  if(t.id==='wkJump2'){jumpWeek(t.value);return}
   if(t.name==='pm-mode'){S.pmode=t.value;remember('bu1wp.pmode',t.value);S.anim='view';render();return}
   if(t.name==='pf-mode'){S.pmode=t.value;remember('bu1wp.pmode',t.value);S.anim='view';render();return}
   if(t.name==='pf-by'){S.pf.by=t.value;S.pf.groups=[];remember('bu1wp.by',t.value);S.anim='view';render();return}
   if(t.name==='v-status'&&editing){const val=t.value;
     if(val==='notdone'){openNcr(ncrOfTask(editing)?ncrOfTask(editing).id:null,editing);return}/* ไม่เสร็จ is saved together with its NCR */
+    if(val==='done'&&!isLeave(editing)){$('#vReason').hidden=true;openSumEdit(true);return}/* เสร็จแล้ว is saved together with its สรุปงาน */
+    sumSlot(sumViewHtml(editing,true));
     if(NEEDS_REASON.has(val)){const w=$('#vReason');w.hidden=false;$('#vReasonLbl').textContent=reasonLabel(val);$('#vReasonSave').textContent=`บันทึกสถานะ “${stTh(val)}”`;
       const ta=$('#v-reason');if(editing.status!==val)ta.value='';setTimeout(()=>ta.focus(),30);return}
     saveViewStatus(val,'');return}
