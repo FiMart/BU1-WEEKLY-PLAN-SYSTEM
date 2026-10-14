@@ -629,27 +629,51 @@ button.wp-jump{padding:0;font:inherit;min-height:0}
 .avp .avp-mv{color:var(--warn-ink);background:color-mix(in srgb,var(--warn) 16%,transparent);border-radius:999px;padding:1px 7px;font-weight:600;white-space:nowrap}
 
 /* ---------- file Preview (user, 14 Oct 2026; previewFile in js/dialog/attachments.js) ---------- */
-.fmeta .fv-name{display:block;max-width:100%;padding:0;border:0;background:none;font:inherit;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fmeta .fv-name:hover{color:var(--accent);text-decoration:underline}
-.fv{width:min(1100px,calc(100vw - 32px));height:min(88vh,1000px);max-width:none;max-height:none;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 30px 80px rgba(13,22,38,.4);overflow:hidden}
-.fv[open]{display:flex;flex-direction:column}
-.fv::backdrop{background:rgba(10,16,28,.62)}
-.fv-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
-.fv-head .fext{flex:none}
-.fv-t{flex:1;min-width:0;display:grid;gap:1px}
-.fv-t b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fv-t small{font-size:12px;color:var(--muted)}
-.fv-head .icon-btn{width:34px;height:34px;min-height:34px;font-size:20px}
-.fv-head a[hidden]{display:none}
-.fv-body{flex:1;min-height:0;display:grid;place-items:center;overflow:auto;background:var(--surface-2)}
-.fv-body img{max-width:100%;max-height:100%;object-fit:contain;display:block}
-.fv-body iframe{width:100%;height:100%;border:0;background:#fff;align-self:stretch;justify-self:stretch}
-.fv-body pre{align-self:stretch;justify-self:stretch;margin:0;padding:16px;font-size:13px;white-space:pre-wrap;overflow:auto}
-.fv-none{display:grid;justify-items:center;gap:12px;text-align:center;padding:24px;color:var(--ink-2)}
-.fv-none .fext{transform:scale(1.6);margin-bottom:6px}
-.fv-msg{color:var(--muted)}
-.fv-msg.bad{color:var(--crit-ink)}
-@media (max-width:760px){.fv{width:100vw;height:100dvh;border-radius:0;border:0}.fv-head{flex-wrap:wrap}.fv-t{flex-basis:calc(100% - 90px)}}
-.fchip .fv-btn{min-width:44px}
+.fmeta .fpv-name{display:block;max-width:100%;padding:0;border:0;background:none;font:inherit;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmeta .fpv-name:hover{color:var(--accent);text-decoration:underline}
+.fpv{width:min(1100px,calc(100vw - 32px));height:min(88vh,1000px);max-width:none;max-height:none;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 30px 80px rgba(13,22,38,.4);overflow:hidden}
+.fpv[open]{display:flex;flex-direction:column}
+.fpv::backdrop{background:rgba(10,16,28,.62)}
+.fpv-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.fpv-head .fext{flex:none}
+.fpv-t{flex:1;min-width:0;display:grid;gap:1px}
+.fpv-t b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fpv-t small{font-size:12px;color:var(--muted)}
+.fpv-head .icon-btn{width:34px;height:34px;min-height:34px;font-size:20px}
+.fpv-head a[hidden]{display:none}
+.fpv-body{flex:1;min-height:0;display:grid;place-items:center;overflow:auto;background:var(--surface-2)}
+.fpv-body img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.fpv-body iframe{width:100%;height:100%;border:0;background:#fff;align-self:stretch;justify-self:stretch}
+.fpv-body pre{align-self:stretch;justify-self:stretch;margin:0;padding:16px;font-size:13px;white-space:pre-wrap;overflow:auto}
+.fpv-none{display:grid;justify-items:center;gap:12px;text-align:center;padding:24px;color:var(--ink-2)}
+.fpv-none .fext{transform:scale(1.6);margin-bottom:6px}
+.fpv-msg{color:var(--muted)}
+.fpv-msg.bad{color:var(--crit-ink)}
+@media (max-width:760px){.fpv{width:100vw;height:100dvh;border-radius:0;border:0}.fpv-head{flex-wrap:wrap}.fpv-t{flex-basis:calc(100% - 90px)}}
+.fchip .fpv-btn{min-width:44px}
 /* document file another person uploaded: no delete (user, 14 Oct 2026) */
 .fchip .rep-lock{flex:none;width:28px;text-align:center;font-size:13px;opacity:.55;cursor:help}
+
+/* ---------- plans a day without leave (user, 14 Oct 2026; dayJobs in js/views/plan.js) ---------- */
+.wp thead th .dcount{display:inline-block;margin:3px 0 0;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--accent) 22%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);vertical-align:top;font-variant-numeric:tabular-nums}
+.wp thead th .dcount.zero{color:var(--muted);background:transparent;border-color:var(--line)}
+/* ---------- สีที่ใช้ล่าสุด (user, 14 Oct 2026; recentColors in js/dialog/fields.js) ---------- */
+.pc-recent{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 9px;margin-right:4px;border:1px dashed var(--line);border-radius:999px}
+.pc-recent small{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+
+/* ---------- board head: week ‹ › · calendar in the middle (user, 14 Oct 2026: "ปรับให้อยู่ตรงกลางได้ไหม") ---------- */
+/* the brand box is for Screenshot only: without line / team chips it was an empty blue square beside the calendar */
+.wp-panel:not(.capture) .wp-brand:not(:has(.wp-line)){display:none}
+@media (min-width:761px){
+  #view .wp-panel>.wp-head{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center}
+  #view .wp-panel>.wp-head>.wp-brand{grid-column:1;grid-row:1;justify-self:start}
+  #view .wp-panel>.wp-head>.wp-nav{grid-column:2;grid-row:1;justify-content:center}
+  #view .wp-panel>.wp-head>.wp-legend{grid-column:3;grid-row:1;justify-self:end;justify-content:flex-end;margin-left:0}
+}
+@media (min-width:761px) and (max-width:1180px){
+  #view .wp-panel>.wp-head{grid-template-columns:minmax(0,1fr)}
+  #view .wp-panel>.wp-head>.wp-nav{grid-column:1;grid-row:1;justify-self:center}
+  #view .wp-panel>.wp-head>.wp-legend{grid-column:1;grid-row:2;justify-self:center;justify-content:center}
+  #view .wp-panel>.wp-head>.wp-brand{grid-column:1;grid-row:3;justify-self:center}
+}
+.wp-panel:not(.capture) .wp-brand::before{display:none}/* the logo square: Screenshot only */
