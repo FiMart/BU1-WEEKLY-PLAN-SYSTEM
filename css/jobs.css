@@ -1,0 +1,153 @@
+/* BU1 Weekly Plan · ใบจองงาน (js/features/jobs.js) — the page, the booking dialog, the Delay / On Process / Timely chips */
+.jb-flow{display:inline-flex;align-items:center;gap:5px;margin:2px 0 0 4px;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;cursor:help}
+.jb-flow::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.jb-flow.delay{color:var(--crit-ink);background:var(--crit-soft)}
+.jb-flow.process{color:var(--warn-ink);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.jb-flow.timely{color:var(--good-ink);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.jb-urgent{display:inline-block;margin-left:6px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:700;color:#fff;background:var(--crit)}
+.jb-rev{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;color:var(--crit-ink);border:1px solid color-mix(in srgb,var(--crit) 50%,transparent)}
+.tile .note{display:block;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--crit-ink)}
+
+/* page */
+.jb-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.jb-tabs button{padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.jb-tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.jb-mine{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);white-space:nowrap}
+.jb-tab tbody tr{cursor:pointer}
+.jb-tab tbody tr:hover{background:var(--surface-2)}
+.jb-tab .sub{display:block;font-size:11.5px;color:var(--muted)}
+.jb-tab .sub.bad{color:var(--crit-ink);font-weight:600}
+.jb-tab td:nth-child(1),.jb-tab td:nth-child(4),.jb-tab td:nth-child(6){white-space:nowrap}
+.jb-tab td:nth-child(3){min-width:200px;max-width:340px}
+.jb-clamp{display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.jb-kpi .tot td{font-weight:700;border-top:2px solid var(--line)}
+.jb-hint{margin:8px 0 0}
+
+/* booking dialog */
+.jb-wrap .dlg-head{border-left-color:var(--accent)}
+.jb-dlg{width:min(860px,calc(100 * var(--vw,1vw) - 24px))}
+.jb-urg{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.jb-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.jb-step{display:grid;gap:3px;align-content:start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);font-size:12.5px;color:var(--muted)}
+.jb-step b{font-size:13px;color:var(--ink-2)}
+.jb-step.done{border-color:color-mix(in srgb,var(--good) 45%,var(--line));background:color-mix(in srgb,var(--good) 7%,var(--surface))}
+.jb-step.now{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+.jb-step .bad{color:var(--crit-ink);font-weight:600}
+.jb-step .jb-flow{margin-left:0;justify-self:start}
+.jb-review,.jb-accept{display:grid;gap:6px;padding:12px 14px;border-radius:12px;border:1px solid}
+.jb-review{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));background:var(--crit-soft)}
+.jb-review>b{color:var(--crit-ink)}
+.jb-review>span{font-size:12.5px;color:var(--ink-2)}
+.jb-review ul{margin:0;padding-left:18px;font-size:13px}
+.jb-review s{color:var(--muted)}
+.jb-review .v-row{display:flex;flex-wrap:wrap;gap:8px}
+.jb-accept{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.jb-acc-row{display:flex;flex-wrap:wrap;gap:8px}
+.jb-acc-row #jb-pn{flex:0 0 170px;font-weight:700}
+.jb-acc-row #jb-accNote{flex:1 1 220px}
+.jb-plans{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.jb-ph{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.jb-plans ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.jb-pl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.jb-pl:hover{border-color:var(--accent)}
+.jb-pl .num{font-weight:700}
+.jb-cancel summary{cursor:pointer;color:var(--crit-ink);font-weight:600;font-size:13px}
+.jb-cancel[open]{display:grid;gap:8px}
+/* the booking box in a plan's view */
+.jb-box{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:9px 12px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-left:4px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));font-size:12.5px;color:var(--ink-2)}
+.jb-box b{color:var(--ink);font-size:13px}
+.jb-box .btn{margin-left:auto}
+.jb-box.rev{border-left-color:var(--crit)}
+.jb-box .bad{color:var(--crit-ink);font-weight:600}
+/* ข้อมูลหลัก › KPI ใบจองงาน */
+.jb-kset{display:grid;gap:10px;font-size:14px}
+.jb-kset .w-num{width:70px;margin:0 6px}
+
+@media (max-width:760px){
+  .jb-steps{grid-template-columns:1fr}
+  .jb-tab thead{display:none}
+  .jb-tab,.jb-tab tbody{display:block;min-width:0;width:100%}
+  .jb-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"no st" "cust cust" "job job" "want want" "sale pn";gap:4px 10px;padding:12px 2px;border-bottom:1px solid var(--line-2)}
+  .jb-tab tbody td{padding:0;border:0;min-width:0;max-width:none;text-align:left;white-space:normal}
+  .jb-tab td:nth-child(1){grid-area:no}.jb-tab td:nth-child(2){grid-area:cust}.jb-tab td:nth-child(3){grid-area:job}
+  .jb-tab td:nth-child(4){grid-area:want}.jb-tab td:nth-child(5){grid-area:sale;font-size:12.5px}.jb-tab td:nth-child(6){grid-area:pn;font-size:12.5px}
+  .jb-tab td:nth-child(7){grid-area:st;text-align:right}
+  .jb-tab td:nth-child(5)::before{content:"Sale ";color:var(--muted)}
+  .jb-tab td[colspan]{grid-column:1/-1;grid-row:1}
+  .jb-acc-row #jb-pn{flex:1 1 100%}
+}
+
+/* ---------- ใบจองงาน as FLS-F-018 (sections, meter cards) ---------- */
+.jb-sec{display:grid;gap:10px;margin:0;padding:12px 14px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.jb-sec>legend{padding:0 6px;font-weight:700;font-size:13.5px;color:var(--ink)}
+.jb-sec>legend small{font-weight:500;color:var(--muted)}
+.jb-rad,.jb-chk{display:flex;flex-wrap:wrap;gap:6px 8px}
+.jb-rad label,.jb-chk label{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);font-size:13px;cursor:pointer}
+.jb-rad label:has(input:checked),.jb-chk label:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.jb-rad label small{display:block;font-size:11px;color:var(--muted)}
+.jb-rad input,.jb-chk input{accent-color:var(--accent)}
+.jb-2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.jb-item{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface-2)}
+.jb-item+.jb-item{margin-top:8px}
+.jb-ih{display:flex;align-items:center;gap:10px;margin-bottom:6px}.jb-ih b{font-size:12.5px}.jb-ih span{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jb-ig{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 8px}
+.jb-ig>label,.jb-ig>.jb-wit{display:grid;gap:2px;min-width:0;font-size:11.5px;color:var(--ink-2)}
+.jb-ig>.w2,.jb-ig>.jb-wit.w2{grid-column:span 2}
+.jb-ig input,.jb-ig select{min-height:32px;font-size:13px;width:100%;min-width:0}
+.jb-wit{align-content:start}.jb-wit label{display:inline-flex;align-items:center;gap:4px;margin-right:8px;font-size:12.5px;color:var(--ink)}
+@media (max-width:760px){.jb-ig{grid-template-columns:repeat(2,minmax(0,1fr))}.jb-ig>.w2,.jb-ig>.jb-wit.w2{grid-column:span 2}}
+
+/* ---------- Check Sheet (js/features/checksheets.js) ---------- */
+.cs-dlg{width:min(1000px,calc(100 * var(--vw,1vw) - 24px))}
+.cs-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.cs-prog{font-size:12.5px;color:var(--ink-2)}.cs-prog b{color:var(--ink)}
+.cs-meta{flex-basis:100%;font-size:12px;color:var(--muted)}
+.cs-sec.done{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.cs-sec.opt>legend{color:var(--ink-2)}
+.cs-items{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.cs-it{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:5px 8px;border-radius:8px;background:var(--surface-2)}
+.cs-chk{display:flex;align-items:flex-start;gap:8px;flex:1 1 320px;font-size:13px;cursor:pointer}
+.cs-chk input{margin-top:3px;width:16px;height:16px;accent-color:var(--good)}
+.cs-l{flex:1 1 320px;font-size:13px}
+.cs-o{display:inline-flex;gap:10px;font-size:12.5px}.cs-o label{display:inline-flex;align-items:center;gap:4px}
+.cs-val{width:140px;min-height:30px;font-size:13px}
+.cs-tbw{display:grid;gap:6px}.cs-tbt{font-size:12.5px}
+.cs-tb th{font-size:11.5px;white-space:nowrap}.cs-tb td{padding:3px 4px}
+.cs-tb input:not([type=checkbox]),.cs-tb select{width:100%;min-width:70px;min-height:30px;font-size:12.5px;padding:2px 6px}
+.cs-tb td:first-child{width:1%}
+.cs-conf{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cs-conf input{flex:1 1 220px;min-height:34px;font-size:13px}
+.cs-pass{border-color:var(--good)!important;color:var(--good-ink)!important}
+.cs-done{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:7px 10px;border-radius:9px;background:color-mix(in srgb,var(--good) 10%,var(--surface));font-size:12.5px;color:var(--ink-2)}
+.cs-done b{color:var(--good-ink)}.cs-done.bad{background:var(--crit-soft)}.cs-done.bad b{color:var(--crit-ink)}
+.cs-sigs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.cs-sig{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.cs-sig img{width:100%;height:110px;object-fit:contain;background:#fff;border-radius:8px}
+.cs-sig>span{font-size:12px;color:var(--muted)}
+.cs-pad{width:100%;height:auto;aspect-ratio:520/170;background:#fff;border:1.5px dashed var(--line);border-radius:8px;touch-action:none;cursor:crosshair}
+.cs-sigrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.cs-sigrow input{flex:1 1 150px;min-height:32px;font-size:13px}
+.cs-appr{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}.cs-appr.ok{border-color:color-mix(in srgb,var(--good) 50%,var(--line))}
+.cs-chip{display:inline-flex;align-items:center;gap:5px;margin:2px 4px 2px 0;padding:2px 8px 2px 3px;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--c) 10%,var(--surface));color:var(--ink);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.cs-chip b{padding:0 6px;border-radius:999px;background:var(--c);color:#fff;font-size:10.5px}
+.cs-add{margin:2px 0;padding:2px 9px;border:1px dashed var(--line);border-radius:999px;background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.cs-add:hover{border-color:var(--accent)}
+.cs-list td{vertical-align:middle}.cs-list .sub{display:block;font-size:11.5px;color:var(--muted)}
+.cs-plan{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;background:var(--surface)}
+.cs-plan>b{font-size:13px}
+.cs-pl-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12.5px;color:var(--ink-2)}.cs-pl-row>span{min-width:180px}
+.cs-tab tbody tr{cursor:pointer}.cs-tab tbody tr:hover{background:var(--surface-2)}.cs-tab .sub{display:block;font-size:11.5px;color:var(--muted)}
+.cs-bar{width:110px;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}.cs-bar i{display:block;height:100%;background:var(--good)}
+.cs-aset{display:grid;gap:10px}.cs-aset label{display:grid;gap:4px;font-size:13px}.cs-aset small{color:var(--muted)}.cs-aset input{min-height:36px}
+.cs-docrow{width:100%;text-align:left;cursor:pointer;font:inherit}
+@media (max-width:760px){.cs-pl-row>span{min-width:0;flex-basis:100%}.cs-val{width:100%}}
+/* tick boxes / radios inside the form grids keep their own size (the field rule widens every input) */
+.jb-sec input[type=checkbox],.jb-sec input[type=radio],.cs-sec input[type=checkbox],.cs-sec input[type=radio]{width:16px!important;height:16px;min-width:16px;min-height:0!important;flex:none;margin:0;padding:0}
+.jb-urg{display:flex!important;align-items:center;justify-content:flex-start!important;gap:8px;font-weight:600;font-size:13px;color:var(--ink)}
+.jb-ig{align-items:start}
+.jb-wit{display:flex!important;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.jb-wit>span{flex-basis:100%}
+.jb-rad label,.jb-chk label{justify-content:flex-start;text-align:left}
+#cs-form{flex:1 1 160px;min-width:0;max-width:100%}/* long form names made the phone page 47 px too wide */
+@media (max-width:760px){.cs-tab thead{display:none}.cs-tab,.cs-tab tbody{display:block;min-width:0;width:100%}.cs-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 2px;border-bottom:1px solid var(--line-2)}.cs-tab tbody td{padding:0;border:0;min-width:0}.cs-tab td:nth-child(6){grid-column:2;grid-row:1;text-align:right}.cs-tab td[colspan]{grid-column:1/-1}}
+#view .sum>.panel{min-width:0;max-width:100%}#view .sum>.panel .ncr-tools>*{min-width:0}
+#view .sum>.panel{grid-template-columns:minmax(0,1fr)}.cs-tab td.hint,.jb-tab td.hint{white-space:normal}@media (max-width:760px){.cs-tab td{white-space:normal}}

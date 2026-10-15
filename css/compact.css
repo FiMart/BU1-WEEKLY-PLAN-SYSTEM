@@ -677,3 +677,106 @@ button.wp-jump{padding:0;font:inherit;min-height:0}
   #view .wp-panel>.wp-head>.wp-brand{grid-column:1;grid-row:3;justify-self:center}
 }
 .wp-panel:not(.capture) .wp-brand::before{display:none}/* the logo square: Screenshot only */
+
+/* ---------- sidebar fits the screen height (user, 15 Oct 2026: "ปรับ navbar ให้มีสัดส่วนที่พอดีกับหน้าจอ") ----------
+   13 pages + the foot (theme · status · account · logout · version) did not fit under ~760 px: the version was cut off.
+   The menu now shares the height left: each item 32–46 px, the foot always at the bottom, and the menu scrolls on its own
+   when even 32 px is too tall. */
+.side>.sb-nav{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent;margin-right:-4px;padding-right:4px}
+.side>.sb-nav button{flex:1 1 auto;min-height:32px;max-height:46px;padding-top:0;padding-bottom:0}
+.side>.sb-foot{flex:none;margin-top:6px}
+@media (max-height:820px){
+  .side{padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .side .sb-foot{gap:5px}
+  .side .sb-theme{min-height:34px;padding-top:6px;padding-bottom:6px}
+  .side .acct-card{padding-top:6px;padding-bottom:6px}
+  .side .sb-rule{margin:6px 0}
+}
+/* ---------- sidebar grouped by work step (user, 15 Oct 2026: "ปรับ Design navbar ใหม่ให้เหมาะสม"; chose แบ่งกลุ่มตามขั้นงาน) ----------
+   ภาพรวม · งานหลัก (ใบจอง → Weekly Plan → Check Sheet) · ติดตาม / รายงาน · คุณภาพ / ความปลอดภัย · ระบบ.
+   Headings .sb-grp keep their height; the items share the rest (30–40 px). The foot is one row shorter:
+   theme (icon only while ออกจากระบบ shows) and ออกจากระบบ side by side. Mini sidebar: headings become thin lines. */
+.side>.sb-nav{gap:1px}
+.side>.sb-nav button{min-height:30px;max-height:40px;border-radius:10px}
+.sb-grp{flex:none;display:flex;align-items:center;gap:8px;margin:11px 2px 3px 12px;font:600 10.5px/1.2 var(--f-body);letter-spacing:.04em;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;user-select:none}
+.sb-grp::after{content:"";flex:1 1 auto;min-width:12px;height:1px;background:rgba(255,255,255,.16)}
+.sb-nav>.sb-grp:first-of-type{margin-top:2px}
+body.mini .sb-grp{margin:7px 12px 3px;font-size:0;gap:0}
+body.mini .sb-nav>.sb-grp:first-of-type{display:none}
+.sb-acts{display:flex;gap:6px}
+.sb-acts .sb-theme{flex:1 1 auto;min-width:0}
+.sb-acts:has(.sb-logout:not([hidden])) .sb-theme:not(.sb-logout){flex:none;width:40px;padding-left:0;padding-right:0}
+.sb-acts:has(.sb-logout:not([hidden])) .sb-theme:not(.sb-logout) span{display:none}
+body.mini .sb-acts{flex-direction:column}
+body.mini .sb-acts .sb-theme{width:auto}
+@media (max-height:760px){.sb-grp{margin-top:7px;margin-bottom:2px}.side>.sb-nav button{min-height:28px}}
+
+/* ---------- Booking Plan redesign (user, 15 Oct 2026: "ปรับ design และ layout ใหม่ · เน้น filter เป็น drop down"; js/views/booking.js) ---------- */
+.bp-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.bp-stat{display:grid;gap:2px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);border-top:3px solid var(--accent)}
+.bp-stat span{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.bp-stat b{font:700 24px/1.15 var(--f-disp,inherit);font-variant-numeric:tabular-nums;color:var(--ink)}
+.bp-stat small{font-size:11.5px;color:var(--muted)}
+.bp-stat.bad{border-top-color:var(--crit)}.bp-stat.bad b{color:var(--crit-ink)}
+.bp-stat.good{border-top-color:var(--good)}
+.bp-stat.warn{border-top-color:var(--warn)}
+.bp-filter{display:grid;gap:8px;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.bp-row1{display:flex;gap:8px;align-items:center}
+.bp-q{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.bp-q:focus-within{border-color:var(--accent)}
+.bp-q svg{width:17px;height:17px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.9;stroke-linecap:round}
+.bp-q input{flex:1;min-width:0;border:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;min-height:36px;font-size:14px;outline:0}
+.bp-row2{display:flex;flex-wrap:wrap;gap:8px}
+.bp-filter .dd-btn{min-height:36px;max-width:260px}
+.bp-filter .dd-pop{width:300px}
+.bp-sort .dd-pop{left:auto;right:0;width:230px}
+.bp-own{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 4px 2px}
+.bp-own[hidden]{display:none}
+.bp-own label{display:grid;gap:3px;font-size:12px;color:var(--ink-2)}
+.bp-own input{min-height:34px;font-size:13px;width:100%}
+.dd-opt.one{grid-template-columns:auto minmax(0,1fr)}
+.bp-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:8px;border-top:1px dashed var(--line)}
+.bp-chips[hidden]{display:none}
+.bp-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 6px 3px 10px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer}
+.bp-chip b{color:var(--ink);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bp-chip i{font-style:normal;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--ink);font-size:13px;line-height:1}
+.bp-chip:hover i{background:var(--crit);color:#fff}
+.bp-clear{font-size:12.5px;margin-left:4px}
+/* week groups */
+.bk-table tr.bp-wk td{padding:10px 12px 6px;background:var(--surface-2);border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.bk-table tr.bp-wk td b{color:var(--ink);font-size:13.5px;margin-right:10px}
+.bk-table tr.bp-wk td .lnk{float:right;font-size:12px}
+.bk-table tr.bp-wk.now td{background:color-mix(in srgb,var(--accent) 10%,var(--surface-2))}
+.bk-table td.bp-empty{padding:28px 12px;text-align:center;color:var(--muted)}
+.bk-table .c-st .sub.bad{display:block;margin-top:3px;color:var(--crit-ink);font-weight:600;font-size:11.5px}
+@container (max-width:1050px){
+  .bk-table tr.bp-wk{grid-column:1/-1;display:block}
+  .bk-table tr.bp-wk td{display:flex!important;flex-wrap:wrap;align-items:center;gap:4px 10px;border:0;border-radius:10px;padding:8px 12px}
+  .bk-table tr.bp-wk td .lnk{float:none;margin-left:auto}
+}
+@media (max-width:1100px){.bp-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.bp-stat.all{grid-column:span 3}}
+@media (max-width:760px){
+  .bp-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.bp-stat.all{grid-column:span 2}.bp-stat{padding:8px 12px}.bp-stat b{font-size:20px}
+  .bp-filter{padding:8px}
+  .bp-row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bp-row2 .dd{min-width:0;position:static}
+  .bp-row2 .dd-btn{width:100%;max-width:none}
+  .bp-filter{position:relative}
+  .bp-row2 .dd-pop,.bp-sort .dd-pop{left:8px;right:8px;width:auto;max-width:none}
+  .bp-sort{position:static}
+  .bp-sort .dd-k{display:none}
+}
+#view>.bp-stats,#view>.bp-filter,#view>.bk-wrap{min-width:0;max-width:100%}/* Booking Plan: shrink with the page (phones overflowed by 46 px) */
+@media (max-width:760px){.bp-row1 .bp-sort .dd-btn{max-width:150px}.bp-row1 .bp-sort .dd-v{max-width:96px}}
+.bp-filter>*,.bp-row2>.dd,.bp-row1>*{min-width:0}
+@media (max-width:760px){.bp-row2 .dd-btn svg{display:none}.bp-row2 .dd-btn{padding:0 8px;gap:4px}}
+
+/* ---------- plans in line with ข้อมูลหลัก (user, 15 Oct 2026; js/features/md-sync.js) ---------- */
+.md-fix{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);color:var(--ink);font-size:13px;line-height:1.5}
+.md-fix b{color:var(--accent);margin-right:4px}.md-fix small{color:var(--muted)}
+.mds-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.mds-table td{vertical-align:top}.mds-table td:first-child{width:1%}.mds-table td:nth-child(2){white-space:nowrap}
+.mds-table .sub{display:block;color:var(--muted);font-size:12px}
+.mds-ch{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;line-height:1.5}.mds-ch s{color:var(--muted)}
+.mds-w{display:inline-block;min-width:68px;padding:0 6px;border-radius:6px;background:var(--surface-2);font-size:12px;font-weight:600;text-align:center}
+.mds-ok{margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ok,#1f9d55) 12%,var(--surface));font-weight:600}
