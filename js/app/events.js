@@ -61,7 +61,7 @@ document.addEventListener('click',e=>{
     case 'side-mini':{const on=!document.body.classList.contains('mini');document.body.classList.toggle('mini',on);remember('bu1wp.mini',on?'1':'0');setTimeout(moveInd,240);break}
     case 'add-sel':if(S.canWrite)openTask(null,{line:S.line,staff:[...S.sel]});break;
     case 'clear-sel':S.sel.clear();syncRowPicks();break;
-    case 'close':dlg.close();break;
+    case 'close':closeTaskDlg();break;
     case 'del-task':deleteTask();break;
     case 'dup-task':duplicateTask();break;
     case 'copy-range':copyRange();break;
@@ -117,7 +117,10 @@ document.addEventListener('change',async e=>{const t=e.target;
     let v=t.type==='checkbox'?t.checked:t.value;
     if(t.dataset.field==='order')v=v===''?null:Number(v);
     if(t.dataset.field==='name'&&!String(v).trim()){toast('ชื่อต้องไม่ว่าง');render();return}
-    try{await Store.update(t.dataset.coll,t.dataset.id,{[t.dataset.field]:typeof v==='string'?v.trim():v});toast('บันทึกแล้ว')}catch(err){toast(errText(err));noteWriteError(err)}
+    const was=t.dataset.coll==='resources'&&t.dataset.field==='name'?S.resources.find(r=>r.id===t.dataset.id):null;const old=was&&was.kind==='vehicle'?was.name:'';
+    try{await Store.update(t.dataset.coll,t.dataset.id,{[t.dataset.field]:typeof v==='string'?v.trim():v});toast('บันทึกแล้ว');
+      if(old)mdRenamed('vehicle',old,String(v).trim())}/* the plans that use the old name follow (js/features/md-sync.js) */
+    catch(err){toast(errText(err));noteWriteError(err)}
     return;
   }
   if(t.dataset.typeIdx!==undefined){const l=typesCopy();const i=Number(t.dataset.typeIdx);if(!l[i])return;const f=t.dataset.typeField;
@@ -131,7 +134,8 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.dataset.posIdx!==undefined){const l=positions().slice();const v=t.value.trim();if(!v){toast('ชื่อตำแหน่งต้องไม่ว่าง');render();return}l[Number(t.dataset.posIdx)]=v;saveCfg({positions:l},'บันทึกแล้ว');return}
   if(t.dataset.saleIdx!==undefined){const list=(S.cfg.sales||[]).map(s=>Object.assign({},s));const i=Number(t.dataset.saleIdx);if(!list[i])return;
     const v=t.value.trim();if(t.dataset.saleField==='name'&&!v){toast('ชื่อ Sale ต้องไม่ว่าง');render();return}
-    list[i][t.dataset.saleField]=v;saveCfg({sales:list},'บันทึกแล้ว')}
+    const old=list[i].name;list[i][t.dataset.saleField]=v;
+    if(await saveCfg({sales:list},'บันทึกแล้ว')&&t.dataset.saleField==='name')mdRenamed('sale',old,v)}/* plans + bookings follow (js/features/md-sync.js) */
 });
 document.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset)return;
   if(f.id==='projForm'){e.preventDefault();

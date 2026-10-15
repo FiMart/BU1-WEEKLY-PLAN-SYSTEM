@@ -27,8 +27,10 @@ const docsOf=(t,k)=>reportsOf(t).filter(f=>docOfKind(f,k));
 const docCanon=l=>docParts(l).map(p=>{const k=DOC_KINDS.find(x=>x.re.test(p));return k?k.name:p}).join(', ');
 /* the documents a plan still owes: only work plans that are "เสร็จแล้ว" */
 const docNeeded=t=>!!t&&!isLeave(t)&&t.status==='done';
-const docMissing=t=>docNeeded(t)?DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)&&!docsOf(t,k.id).length).map(k=>k.id):[];
-function docState(t){const na=docNAOf(t);const need=DOC_KINDS.filter(k=>!na.includes(k.id));return {need:need.length,have:need.filter(k=>docsOf(t,k.id).length).length,na}}
+/* an approved Service Report / Remove-Reinstall Check Sheet in the system counts as that document (js/features/checksheets.js) */
+const docBySheet=(t,k)=>typeof csApprovedFor==='function'?csApprovedFor(t,k):null;
+const docMissing=t=>docNeeded(t)?DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)&&!docsOf(t,k.id).length&&!docBySheet(t,k.id)).map(k=>k.id):[];
+function docState(t){const na=docNAOf(t);const need=DOC_KINDS.filter(k=>!na.includes(k.id));return {need:need.length,have:need.filter(k=>docsOf(t,k.id).length||docBySheet(t,k.id)).length,na}}
 const REP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13l2 2 4-4"/></svg>';
 /* the card's chip: "2/3" once the job is done (red while missing), a plain file count before */
 function docChip(t){
@@ -60,12 +62,12 @@ const upBtn=(kind,name,n)=>{const busy=repBusy===kind;
    then "เอกสารอื่น ๆ" for any other file */
 function docBox(t,edit){
   const s=docState(t);const done=docNeeded(t);const ok=s.have>=s.need;const na=docNAOf(t);const full=reportsOf(t).length>=MAX_REPORTS;
-  const rows=DOC_KINDS.map(k=>{const fs=docsOf(t,k.id);const n=fs.length;const st=n?'ok':na.includes(k.id)?'na':done?'miss':'wait';
+  const rows=DOC_KINDS.map(k=>{const fs=docsOf(t,k.id);const sh=docBySheet(t,k.id);const n=fs.length;const st=n||sh?'ok':na.includes(k.id)?'na':done?'miss':'wait';
     const up=edit&&st!=='na'&&!full?upBtn(k.id,k.name,n):'';
     return `<div class="doc-row ${st}">
       <div class="doc-rh"><i class="doc-ic">${st==='ok'?'✓':st==='na'?'–':st==='miss'?'✗':'○'}</i><span class="doc-nm"><b>${esc(k.name)}</b><small>${st==='na'?'ไม่มีสำหรับงานนี้':esc(k.sub)}</small></span>
         <span class="doc-act">${up}${edit&&!n?`<button type="button" class="lnk" data-rep-na="${k.id}">${st==='na'?'ต้องส่ง':'ไม่มี'}</button>`:''}</span></div>
-      ${n?`<div class="vr-list">${fs.map(f=>reportRow(f,edit,k.id)).join('')}</div>`:''}</div>`}).join('');
+      ${sh?`<div class="vr-list"><button type="button" class="fchip doc-file cs-docrow" data-cs-open="${esc(sh.id)}"><span class="fext" data-ext="CS">CS</span><span class="fmeta"><b>${esc(sh.no)} · Check Sheet ในระบบ</b><small>อนุมัติ ${esc(jbWhen(sh.approvedAt))} โดย ${esc(String(sh.approvedBy||'').split('@')[0])}</small></span></button></div>`:''}${n?`<div class="vr-list">${fs.map(f=>reportRow(f,edit,k.id)).join('')}</div>`:''}</div>`}).join('');
   const other=reportsOf(t).filter(f=>!DOC_KINDS.some(k=>docOfKind(f,k.id)));
   return `<div class="v-report${done&&!ok?' miss':''}" id="vReport">
     <div class="vr-head">${REP_ICON}<b>เอกสารหลังจบงาน</b><span class="opt${done?ok?' ok':' bad':''}">ส่งแล้ว ${s.have}/${s.need}</span>${done?'':'<span class="hint">แนบล่วงหน้าได้ · ต้องครบเมื่องานเสร็จ</span>'}</div>

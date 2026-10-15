@@ -2,13 +2,13 @@
 <title>BU1 Lab Weekly Plan</title>
 <!-- browser tab icon: added to <head> by script so the page head stays the plain skeleton the claude.ai publisher expects -->
 <script>(function(){var h=document.head,add=function(tag,attrs){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);h.appendChild(e)};
-add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.15.4'});
-add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.15.4'});
-add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.15.4'});
+add('link',{rel:'icon',type:'image/svg+xml',href:'assets/favicon.svg?v=4.20.0'});
+add('link',{rel:'icon',type:'image/png',sizes:'32x32',href:'assets/favicon-32.png?v=4.20.0'});
+add('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/apple-touch-icon.png?v=4.20.0'});
 add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <!-- fluid UI scale: set before first paint; css/scale.css applies it (phones and tablets 1; desktops w/1560 kept within 0.95–1.15, so text never drops below ~13px on a laptop) -->
 <script>(function(){var r=document.documentElement,f=function(){var w=window.innerWidth,z=w<=1180?1:Math.min(1.15,Math.max(.95,w/1560));r.style.setProperty('--z',String(Math.round(z*1000)/1000))};f();window.addEventListener('resize',f);window.uiZoom=function(){return parseFloat(getComputedStyle(r).getPropertyValue('--z'))||1};})();</script>
-<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.15.4"></noscript>
+<noscript><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.20.0"></noscript>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -26,6 +26,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <link rel="stylesheet" href="css/available.css">
 <link rel="stylesheet" href="css/plan-day.css">
 <link rel="stylesheet" href="css/ncr.css">
+<link rel="stylesheet" href="css/jobs.css">
 <link rel="stylesheet" href="css/responsive.css">
 <link rel="stylesheet" href="css/scale.css">
 <link rel="stylesheet" href="css/type.css">
@@ -41,25 +42,31 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
   <div class="sb-rule"></div>
   <button type="button" class="sb-collapse" data-action="side-mini" aria-label="ย่อหรือขยายเมนู" title="ย่อ / ขยายเมนู">‹</button>
   <nav class="sb-nav" role="tablist" aria-label="เมนูหลัก"><span class="sb-ind" id="sbInd" aria-hidden="true"></span>
+    <div class="sb-grp" role="presentation">ภาพรวม</div>
     <button type="button" role="tab" data-view="dash" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg><span>Dashboard</span></button>
+    <div class="sb-grp" role="presentation">งานหลัก</div>
+    <button type="button" role="tab" data-view="jobs" title="ใบจองงาน · Sale จอง → Planner รับงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.2"/><path d="M9 3.5V2.5h6v1M8.5 9h7M8.5 12.5h7M8.5 16h4"/><path d="m14.5 16.2 1.4 1.4 2.6-2.8"/></svg><span>ใบจองงาน</span><b class="nav-badge" id="jobBadge" hidden></b></button>
     <button type="button" role="tab" data-view="plan" title="Weekly Plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Weekly Plan</span></button>
+    <button type="button" role="tab" data-view="checks" title="Check Sheet · ทำทีละหัวข้อ → ส่งตรวจ → อนุมัติ"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17.5" rx="2.2"/><path d="m8 8.5 1.4 1.4L12 7.3M8 13.5l1.4 1.4L12 12.3M14 9h3M14 14h3M8 18h9"/></svg><span>Check Sheet</span><b class="nav-badge" id="csBadge" hidden></b></button>
+    <div class="sb-grp" role="presentation">ติดตาม / รายงาน</div>
     <button type="button" role="tab" data-view="booking" title="Booking Plan · ภาพรวมการจองทุกสัปดาห์"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg><span>Booking Plan</span></button>
     <button type="button" role="tab" data-view="mplan" title="Master Plan · แผนรายเดือน Flow Meter / Instrument"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M8 13h2M12 13h4M8 16.5h4M14 16.5h2"/></svg><span>Master Plan</span></button>
-    <button type="button" role="tab" data-view="safety" title="Safety Training · บัตรเข้าพื้นที่และคำขออบรม"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span>Safety Training</span></button>
     <button type="button" role="tab" data-view="people" title="สรุปรายคน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.4-.3 4.4 1.3 5 4.3"/></svg><span>สรุปรายคน</span></button>
     <button type="button" role="tab" data-view="projects" title="กำลังคนโปรเจกต์"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="7" width="8" height="3" rx="1"/><rect x="10" y="12.5" width="9" height="3" rx="1"/></svg><span>กำลังคนโปรเจกต์</span></button>
     <button type="button" role="tab" data-view="search" title="ค้นหาย้อนหลัง"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>ค้นหาย้อนหลัง</span></button>
+    <div class="sb-grp" role="presentation">คุณภาพ / ความปลอดภัย</div>
     <button type="button" role="tab" data-view="ncr" title="NCR · งานไม่สำเร็จ"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4.5V3h6v1.5M12 9v4.5M12 16.6v.1"/></svg><span>NCR</span><b class="nav-badge" id="ncrBadge" hidden></b></button>
-    <button type="button" class="nav-ext" data-action="ga-fleet" title="จองรถส่วนกลาง GA (เปิดแท็บใหม่)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-1M7.5 17.5v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1M5 12h14"/><circle cx="8" cy="14.3" r=".9"/><circle cx="16" cy="14.3" r=".9"/></svg><span>จองรถส่วนกลาง GA<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></span></button>
+    <button type="button" role="tab" data-view="safety" title="Safety Training · บัตรเข้าพื้นที่และคำขออบรม"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span>Safety Training</span></button>
+    <div class="sb-grp" role="presentation">ระบบ</div>
     <button type="button" role="tab" data-view="settings" title="จัดการข้อมูลหลัก"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>จัดการข้อมูล</span></button>
     <button type="button" role="tab" data-view="help" title="วิธีใช้"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.8h.01"/></svg><span>วิธีใช้</span></button>
+    <button type="button" class="nav-ext" data-action="ga-fleet" title="จองรถส่วนกลาง GA (เปิดแท็บใหม่)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-1M7.5 17.5v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1M5 12h14"/><circle cx="8" cy="14.3" r=".9"/><circle cx="16" cy="14.3" r=".9"/></svg><span>จองรถส่วนกลาง GA<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></span></button>
   </nav>
   <div class="sb-foot">
-    <button type="button" class="sb-theme" data-action="theme" title="สลับโหมดมืด / สว่าง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span id="themeLbl">โหมดมืด</span></button>
-    <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
     <button type="button" class="acct-card" id="me" data-action="account" title="บัญชีของฉัน" aria-label="ดูข้อมูลบัญชีของฉัน"><img alt="" id="meAv"><span class="acct-txt"><b id="meName">กำลังเชื่อมต่อ…</b><small id="meRole"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
-    <button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button>
-    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.15.4 · BU1 Lab</button>
+    <div class="sb-acts"><button type="button" class="sb-theme" data-action="theme" title="สลับโหมดมืด / สว่าง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span id="themeLbl">โหมดมืด</span></button><button type="button" class="sb-theme sb-logout" id="btnLogout" data-action="logout" title="ออกจากระบบ" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg><span>ออกจากระบบ</span></button></div>
+    <div class="sync" id="sync" role="status"><i></i><span>กำลังเชื่อมต่อ…</span></div>
+    <button type="button" class="sb-ver" id="sbVer" data-action="about" title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน">v4.20.0 · BU1 Lab</button>
   </div>
 </aside>
 <header class="mtop">
@@ -77,6 +84,8 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 </nav>
 <!-- phone: the rest of the pages, opened from "เพิ่มเติม" in the bottom bar -->
 <div class="bn-sheet" id="bnSheet" role="menu" aria-label="หน้าอื่น ๆ" hidden>
+    <button type="button" data-view="jobs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.2"/><path d="M9 3.5V2.5h6v1M8.5 9h7M8.5 12.5h7M8.5 16h4"/><path d="m14.5 16.2 1.4 1.4 2.6-2.8"/></svg>ใบจองงาน<b class="nav-badge" id="jobBadgeM" hidden></b></button>
+    <button type="button" data-view="checks"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17.5" rx="2.2"/><path d="m8 8.5 1.4 1.4L12 7.3M8 13.5l1.4 1.4L12 12.3M14 9h3M14 14h3M8 18h9"/></svg>Check Sheet<b class="nav-badge" id="csBadgeM" hidden></b></button>
     <button type="button" data-view="mplan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M8 13h2M12 13h4M8 16.5h4M14 16.5h2"/></svg>Master Plan</button>
     <button type="button" data-view="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="5" width="3.2" height="13" rx="1"/><rect x="15.8" y="13" width="3.2" height="5" rx="1"/></svg>สรุป</button>
     <button type="button" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>ค้นหา</button>
@@ -161,6 +170,7 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <div class="dlg-body">
       <div class="dv" id="dView" hidden></div>
       <fieldset class="ro" id="formFields">
+      <p class="md-fix" id="f-mdfix" role="status" hidden></p>
       <div class="sheet">
         <label class="fl" for="f-type"><b>หัวข้องาน</b><small>ประเภทงาน</small></label>
         <div class="fv"><div class="type-q"><input id="f-typeQ" list="dl-types" maxlength="40" autocomplete="off" placeholder="พิมพ์ หรือเลือกหัวข้องาน" aria-label="หัวข้องาน"><button type="button" class="btn sm" id="typeAdd" hidden>+ เพิ่มเข้าข้อมูลหลัก</button></div>
@@ -347,6 +357,20 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
     <footer class="ncr-foot"><button type="button" class="btn danger" id="ncrDel" hidden>ลบ NCR</button><button type="button" class="btn" id="ncrPrint" hidden>พิมพ์ใบ NCR</button><span class="grow"></span><button type="button" class="btn ghost" data-ncr-close>ปิด</button><button type="submit" class="btn primary" id="ncrSave">บันทึก NCR</button></footer>
   </form>
 </dialog>
+<dialog id="jbDlg" class="ncr-dlg jb-dlg" aria-labelledby="jbTitle">
+  <form id="jbForm" class="ncr-wrap jb-wrap" novalidate>
+    <header class="dlg-head"><div><h2 id="jbTitle">ใบจองงาน</h2><p class="dlg-sub" id="jbSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-jb-close aria-label="ปิด">✕</button></header>
+    <div class="ncr-body" id="jbBody"></div>
+    <footer class="ncr-foot"><button type="button" class="btn danger" id="jbDel" hidden>ลบใบจอง</button><button type="button" class="btn" id="jbPrint" hidden title="พิมพ์ใบรับคำร้อง FLS-F-018">พิมพ์</button><button type="button" class="btn" id="jbPdf" hidden title="ดาวน์โหลดใบรับคำร้อง FLS-F-018 เป็นไฟล์ PDF">PDF</button><button type="button" class="btn" id="jbPdfAll" hidden title="ใบรับคำร้อง + Check Sheet ทุกใบของงานนี้ รวมเป็นไฟล์ PDF เดียว">PDF ทั้งชุด</button><span class="grow"></span><button type="button" class="btn ghost" data-jb-close>ปิด</button><button type="submit" class="btn primary" id="jbSave">บันทึกใบจอง</button></footer>
+  </form>
+</dialog>
+<dialog id="csDlg" class="ncr-dlg jb-dlg cs-dlg" aria-labelledby="csTitle">
+  <form id="csForm" class="ncr-wrap jb-wrap" novalidate onsubmit="return false">
+    <header class="dlg-head"><div><h2 id="csTitle">Check Sheet</h2><p class="dlg-sub" id="csSub"></p></div><span class="grow"></span><button type="button" class="icon-btn" data-cs-close aria-label="ปิด">✕</button></header>
+    <div class="ncr-body" id="csBody"></div>
+    <footer class="ncr-foot"><button type="button" class="btn danger" id="csDel" hidden>ลบ</button><button type="button" class="btn" id="csPrint" title="พิมพ์แบบฟอร์ม">พิมพ์</button><button type="button" class="btn" id="csPdf" title="ดาวน์โหลดแบบฟอร์มที่กรอกแล้วเป็นไฟล์ PDF">PDF</button><span class="grow"></span><button type="button" class="btn ghost" data-cs-close>ปิด</button><button type="button" class="btn" id="csSave">บันทึก</button><button type="button" class="btn primary" id="csSubmit">ส่งตรวจ</button></footer>
+  </form>
+</dialog>
 <dialog id="confirmDlg" class="confirm-dlg" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
   <div class="confirm-wrap">
     <div class="confirm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14"/><path d="M11 12h9M17 8.5 20.5 12 17 15.5"/></svg></div>
@@ -517,12 +541,16 @@ add('meta',{name:'theme-color',content:'#0D46B5'});})();</script>
 <script src="js/views/master-plan-io.js"></script>
 <script src="js/views/dash-master.js"></script>
 <script src="js/features/master-actions.js"></script>
+<script src="js/features/md-sync.js"></script>
 <script src="js/features/backup.js"></script>
 <script src="js/features/auto-backup.js"></script>
 <script src="js/features/account.js"></script>
 <script src="js/features/about.js"></script>
 <script src="js/features/iso.js"></script>
 <script src="js/features/ncr.js"></script>
+<script src="js/features/jobs.js"></script>
+<script src="js/features/checksheets.js"></script>
+<script src="js/features/pdf-export.js"></script>
 <script src="js/features/cert-status.js"></script>
 <script src="js/features/safety.js"></script>
 <script src="js/views/safety-pages.js"></script>

@@ -13,11 +13,11 @@ async function deleteRow(btn){
 async function clearSample(btn){
   if(!arm(btn,'sample','ลบข้อมูลตัวอย่างทั้งหมด','กดอีกครั้งเพื่อลบข้อมูลตัวอย่างทั้งหมด'))return;
   btn.disabled=true;btn.textContent='กำลังลบ…';let n=0;
-  try{for(const c of ['tasks','staff','resources','projects']){const list=await Store.where(c,'sample','==',true);for(const r of list){await Store.del(c,r.id);n++}}invalidate();toast(`ลบข้อมูลตัวอย่าง ${n} รายการแล้ว`)}
+  try{for(const c of ['tasks','staff','resources','projects','jobs','checks']){const list=await Store.where(c,'sample','==',true);for(const r of list){await Store.del(c,r.id);n++}}invalidate();toast(`ลบข้อมูลตัวอย่าง ${n} รายการแล้ว`)}
   catch(err){toast(errText(err));noteWriteError(err)}
   finally{btn.disabled=false;render()}
 }
-async function saveCfg(patch,msg){try{await Store.set('config','main',Object.assign({},S.cfg,patch));if(msg)toast(msg)}catch(err){toast(errText(err));noteWriteError(err)}}
+async function saveCfg(patch,msg){try{await Store.set('config','main',Object.assign({},S.cfg,patch));if(msg)toast(msg);return true}catch(err){toast(errText(err));noteWriteError(err);return false}}
 /* one-time switch to the English roles (Admin, Engineer, …) on shared data: renames staff roles and resets the
    positions list to DEFAULT_POSITIONS, keeping team-added positions after them; runs once, by the first editor to open */
 let rolesBusy=false;

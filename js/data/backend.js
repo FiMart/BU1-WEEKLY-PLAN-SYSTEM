@@ -37,12 +37,12 @@ const CENTRAL_TYPES=[
   {id:'site_survey',name:'Site Survey',color:'#64748b'},
 ];
 /* entity -> public tables it is read from (for realtime) */
-const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
+const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],jobs:['app_settings'],checks:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
 /* entities kept as rows of app_settings, one row per record, id = prefix + record id */
 /* data.ga… fields this app writes itself (GA Fleet's request fields, see gaFields): not GA's answer (gaMore) */
 const GA_OWN=['gaDepart','gaPattern','gaUrgent','gaCargo','gaNote','gaRequestedAt','gaCancel','gaWholeRange'];
-const KV_PREFIX={ncr:NCR_PREFIX,mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
+const KV_PREFIX={ncr:NCR_PREFIX,jobs:'bu1wp_job:',checks:'bu1wp_chk:',/* Check Sheet (js/features/checksheets.js) *//* ใบจองงาน (js/features/jobs.js) */mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
 
@@ -106,7 +106,7 @@ function supabaseBackend(client,{dept}){
       gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
-      doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */
+      doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */jobId:x.jobId||'',/* ใบจองงาน it was made from */
       photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
@@ -183,7 +183,7 @@ function supabaseBackend(client,{dept}){
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       teamNeed:Math.max(0,Math.floor(Number(t.teamNeed)||0)),/* จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026) */
       status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
-      doneSum:t.doneSum||'',doneBy:t.doneBy||null,doneAt:t.doneAt||'',/* สรุปงาน: confirms เสร็จแล้ว (user, 14 Oct 2026) */
+      doneSum:t.doneSum||'',doneBy:t.doneBy||null,doneAt:t.doneAt||'',/* สรุปงาน: confirms เสร็จแล้ว (user, 14 Oct 2026) */jobId:t.jobId||'',/* ใบจองงาน (user, 15 Oct 2026) */
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */
       insItems:asList(t.insItems),/* Weekly plan instrument rows + certificates (js/features/instrument.js) */

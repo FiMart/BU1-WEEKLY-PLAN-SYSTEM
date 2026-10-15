@@ -21,7 +21,10 @@ const MD_ICONS={
   holidays:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.6.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
   about:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/>',
   iso:'<path d="M12 3.5 5 6.2v5.3c0 4.3 2.9 7.6 7 9 4.1-1.4 7-4.7 7-9V6.2z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  csappr:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 9h7M8.5 12.5h4"/><path d="m12.5 16.6 1.8 1.8 3.4-3.6"/>',
+  jobkpi:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5v2h6v-2M8.5 11h7M8.5 14.5h4"/><circle cx="16" cy="16.5" r="2.6"/><path d="M16 15.3v1.3l.8.6"/>',
   prefs:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
+  mdsync:'<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/><path d="m9.5 12 1.8 1.8 3.2-3.4"/>',
 };
 function renderSettings(){
   if(notReady())return loading();
@@ -96,7 +99,8 @@ function renderSettings(){
      body:`<div><button type="button" class="btn danger" data-action="clear-sample"${hasSample?'':' disabled'}>ลบข้อมูลตัวอย่างทั้งหมด</button></div>`});
   const us=usersSection();if(us)secs.unshift(us);
   secs.splice(secs.findIndex(s=>s.id==='periods')+1,0,holidaySection());
-  secs.push(isoSection(),backupSection(),prefsSection(),aboutSection());
+  if(can('master'))secs.push(mdSyncSection());/* ตรวจแผนให้ตรงข้อมูลหลัก (js/features/md-sync.js) */
+  secs.push(jobKpiSection(),csApproverSection(),isoSection(),backupSection(),prefsSection(),aboutSection());
   const cur=secs.find(s=>s.id===S.md)||secs[0];
   return `
   <div class="md">

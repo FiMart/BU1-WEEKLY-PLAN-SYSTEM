@@ -252,7 +252,7 @@ function renderColorPick(){const el=$('#pcPick');if(el)el.innerHTML=colorPickHtm
 /* หัวข้องาน typed or picked (user, 9 Oct 2026: "พิมพ์เองได้ ถ้าไม่เจอในข้อมูลหลักกดเพิ่มได้"): #f-typeQ is the field people see,
    #f-type (hidden select) still holds the type id for the rest of the form. A name in the list selects that type; a new
    name is saved as อื่นๆ with that text, and people with master-data rights can add it to ข้อมูลหลัก › หัวข้องาน at once */
-const typeByName=q=>{const k=norm(q);return k?activeTypes().find(t=>norm(t.name)===k)||jobTypes().find(t=>norm(t.name)===k)||null:null};
+const typeByName=q=>{const k=norm(q);return k?activeTypes().find(t=>norm(t.name)===k)||jobTypes().find(t=>norm(t.name)===k)||mdTypeByKey(q)||null:null};/* mdTypeByKey: spaces / dots / dashes ignored (js/features/md-sync.js) */
 function fillTypeQ(){
   const tid=$('#f-type').value;const ty=jobTypes().find(x=>x.id===tid);
   $('#f-typeQ').value=tid==='other'?$('#f-typeOther').value||(ty?ty.name:''):ty?ty.name:'';

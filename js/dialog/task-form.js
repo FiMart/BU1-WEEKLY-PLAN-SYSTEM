@@ -1,13 +1,17 @@
 'use strict';
 /* BU1 Weekly Plan · plan drawer: open/view/edit, validation, save, delete, copy */
 function defaultDate(){const td=ymd(new Date());const {from,to}=weekRange();return td>=from&&td<=to?td:from}
+/* a new plan made from a booking (js/features/jobs.js, planFromJob): its id goes into task.jobId on save */
+let formJobId='';
 function openTask(id,preset){
   const t=id?findTask(id):null;if(id&&!t)return;
-  editing=t;const p=preset||{};
+  editing=t;const p=preset||{};const jb=!t&&p.job?p.job:null;formJobId=jb?jb.id:'';
   const v=t||{jobType:p.type||'',customer:p.customer||'',period:PERIOD[p.period]?p.period:'full',status:'planned',date:p.date||defaultDate(),staffIds:Array.isArray(p.staff)?p.staff.slice():p.staff?[p.staff]:[]};
+  /* ใบจอง → แผน: every field the booking has, so nothing from the customer is typed twice (user, 15 Oct 2026) */
+  if(jb)Object.assign(v,{location:jb.location||'',contact:jb.contact||'',contactTel:jb.contactTel||'',sale:jb.sale||'',detail:[jb.detail||''].concat((jb.items||[]).map((it,i)=>`- ${jbItemText(it)}`)).filter(Boolean).join('\n'),planNo:jb.planNo||'',calItems:jb.line==='fm'?(jb.items||[]).map(it=>({id:newId('c'),reqNo:jb.planNo||'',tag:it.tag||'',size:it.size?it.size+'\"':'',type:it.type||'',fluid:'',range:it.range||'',points:it.points||'',round:it.round||'',lab:'',status:'add',result:'',detail:''})):[],teamNeed:jb.teamNeed||0,request:[jb.qty,jb.poNo?'PO / ใบเสนอราคา '+jb.poNo:'',jb.note].filter(Boolean).join('\n')});
   const tid=t?typeIdOf(t):(p.type&&jobTypes().some(x=>x.id===p.type)?p.type:'');
   $('#f-type').innerHTML=typeOptions(tid,'— เลือกหัวข้องาน —');$('#f-type').value=tid;
-  $('#f-typeOther').value=t&&tid==='other'?typeLabel(t)==='อื่นๆ'?'':typeLabel(t):'';syncTypeOther();fillTypeQ();
+  $('#f-typeOther').value=t&&tid==='other'?typeLabel(t)==='อื่นๆ'?'':typeLabel(t):jb&&tid==='other'?jb.jobTypeOther||'':'';syncTypeOther();fillTypeQ();
   /* สายงาน: the plan's own, else its job type's, else (new plan) the open tab */
   setLine(t?lineOf(t):(LINE[(jobTypes().find(x=>x.id===tid)||{}).line]?jobTypes().find(x=>x.id===tid).line:LINE[p.line]?p.line:''));syncLineField(false);
   $('#f-planno').value=v.planNo||'';$('#f-planhint').hidden=true;$('#f-color').value=ownColor(v);renderColorPick();
@@ -26,7 +30,7 @@ function openTask(id,preset){
   $('#f-teamNeed').value=v.teamNeed>0?v.teamNeed:'';
   pickSel=new Set(v.staffIds||[]);pickPool=null;pickTeam=null;$('#tpQ').value='';$('#tpFree').checked=false;$('#tpAllowBusy').checked=false;
   renderPickSel();renderPickerList();
-  $('#untilWrap').hidden=!!t;$('#copyBox').open=false;
+  $('#untilWrap').hidden=!!t;$('#copyBox').open=false;if(jb&&jb.wantTo&&jb.wantTo>v.date)$('#f-until').value=jb.wantTo;/* a booking over several days → one plan a day */
   if(t){const nx=ymd(addDays(parseD(t.date),1));$('#cp-from').value=nx;$('#cp-to').value=nx;$('#cp-type').innerHTML=`<option value="">เหมือนเดิม (${esc(typeLabel(t))})</option>`+typeOptions('','');$('#cp-type').value=''}
   $('#formFields').disabled=!(S.canWrite||(t&&can('ga')));
   resetDel();$('#f-err').hidden=true;$('#f-conf').hidden=true;
@@ -40,6 +44,7 @@ function openTask(id,preset){
   $('#dl-locations').innerHTML=opt(hist.map(x=>x.location));
   $('#dl-contacts').innerHTML=opt(hist.map(x=>x.contact));
   $('#dl-guests').innerHTML=opt(hist.flatMap(x=>x.guests||[]));
+  mdFormNote(null,true);mdFormSync();/* Sale / รถ / หัวข้องาน in the master spelling (js/features/md-sync.js) */
   if(!dlg.open)dlg.showModal();
   setMode(t?'view':'edit');
   if(!t)setTimeout(()=>$('#f-typeQ').focus(),30);
@@ -83,6 +88,7 @@ function setMode(m){
   else if(ga){$('#dlgTitle').textContent='ระบุรถ (GA)';$('#dlgSub').textContent=[t.planNo,typeLabel(t),fmtDayY(t.date)].filter(Boolean).join(' · ')+' · แก้ได้เฉพาะช่องรถ'}
   else{$('#dlgTitle').textContent=t?'แก้ไขแผนงาน':'เพิ่มแผนงาน';$('#dlgSub').textContent=t?[t.planNo,typeLabel(t),fmtDayY(t.date)].filter(Boolean).join(' · '):'กรอกตามลำดับ · เลือก Team Service ตอนนี้ หรือเพิ่มทีหลังก็ได้'}
   const body=dlg.querySelector('.dlg-body');if(body)body.scrollTop=0;
+  formSnap=view?null:formKey();/* what "not saved yet" is measured against (closeTaskDlg) */
   checkConflicts();
 }
 /* leave and ประเภทระบบ plans have no สถานะงาน (user, 14 Oct 2026; noStatusId): always saved as planned */
@@ -130,6 +136,7 @@ function renderDrawerView(t){
   $('#dView').innerHTML=`<div class="dv-badges">${noStatus(t)?'':`<span class="badge" style="--c:${st.color}"><i></i>${esc(st.th)}</span>`/* leave: no สถานะงาน */}${ln?`<span class="badge" style="--c:${ln.color}"><i></i>${esc(ln.name)}</span>`:''}<span class="badge" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span><span class="badge" style="--c:var(--accent)">${esc(pName(t))}</span></div>
     ${S.canWrite&&!isLeave(t)?`<div class="dv-color"><span>สีของแผน</span><div class="pc-pick">${colorPickHtml(t.color,t.planNo,'data-pcv')}</div></div>`:''}
     <div class="dv-by"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>ผู้จองแผน <b id="dvBy" class="dash">—</b></div>
+    ${typeof jbPlanBox==='function'?jbPlanBox(t):''}
     ${NEEDS_REASON.has(t.status)&&!noStatus(t)?`<div class="reason-box ${esc(t.status)}"><b>${statusFlag(t.status)} · เหตุผล / ปัญหาที่หน้างาน</b><span>${t.statusNote?esc(t.statusNote):'<i>ยังไม่ได้ใส่เหตุผล</i>'}</span></div>`:''}
     ${!noStatus(t)&&(t.status==='notdone'||t.ncrId)?ncrLinkHtml(t):''}
     <div><button type="button" class="btn sm" data-action="copy-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg> คัดลอกข้อความ</button></div>
@@ -152,6 +159,7 @@ function renderDrawerView(t){
       ${reportBoxHtml(t)}
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
+    ${typeof csPlanHtml==='function'?csPlanHtml(t):''/* Check Sheet of this plan (js/features/checksheets.js) */}
     ${canWork()?'':sumViewHtml(t,false)}
     ${canWork()?remarkEdit(t):remarkBox(t)}
     ${isoHistoryHtml(t)}`;
@@ -162,15 +170,16 @@ function renderDrawerView(t){
 function readForm(){
   const typeId=$('#f-type').value;const ty=jobTypes().find(x=>x.id===typeId);
   const g=$('#tpGuest')&&$('#tpGuest').value.trim();
-  return {photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,line:curLine(),jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
+  return mdClean({photoIds:photoItems.map(p=>p.id),fileIds:fileItems.map(f=>f.id),files:fileMeta(),jobType:typeId,line:curLine(),jobTypeOther:typeId==='other'?$('#f-typeOther').value.trim():'',jobTypeName:ty?ty.name:'',
     planNo:cleanPlan($('#f-planno').value),color:$('#f-color').value,sale:$('#f-sale').value,customer:$('#f-customer').value.trim(),location:$('#f-location').value.trim(),areaId:$('#f-area').value,sharedTeam:$('#f-sharedTeam').checked,
     date:$('#f-date').value,period:$('#f-period').value,timeNote:$('#f-timeNote').value.trim(),
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     ...carForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
     prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),teamNeed:isLeaveId(typeId)?0:teamNeedIn(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
+    jobId:editing?editing.jobId||'':formJobId,/* ใบจองงาน it was made from */
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():'',
     /* สรุปงาน: written while เสร็จแล้ว is picked; another status keeps the stored one */
-    ...(curStatus()==='done'&&!isLeaveId(typeId)?sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing):{})};
+    ...(curStatus()==='done'&&!isLeaveId(typeId)?sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing):{})});/* mdClean: Sale / รถ / หัวข้องาน saved in the master spelling */
 }
 form.addEventListener('change',e=>{
   if(e.target.id==='f-customer'&&!$('#f-contact').value.trim()){const c=norm(e.target.value);const hit=S.tasks.concat(ALL.data||[]).filter(t=>norm(t.customer)===c&&t.contact).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
@@ -228,7 +237,17 @@ function checkConflicts(){
   },250);
 }
 form.addEventListener('input',checkConflicts);form.addEventListener('change',checkConflicts);
-dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+/* the form never closes from a click beside it (user, 15 Oct 2026: "ป้องกันไม่ให้กดตรงพื้นที่ว่างๆของ form เพื่อปิด");
+   ✕ / ปิด / Esc ask first while the edit form holds changes not saved (formSnap = readForm() when the form opened) */
+let formSnap=null;
+const formKey=()=>{try{return JSON.stringify(readForm())}catch(e){return null}};
+const formDirty=()=>dlg.open&&dMode==='edit'&&(S.canWrite||gaOnlyEdit())&&formSnap!==null&&formKey()!==formSnap;
+async function closeTaskDlg(){
+  if(formDirty()&&!await askConfirm('ยังไม่ได้บันทึก','แผนงานนี้มีข้อมูลที่ยังไม่ได้บันทึก ปิดฟอร์มโดยไม่บันทึกหรือไม่?','ปิดโดยไม่บันทึก'))return;
+  formSnap=null;if(dlg.open)dlg.close();
+}
+dlg.addEventListener('cancel',e=>{if(e.target===dlg&&formDirty()){e.preventDefault();closeTaskDlg()}});
+dlg.addEventListener('close',()=>{formSnap=null});
 function formError(msg){const el=$('#f-err');el.textContent=msg;el.hidden=!msg}
 function validate(v,copy){
   if(!v.jobType)return ['พิมพ์ หรือเลือกหัวข้องานก่อนบันทึก','#f-typeQ'];

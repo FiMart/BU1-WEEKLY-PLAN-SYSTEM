@@ -5,7 +5,9 @@ let pendingRender=false;
 const PAGES={
   plan:['Weekly Plan',''],
   safety:['Safety Training','บัตรเข้าพื้นที่ของทีม คำขออบรม บันทึกอบรมย้อนหลัง และเอกสาร · ข้อมูลจากระบบ Safety ของบริษัท'],
-  booking:['Booking Plan','ภาพรวมการจองงานทั้งหมดทุกสัปดาห์ · ดูอย่างเดียว การจองและแก้ไขทำที่หน้า Weekly Plan · กดแถวเพื่อเปิดแผน'],
+  jobs:['ใบจองงาน','Sale จองงาน → Planner รับงาน (ออก PN No.) → ลงแผนรายวัน · ทุกขั้นตอนบันทึกวัน-เวลา และบอกสถานะ Delay / On Process / Timely'],
+  checks:['Check Sheet','QC LAB · Data Flow Meter · Remove-Reinstall · Service Report — ทำทีละหัวข้อ (ลงชื่อและเวลาให้เอง) → ส่งตรวจ → ผู้อนุมัติอนุมัติ / ตีกลับ'],
+  booking:['Booking Plan','ภาพรวมแผนงานทุกสัปดาห์ในตารางเดียว · กรองด้วย drop down · กดแถวเพื่อเปิดแผน (จองงานที่หน้าใบจองงาน แก้แผนที่ Weekly Plan)'],
   mplan:['Master Plan','แผนรายเดือนตามสายงาน · Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน กรอกและแก้ที่นี่ · Instrument: Request No. LAB Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน · กรอกและแก้ที่นี่'],
   people:['สรุปรายคนรายวัน','ช่วงเวลาของงานแรกและงานสุดท้าย จำนวนงาน และใครว่างในแต่ละวัน ติ๊กชื่อเพื่อลงแผนให้หลายคนพร้อมกัน'],
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
@@ -15,7 +17,7 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,booking:renderBooking,mplan:renderMp,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,jobs:renderJobs,checks:renderChecks,booking:renderBooking,mplan:renderMp,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   document.body.dataset.page=S.view;/* page-specific phone layout (css/compact.css, "Weekly Plan on phones") */
@@ -40,6 +42,10 @@ function render(){
   if(S.view==='settings')filterMd();
   if(S.view==='people')syncRowPicks();
   if(S.view==='ncr')fillNcrTable();
+  if(S.view==='jobs')fillJobs();
+  if(S.view==='checks')fillChecks();
+  csBadge();/* Check Sheet waiting for this approver */
+  jbBadge();/* ใบจองงาน waiting for the Planner */
   if(S.view==='mplan')fillMp();else if(S.mpKey)mpStop();/* the Master Plan month is read live only while it is open */
   {const b=$('#ncrBadge');if(b){const n=S.ncr.filter(x=>x.state!=='closed').length;b.hidden=!n;b.textContent=n}}
   {const on=main.querySelector('.pd-strip.scroll .pd-day.on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}
@@ -115,7 +121,7 @@ function renderBanners(){
 let wkExportHtml=null;
 function renderWeekbar(){
   const show=S.view==='people'||(S.view==='dash'&&S.dash.mode==='week');
-  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety';/* Safety has its own "+ ขออบรม" */
+  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety'||S.view==='jobs';/* Safety has its own "+ ขออบรม", ใบจองงาน its "+ จองงาน" */
   if(!show)return;
   const last=addDays(S.week,6);
   $('#wkTitle').textContent=weekName(S.week);

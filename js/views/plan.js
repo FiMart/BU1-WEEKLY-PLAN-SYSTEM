@@ -212,8 +212,9 @@ function renderPlan(){
       ${calBtn('board')}</div>
     <div class="wp-legend">${[['planned','var(--muted)','วางแผน'],['done','var(--good)','เสร็จ'],['postponed','var(--warn)','เลื่อน'],['notdone','var(--crit)','ไม่เสร็จ']].filter(([s])=>s!=='notdone'||cnt(s)).map(([s,c,l])=>`<span><i style="background:${c}"></i>${l} <b data-n="${cnt(s)}">${cnt(s)}</b></span>`).join('')}${confN?`<span class="alert">⚠ จัดชน <b data-n="${confN}">${confN}</b></span>`:''}</div>
   </header>`;
-  const total=LT.length;const vis=shown.reduce((a,g)=>a+g.tasks.length,0);
-  $('#pf-count').textContent=vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`;
+  /* plans without leave, like the day heads; leave counted apart (user, 15 Oct 2026: "ข้อมูลแต่ละหน้าที่แปลกๆ") */
+  const total=LT.filter(t=>!isLeave(t)).length;const vis=shown.reduce((a,g)=>a+g.tasks.filter(t=>!isLeave(t)).length,0);const lvN=LT.filter(isLeave).length;
+  $('#pf-count').textContent=(vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`)+(lvN?` · ลา ${lvN}`:'');
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
     return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+calWeekHtml()+insWeekHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;

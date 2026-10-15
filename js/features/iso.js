@@ -12,6 +12,8 @@
       recent deletions, and "ส่งออกเก็บถาวร" = one Excel workbook of a month / year (plans, documents, NCR, history, deletions). */
 const ISO_HISTORY_MAX=80;
 const ISO_RECS=[
+  {k:'checks',name:'Check Sheet (QC LAB F-161 · Data Flow Meter F-122 · Remove-Reinstall F-162 · Service Report F-158)',where:'หน้า Check Sheet · พิมพ์แบบฟอร์ม',keep:5},
+  {k:'jobs',name:'ใบจองงาน (Sale จอง → Planner รับงาน · ออก PN)',where:'หน้าใบจองงาน · ประวัติการแก้ไขในใบจอง',keep:5},
   {k:'plan',name:'แผนงานรายสัปดาห์ (Weekly Plan)',where:'Weekly Plan · Print / PDF · Excel',keep:3},
   {k:'docs',name:'เอกสารหลังจบงาน (Service Report · QC · ใบรับงาน)',where:'แนบในแผนงาน · หน้ารายละเอียดแผน',keep:5},
   {k:'ncr',name:'NCR · รายงานงานที่ไม่สำเร็จ',where:'หน้า NCR · พิมพ์ใบ NCR',keep:5},
@@ -36,20 +38,23 @@ function isoPageCss(k){const d=isoDoc(k);const left=[d.code,d.rev?'Rev. '+d.rev:
 const isoXlsxRow=k=>[`${isoLine(k)} · ส่งออกโดย ${isoWho()} · ${isoStamp()}`];
 
 /* ---------- 1) audit trail ---------- */
-const ISO_COLLS=new Set(['tasks','ncr']);
-const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','gaRequestedAt','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy','doneBy','doneAt']);
+const ISO_COLLS=new Set(['tasks','ncr','jobs','checks']);
+const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','gaRequestedAt','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy','doneBy','doneAt','bookedBy','acceptedBy','cancelledBy','reviewedBy','review','dirty','submittedBy','approvedBy','rejectedBy']);
 const ISO_FIELD={date:'วันที่',period:'ช่วงเวลา',jobType:'หัวข้องาน',jobTypeOther:'หัวข้องาน (อื่นๆ)',line:'สายงาน',planNo:'Plan No.',color:'สีของแผน',sale:'Sale',customer:'Customer',location:'Location',areaId:'พื้นที่ (Safety)',
   timeNote:'Time',detail:'Detail',request:'Request',remark:'หมายเหตุ',transport:'รถแผนก',gaPlate:'ทะเบียนรถ GA',needGA:'ขอรถ GA',selfDrive:'ขอรถไปเอง',gaGo:'เวลารถออก / รับรถ',gaBack:'เวลากลับ / คืนรถ',gaPattern:'รูปแบบรถ GA',gaUrgent:'งานด่วน (รถ GA)',gaCargo:'ของต้องขน',gaNote:'หมายเหตุถึง GA',carReason:'เหตุผลขอรถไปเอง',carNote:'รายละเอียด (รถ)',
   contact:'Contact',contactTel:'เบอร์ติดต่อ',guests:'คนแผนกอื่น',prep:'ใบเตรียมงาน',staffIds:'Team Service',teamNeed:'จำนวน Team Service ที่ต้องการ',sharedTeam:'ใช้ทีมร่วม',status:'สถานะ',statusNote:'เหตุผล / ปัญหา',doneSum:'สรุปงาน',
   calItems:'Weekly plan calibration',insItems:'Weekly plan instrument',reports:'เอกสารหลังจบงาน',docNA:'เอกสารที่ไม่มีสำหรับงานนี้',photoIds:'รูป',files:'ไฟล์แนบ',ncrId:'NCR',
-  ncrNo:'NCR No.',taskId:'แผนงาน',category:'หมวดปัญหา',issue:'ปัญหา',cause:'สาเหตุ',correction:'การแก้ไขเฉพาะหน้า',action:'การแก้ไขและป้องกัน',owner:'ผู้รับผิดชอบ',due:'กำหนดเสร็จ',state:'สถานะ NCR',result:'ผลการตรวจติดตาม'};
+  ncrNo:'NCR No.',taskId:'แผนงาน',category:'หมวดปัญหา',issue:'ปัญหา',cause:'สาเหตุ',correction:'การแก้ไขเฉพาะหน้า',action:'การแก้ไขและป้องกัน',owner:'ผู้รับผิดชอบ',due:'กำหนดเสร็จ',state:'สถานะ (NCR / ใบจอง / Check Sheet)',h:'ข้อมูลฟอร์ม',v:'รายการตรวจ',tb:'ตาราง',steps:'ยืนยันหัวข้อ',sig:'ลายเซ็น',no:'เลขที่',form:'ฟอร์ม',title:'เครื่อง / แผน',submittedAt:'ส่งตรวจเมื่อ',approvedAt:'อนุมัติเมื่อ',approveNote:'ความเห็นผู้อนุมัติ',rejectReason:'เหตุผลตีกลับ',rejectedAt:'ตีกลับเมื่อ',itemId:'เครื่อง (UUT)',jobNo:'เลขที่จอง',wantFrom:'วันที่ลูกค้าต้องการ',wantTo:'ถึงวันที่',qty:'จำนวนเครื่อง / จุด',poNo:'เลขที่ PO / ใบเสนอราคา',note:'หมายเหตุถึง Planner',urgent:'งานด่วน',bookedAt:'จองเมื่อ',acceptedAt:'รับงาน (ออก PN) เมื่อ',acceptNote:'หมายเหตุจาก Planner',reviewedAt:'Planner review เมื่อ',cancelReason:'เหตุผลที่ยกเลิก',cancelledAt:'ยกเลิกเมื่อ',jobId:'ใบจองงาน',result:'ผลการตรวจติดตาม'};
 const isoBlank=v=>v==null||v===''||v===false||v===0||/* 0 = not set (teamNeed), same as a missing field */(Array.isArray(v)&&!v.length)||(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length);
 const isoKey=v=>isoBlank(v)?'':typeof v==='string'?v.trim():JSON.stringify(v);
 /* a value as people read it (stored as text: the history stays readable after names or lists change) */
 function isoText(k,v,other){
   if(isoBlank(v))return '—';
   if(k==='status')return stTh(v);
-  if(k==='state')return (NCR_STATE[v]||{th:v}).th;
+  if(k==='state')return (NCR_STATE[v]||(typeof JB_STATE!=='undefined'&&JB_STATE[v])||(typeof CS_STATE!=='undefined'&&CS_STATE[v])||{th:v}).th;
+  if(k==='sig')return Object.values(v||{}).map(x=>x&&x.name).filter(Boolean).join(', ')||'—';
+  if(k==='steps')return Object.entries(v||{}).filter(([,x])=>x&&x.at).map(([s,x])=>s+(x.res==='fail'?' (Fail)':'')).join(', ')||'—';
+  if(k==='h'||k==='v'||k==='tb')return `กรอก ${Object.keys(v||{}).length} ช่อง`;
   if(k==='staffIds')return asArr(v).map(staffName).join(', ');
   if(k==='areaId'&&typeof areaName==='function')return areaName(v);
   if(k==='line')return LINE[v]?LINE[v].name:String(v);
@@ -68,6 +73,8 @@ const asArr=v=>Array.isArray(v)?v:v?[v]:[];
 function isoOld(c,id){
   if(c==='tasks'){const t=findTask(id);if(t)return t;const l=L.tasks.get(id);return l?Object.assign({id},l):null}
   if(c==='ncr'){const n=(S.ncr||[]).find(x=>x.id===id);if(n)return n;const l=L.ncr.get(id);return l?Object.assign({id},l):null}
+  if(c==='checks'){const n=(S.checks||[]).find(x=>x.id===id);if(n)return n;const l=L.checks.get(id);return l?Object.assign({id},l):null}
+  if(c==='jobs'){const n=(S.jobs||[]).find(x=>x.id===id);if(n)return n;const l=L.jobs.get(id);return l?Object.assign({id},l):null}
   return null;
 }
 /* called by Store.set (partial=false) and Store.update (partial=true) before the write: returns the data with history added */
@@ -83,11 +90,13 @@ function isoAudit(c,id,d,partial){
   const entry={at:new Date().toISOString(),by:isoWho(),a:old?'edit':'create',ch:old?ch:[]};
   return Object.assign({},d,{history:hist.concat(entry).slice(-ISO_HISTORY_MAX)});
 }
-const isoLabel=(c,r)=>!r?'':c==='ncr'?[r.ncrNo,r.planNo,r.customer].filter(Boolean).join(' · '):[r.planNo,typeof typeLabel==='function'?typeLabel(r):'',r.customer,r.date?fmtDay(r.date):''].filter(Boolean).join(' · ');
+const isoLabel=(c,r)=>!r?'':c==='ncr'?[r.ncrNo,r.planNo,r.customer].filter(Boolean).join(' · '):c==='jobs'?[r.jobNo,r.planNo,r.customer].filter(Boolean).join(' · '):c==='checks'?[r.no,r.planNo,r.title].filter(Boolean).join(' · '):[r.planNo,typeof typeLabel==='function'?typeLabel(r):'',r.customer,r.date?fmtDay(r.date):''].filter(Boolean).join(' · ');
 /* called by Store.del before a plan / NCR is deleted: the deletion and the record's last state stay in the audit log */
 async function isoDeleteLog(c,id){
   if(!ISO_COLLS.has(c))return;const old=isoOld(c,id);if(!old||old.sample)return;
   const snap=c==='ncr'?{ncrNo:old.ncrNo,date:old.date,planNo:old.planNo,customer:old.customer,issue:old.issue,state:old.state}
+    :c==='checks'?{no:old.no,form:old.form,planNo:old.planNo||'',title:old.title||'',state:old.state,submittedAt:old.submittedAt||'',approvedAt:old.approvedAt||'',approvedBy:old.approvedBy||''}
+    :c==='jobs'?{jobNo:old.jobNo,planNo:old.planNo||'',customer:old.customer||'',location:old.location||'',sale:old.sale||'',wantFrom:old.wantFrom||'',state:old.state,bookedAt:old.bookedAt,acceptedAt:old.acceptedAt||''}
     :{date:old.date,planNo:old.planNo||'',jobType:typeof typeLabel==='function'?typeLabel(old):old.jobType,customer:old.customer||'',location:old.location||'',status:old.status||'',team:asArr(old.staffIds).map(staffName).join(', '),reports:asArr(old.reports).length};
   await Store.set('audit',newId('a'),{at:new Date().toISOString(),by:isoWho(),coll:c,recId:String(id),a:'delete',label:isoLabel(c,old),snap,history:asArr(old.history).slice(-30)});
 }
@@ -111,7 +120,7 @@ function isoSection(){
     return `<tr><td><b>${esc(r.name)}</b><span class="sub">${esc(r.where)}</span></td><td>${f('code',d.code,' maxlength="40" placeholder="เช่น FM-LAB-01" class="mono"')}</td><td>${f('rev',d.rev,' maxlength="10" placeholder="00" class="w-rev"')}</td>
       <td>${f('eff',d.eff,' type="date"')}</td><td>${f('keep',d.keep,' type="number" min="1" max="50" class="w-num"')}</td><td>${f('owner',d.owner,' maxlength="60"')}</td></tr>`}).join('');
   const del=isoDel==null?'<p class="hint">กำลังโหลด…</p>':isoDel.length?`<div class="scroll-x plain"><table class="mini"><thead><tr><th>เมื่อ</th><th>โดย</th><th>Record ที่ลบ</th></tr></thead><tbody>${isoDel.slice(0,30).map(a=>{const d=new Date(a.at);
-    return `<tr><td class="num">${esc(isNaN(d)?'':thDate(ymd(d))+' '+pad(d.getHours())+':'+pad(d.getMinutes()))}</td><td>${esc(String(a.by||'').split('@')[0])}</td><td>${esc(a.coll==='ncr'?'NCR':'แผนงาน')} · ${esc(a.label||a.recId)}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="hint">ยังไม่มีการลบแผนงานหรือ NCR</p>';
+    return `<tr><td class="num">${esc(isNaN(d)?'':thDate(ymd(d))+' '+pad(d.getHours())+':'+pad(d.getMinutes()))}</td><td>${esc(String(a.by||'').split('@')[0])}</td><td>${esc(a.coll==='ncr'?'NCR':a.coll==='jobs'?'ใบจองงาน':a.coll==='checks'?'Check Sheet':'แผนงาน')} · ${esc(a.label||a.recId)}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="hint">ยังไม่มีการลบแผนงานหรือ NCR</p>';
   const years=Array.from({length:6},(_,i)=>y-i);
   return {id:'iso',title:'ISO 9001 · Record',sub:'เลขที่เอกสาร · ระยะเวลาจัดเก็บ',count:ISO_RECS.length,
     desc:'ทะเบียน Record ตาม ISO 9001 (ข้อ 7.5 เอกสารที่เป็นลายลักษณ์อักษร) · เลขที่เอกสาร Rev. และวันที่มีผล พิมพ์บนหัวรายงานทุกฉบับ (Print / PDF / Excel) พร้อมเลขหน้า · ทุกแผนงานและ NCR เก็บประวัติการแก้ไขว่าใครแก้อะไรเมื่อไร และบันทึกการลบไว้',
@@ -160,7 +169,7 @@ async function isoArchive(btn){
     ncr.forEach(n=>asArr(n.history).forEach(e=>{const base=['NCR',n.ncrNo||'',when(e.at),who(e.by),e.a==='create'?'สร้าง':'แก้ไข'];if((e.ch||[]).length)e.ch.forEach(([f,a,b])=>hist.push(base.concat([f,a,b])));else hist.push(base.concat(['','','']))}));
     add('ประวัติการแก้ไข','audit','ประวัติการแก้ไข (Audit trail)',['ชนิด','Record','เมื่อ','โดย','การกระทำ','ช่อง','จาก','เป็น'],hist.sort((a,b)=>String(a[2]).localeCompare(String(b[2]))),[9,36,16,16,9,22,30,30]);
     add('การลบ','audit','การลบ Record',['เมื่อ','โดย','ชนิด','Record','ข้อมูลล่าสุดก่อนลบ'],audit.filter(a=>a.a==='delete'&&inR(a.at)).sort((a,b)=>String(a.at).localeCompare(String(b.at)))
-      .map(a=>[when(a.at),who(a.by),a.coll==='ncr'?'NCR':'แผนงาน',a.label||a.recId,JSON.stringify(a.snap||{})]),[16,16,9,40,60]);
+      .map(a=>[when(a.at),who(a.by),a.coll==='ncr'?'NCR':a.coll==='jobs'?'ใบจองงาน':a.coll==='checks'?'Check Sheet':'แผนงาน',a.label||a.recId,JSON.stringify(a.snap||{})]),[16,16,9,40,60]);
     await saveFile(`BU1-ISO-Records_${label}.xlsx`,X.write(wb,{type:'array',bookType:'xlsx'}),`ส่งออก Record ${m?TH_MON_FULL[m-1]+' ':''}${y+543} แล้ว · ${plans.length} แผน · NCR ${ncr.length}`);
   }catch(err){toast('ส่งออกไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองใหม่')}
   finally{btn.disabled=false;btn.textContent=old}

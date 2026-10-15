@@ -52,6 +52,7 @@ $('#copyMenu').addEventListener('toggle',e=>{
   $('#copyPop').innerHTML=`<p>เลือกวัน แล้ววางข้อความใน LINE${scopeName()?` · เฉพาะ ${esc(scopeName())}`:''}</p>`+days.map(d=>{const k=ymd(d);const n=S.tasks.filter(t=>t.date===k&&isWorking(t)&&!isLeave(t)&&lineMatch(t)).length;
     return `<button type="button" data-action="copy-day" data-date="${k}">${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)}<span>${n} งาน</span></button>`}).join('');
 });
+const H2I_LIB='https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';/* Screenshot + PDF files (js/features/pdf-export.js) */
 function loadLib(src,glob){
   if(window[glob])return Promise.resolve(window[glob]);
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>window[glob]?res(window[glob]):rej(new Error('lib'));s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)});
@@ -74,7 +75,7 @@ async function takeShot(btn){
   const el=document.querySelector('#view .wp-panel');if(!el||!downloads)return;
   btn.disabled=true;
   try{
-    const [lib,fontCSS]=await Promise.all([loadLib('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js','htmlToImage'),shotFontCSS()]);
+    const [lib,fontCSS]=await Promise.all([loadLib(H2I_LIB,'htmlToImage'),shotFontCSS()]);
     /* capture at zoom 1 with an explicit width (the whole table, not the scrolled window), otherwise the size resolves wrongly and the image comes out blank */
     document.body.style.zoom='1';el.classList.add('capture');
     const sc=el.querySelector('.wp-scroll');const w=Math.ceil(Math.max(el.clientWidth,sc?sc.scrollWidth:0));el.style.width=w+'px';
