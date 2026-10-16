@@ -720,7 +720,8 @@ body.mini .sb-acts .sb-theme{width:auto}
 .bp-stat.bad{border-top-color:var(--crit)}.bp-stat.bad b{color:var(--crit-ink)}
 .bp-stat.good{border-top-color:var(--good)}
 .bp-stat.warn{border-top-color:var(--warn)}
-.bp-filter{display:grid;gap:8px;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05)}
+.bp-filter{display:grid;gap:8px;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(13,22,38,.04),0 6px 18px rgba(13,22,38,.05);
+  position:relative;z-index:25}/* above the table: .bk-wrap is a size container (its own layer), which painted over the open dropdown (user, 16 Oct 2026) */
 .bp-row1{display:flex;gap:8px;align-items:center}
 .bp-q{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
 .bp-q:focus-within{border-color:var(--accent)}
