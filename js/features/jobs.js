@@ -404,7 +404,7 @@ h1{font-size:17px;margin:0;text-align:center}.top{display:flex;justify-content:s
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #6b7c96;padding:3px 5px;vertical-align:top}th{background:#eef3fa;font-weight:600}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.box{border:1px solid #6b7c96;padding:5px 7px}.box b{display:block}
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.foot{margin-top:6px;text-align:right;color:#4a5b75}
 @media print{.bar{display:none}body{margin:0}}${typeof isoPageCss==='function'?isoPageCss('jobs'):''}</style></head><body>
-<div class="bar"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวนอน · FLS-F-018</span></div>
+<div class="bar">${printBackHtml()}<button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวนอน · FLS-F-018</span></div>
 <div class="top"><div style="display:flex;gap:12px;align-items:center">${orgLogo(52)}<div><b>${esc(ORG_NAME)}</b><h1 style="text-align:left">ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div></div>
 <div class="req"><b>REQUEST No. ${esc(j.planNo||'(รอ Planner ออก PN)')}</b><br>CONTACT SALE : ${esc(j.sale||'')}<br>เลขที่คำร้อง : ${esc(j.jobNo)} · รับคำร้องเมื่อ ${esc(jbWhen(j.bookedAt))}</div></div>
 <p><b>ส่วนที่ 1 สำหรับ SALE</b> &nbsp; ${svc('inhouse')} In-house calibration &nbsp; ${svc('onsite')} On-site calibration &nbsp; ${svc('mobile')} Mobile calibration</p>

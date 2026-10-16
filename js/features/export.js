@@ -53,6 +53,13 @@ const ORG_NAME='FLOWLAB & SERVICE CO., LTD.';
 const ORG_LOGO_SRC='assets/flowlab-logo.png';
 const orgLogoUrl=()=>{const v=typeof APP_VERSION!=='undefined'?'?v='+APP_VERSION:'';try{return new URL(ORG_LOGO_SRC,document.baseURI).href+v}catch(e){return ORG_LOGO_SRC+v}};
 const orgLogo=h=>`<img src="${orgLogoUrl()}" alt="FLOWLAB &amp; SERVICE" style="height:${h||40}px;width:auto;display:block;flex:none">`;
+/* "← กลับ" on every print page (user, 16 Oct 2026: "เวลากดพิมพ์ใน mobile แล้วออกไม่ได้"): a print window opened from a phone, above all
+   from the app added to the home screen, has no tab bar to close it. The button closes the window it is (opened by the app), else
+   goes back to the app's address (a downloaded copy, or a browser that refuses window.close). The bar stays on top while scrolling. */
+function printBackHtml(){
+  let app='';try{app=location.origin+location.pathname}catch(e){}
+  return `<style>.bar{position:sticky;top:0;z-index:5;flex-wrap:wrap}@media print{.bar{display:none!important}}</style><button type="button" onclick="try{window.close()}catch(e){}setTimeout(function(){try{location.replace(${esc(JSON.stringify(app))})}catch(e){}},300)" style="font:inherit;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #1462d0;background:#fff;color:#1462d0;cursor:pointer">← กลับ</button>`;
+}
 /* the app's own mark (the blue "BU1" square of the sidebar), drawn as SVG; prints used it until the company logo came (15 Oct 2026) */
 const LOGO_MARK='<svg width="40" height="40" viewBox="0 0 48 48" role="img" aria-label="BU1"><defs><linearGradient id="rp-bu1" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7FE0FF"/><stop offset=".5" stop-color="#2F8BFF"/><stop offset="1" stop-color="#1D5BE0"/></linearGradient></defs><rect x="1" y="1" width="46" height="46" rx="13" fill="url(#rp-bu1)"/><rect x="1.5" y="1.5" width="45" height="45" rx="12.5" fill="none" stroke="#fff" stroke-opacity=".35"/><text x="24" y="29.6" text-anchor="middle" font-family="IBM Plex Sans Thai,Segoe UI,Arial,sans-serif" font-weight="700" font-size="16" letter-spacing=".3" fill="#fff">BU1</text></svg>';
 /* Print / PDF: the Weekly Plan of the open week as the board shows it — rows = หัวข้องาน (or ลูกค้า, as on screen; ลา last),
@@ -111,7 +118,7 @@ table.wp{border-collapse:collapse;width:100%;table-layout:fixed}
 .sm{border-collapse:collapse;width:100%}.sm th,.sm td{border:1px solid #c6d9f1;padding:3px 5px;text-align:left;vertical-align:top;font-size:10px}.sm thead th{background:#e6f1fd}.fr{color:#006300;font-weight:600}.lv{color:#875800;font-weight:600}
 .sig{display:flex;gap:40px;margin-top:30px}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:30px 16px 4px}
 @media print{.bar{display:none}body{margin:0}}${isoPageCss('plan')}</style></head><body>
-<div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics</span></div>
+<div class="bar">${printBackHtml()}<button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p>BU1 Lab · Weekly Planning${esc(lineTitle())}</p><h1>${esc(`${fmtShort(S.week)} – ${fmtShort(last)} ${be(last)}`)}</h1></div></div><p>${esc(`สัปดาห์ที่ ${isoWeek(S.week)} · ${wn}`)}<br>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>${isoHeadHtml('plan')}
 <div class="lg">${legend}</div>
 <table class="wp"><colgroup><col class="g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>${head}</tr></thead><tbody>${body}</tbody></table>

@@ -365,7 +365,7 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}.e{color:#62738f;margin:2px 0 6px}
 .sig{display:flex;gap:30px;margin-top:34px;break-inside:avoid}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:34px 10px 4px}
 @media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}</style></head><body>
-<div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
+<div class="bar">${printBackHtml()}<button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h1></div></div>
 <p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml('dash')}
 ${sec(1,'สรุปภาพรวม','Summary')}

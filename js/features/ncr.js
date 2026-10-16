@@ -141,7 +141,7 @@ async function ncrPrint(){
 table{border-collapse:collapse;width:100%;margin-bottom:10px}th,td{border:1px solid #c6d9f1;padding:6px 8px;text-align:left;vertical-align:top}th{width:38mm;background:#f3f7fd;font-weight:600}td{white-space:pre-line;overflow-wrap:anywhere}
 h2{font-size:12.5px;margin:12px 0 6px}.sig{display:flex;gap:24px;margin-top:40px}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:36px 8px 4px}
 @media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('ncr')}</style></head><body>
-<div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวตั้ง</span></div>
+<div class="bar">${printBackHtml()}<button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวตั้ง</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานงานที่ไม่สำเร็จ (NCR)</h1></div></div><p><span class="no">${esc(n.ncrNo)}</span><br><span class="st">${esc(st.th)}</span><br>พิมพ์เมื่อ ${esc(thDate(ymd(now)))}</p></div>${isoHeadHtml('ncr')}
 <h2>ข้อมูลงาน</h2><table>${r('วันที่พบปัญหา',n.date?fmtDayY(n.date):'')}${r('หัวข้องาน',n.jobTypeName)}${r('Plan No.',n.planNo)}${r('ลูกค้า',n.customer)}${r('สถานที่',n.location)}${r('ทีมผู้ปฏิบัติงาน',(n.staffIds||[]).map(staffName).join(', '))}</table>
 <h2>ปัญหาและการแก้ไข</h2><table>${r('หมวดปัญหา',n.category)}${r('รายละเอียดปัญหา',n.issue)}${r('สาเหตุ (Root cause)',n.cause)}${r('การแก้ไขเฉพาะหน้า',n.correction)}${r('การแก้ไขและป้องกันการเกิดซ้ำ',n.action)}${r('ผู้รับผิดชอบ',n.owner)}${r('กำหนดแก้ไขเสร็จ',n.due?thDate(n.due):'')}</table>

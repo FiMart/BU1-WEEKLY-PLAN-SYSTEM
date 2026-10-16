@@ -254,7 +254,7 @@ table.mp{border-collapse:collapse;width:100%}.mp th,.mp td{border:1px solid #9fb
 h2{font-size:12px;margin:10px 0 4px}.lg .lgh{text-align:left;width:120px;background:#f5f8fd}.note{color:#34496b;font-size:9px;margin:6px 0 0}
 .sig{display:flex;gap:40px;margin-top:24px;break-inside:avoid}.sig div{flex:1;text-align:center;font-size:10px}.sig span{display:block;border-top:1px solid #0b1b33;margin:26px 16px 4px}
 @media print{.bar{display:none}body{margin:0}}${isoPageCss(ins?'mpins':'mpfm')}</style></head><body>
-<div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics · เลือกเครื่องพิมพ์ "Save as PDF" เพื่อได้ไฟล์ PDF</span></div>
+<div class="bar">${printBackHtml()}<button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A3 · แนวนอน (Landscape) · ติ๊ก Background graphics · เลือกเครื่องพิมพ์ "Save as PDF" เพื่อได้ไฟล์ PDF</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p>BU1 Lab · Master Plan</p><h1>${esc(D.title.replace(/^BU1 Lab · Master Plan · /,''))}</h1></div></div><p>พิมพ์เมื่อ ${fmtShort(now)} ${be(now)} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้พิมพ์ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml(ins?'mpins':'mpfm')}
 <div class="st">${D.stats.map(([v,l])=>`<span><b>${esc(v)}</b>${esc(l)}</span>`).join('')}</div>
 <table class="mp"><thead>${tops}<tr>${th}</tr></thead><tbody>${body}${D.rows.length?foot:''}</tbody></table>
