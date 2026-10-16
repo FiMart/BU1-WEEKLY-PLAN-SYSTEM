@@ -35,7 +35,7 @@ function startLocal(){
   {const m=ymd(w).slice(0,7),n=k=>parseD(D(k)).getDate();/* Master Plan Instrument sample row */
    if(ymd(addDays(w,2)).slice(0,7)===m)L.mpins.set('n0',{month:m,order:1,reqNo:'R-S1-2608061',lab:'1',cust:'ลูกค้าตัวอย่าง 2',plant:'HD4',tag:'ตามเอกสารแนบ',type:'PT,TT,TE',
      range:'Point Cal ตามเอกสารแนบ',remove:insDM(D(0)),cal:insDM(D(1)),install:insDM(D(2)),bu:'-',rs:'ลูกค้าส่งเอง',sale:'Rungnapa',contact:'K.Suphamit',booking:'13',days:{[n(1)]:'8',[n(2)]:'6'},remark:'',sample:true})}
-  {/* ใบจองงาน samples: one done (PN-26-09001 → the two plans above), one waiting too long (Delay), one just booked */
+  {/* ใบรับคำร้องขอรับบริการสอบเทียบ samples: one done (PN-26-09001 → the two plans above), one waiting too long (Delay), one just booked */
    const ago=(days,h)=>{const d=new Date();d.setDate(d.getDate()-days);d.setHours(h,15,0,0);return d.toISOString()};
    L.jobs.set('j1',{jobNo:'JB-26-09001',state:'accepted',svcType:'inhouse',customer:'ลูกค้าตัวอย่าง',address:'99 ถ.ตัวอย่าง อ.เมือง จ.ชลบุรี',email:'somchai@example.com',certSame:true,location:'ชลบุรี',contact:'K.Somchai',contactTel:'08x-xxx-1111',sale:'Sale ตัวอย่าง',jobType:'disconnect',line:'fm',
      items:[{id:'u1',tag:'FT-101',product:'Flowmeter',type:'Magnetic meter',size:'2',cls:'150#',output:'4-20 mA',range:'0–40 m³/h',points:'10%, 25%, 50%, 75%, 100%',acc:'0.5%',interval:'1 ปี',method:'1',witness:['excise'],round:'A (Excise)',refer:''},
@@ -43,8 +43,9 @@ function startLocal(){
      reports:['Calibration certificate','Before calibration result'],materialBy:'flowlab',materials:['Gasket'],adjust:'accept',installBy:'flowlab',disconnectDate:D(0),installDate:D(1),transportBy:'flowlab',receiveDate:D(0),returnDate:D(1),
      wantFrom:D(0),wantTo:D(1),period:'full',teamNeed:2,qty:'Flowmeter 2 ตัว',poNo:'QT-26-0901',detail:'Remove Flowmeter FT-101, FT-102 ส่ง Cal ที่ Lab แล้ว Install คืน',note:'',urgent:false,
      bookedAt:ago(9,9),bookedBy:'sale@example.com',planNo:'PN-26-09001',acceptedAt:ago(9,14),acceptedBy:'planner@example.com',acceptNote:'',createdAt:ago(9,9),updatedAt:ago(9,14),sample:true});
-   L.jobs.set('j2',{jobNo:'JB-26-09002',state:'pending',customer:'ลูกค้าตัวอย่าง 3',location:'ระยอง',contact:'K.Napa',contactTel:'08x-xxx-2222',sale:'Rungnapa',jobType:'calonsite',line:'ins',
-     wantFrom:ymd(addDays(new Date(),2)),wantTo:'',period:'am',teamNeed:2,qty:'PT/TT 8 จุด',poNo:'',detail:'Cal On Site PT/TT 8 จุด ที่หน่วย Utility',note:'ลูกค้าขอทีมเดิม',urgent:false,
+   L.jobs.set('j2',{jobNo:'JB-26-09002',state:'pending',customer:'ลูกค้าตัวอย่าง 3',location:'ระยอง',contact:'K.Napa',contactTel:'08x-xxx-2222',sale:'Rungnapa',jobType:'dci',line:'fm',svcType:'onsite',
+     items:[{id:'u3',tag:'FT-301',product:'Flowmeter',type:'Coriolis meter',size:'4',cls:'300#',output:'4-20 mA',range:'0–50,000 kg/h',points:'25%, 50%, 75%, 100%',acc:'0.2%',interval:'1 ปี',method:'2',witness:['customer'],round:'',refer:''}],
+     wantFrom:ymd(addDays(new Date(),2)),wantTo:'',period:'am',teamNeed:2,qty:'1 เครื่อง',poNo:'',detail:'D/C/I Coriolis FT-301 ที่หน่วย Utility',note:'ลูกค้าขอทีมเดิม',urgent:false,
      bookedAt:ago(3,10),bookedBy:'sale2@example.com',createdAt:ago(3,10),updatedAt:ago(3,10),sample:true});
    L.jobs.set('j3',{jobNo:'JB-26-09003',state:'pending',customer:'ลูกค้าตัวอย่าง 4',location:'สมุทรปราการ',contact:'',contactTel:'',sale:'Priraya',jobType:'installation',line:'fm',
      wantFrom:ymd(addDays(new Date(),1)),wantTo:'',period:'full',teamNeed:3,qty:'Flowmeter 1 ตัว',poNo:'PO-7781',detail:'Install Flowmeter ใหม่ 1 ตัว พร้อม Loop Test',note:'',urgent:true,
@@ -62,7 +63,7 @@ function wireData(){
   db.collection('resources').onSnapshot(s=>{S.resources=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.resReady=true;render()},dbErr);
   db.collection('projects').onSnapshot(s=>{S.projects=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.projReady=true;render()},dbErr);
   db.collection('ncr').onSnapshot(s=>{S.ncr=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.ncrReady=true;render()},dbErr);
-  db.collection('jobs').onSnapshot(s=>{S.jobs=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.jobsReady=true;render()},dbErr);/* ใบจองงาน */
+  db.collection('jobs').onSnapshot(s=>{S.jobs=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.jobsReady=true;render()},dbErr);/* ใบรับคำร้องขอรับบริการสอบเทียบ */
   db.collection('checks').onSnapshot(s=>{S.checks=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.checksReady=true;render()},dbErr);/* Check Sheet */
   db.doc('config/main').onSnapshot(s=>{S.cfg=s.exists?s.data():{};S.cfgReady=true;render();migrateRoles()},dbErr);
   subscribeWeek();

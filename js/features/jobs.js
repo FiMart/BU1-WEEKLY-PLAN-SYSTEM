@@ -1,5 +1,5 @@
 'use strict';
-/* BU1 Weekly Plan · ใบจองงาน (user, 15 Oct 2026 — ISO 9001 project, stage 1: "Sale จองงาน → Planner รับงาน (ออก PN No.) → กระจายเป็น Weekly";
+/* BU1 Weekly Plan · ใบรับคำร้องขอรับบริการสอบเทียบ (user, 15 Oct 2026 — ISO 9001 project, stage 1: "Sale ส่งคำร้อง → Planner รับงาน (ออก PN No.) → กระจายเป็น Weekly";
    chose: the booking is the one source the daily plans are made from · in-app notices only)
    collection "jobs" ↔ app_settings rows bu1wp_job:<id> = {jobNo JB-YY-MMNNN, state pending | accepted | cancelled,
      customer, location, contact, contactTel, sale, jobType, jobTypeOther, line, wantFrom, wantTo, period, teamNeed, qty, poNo,
@@ -7,7 +7,7 @@
      review {at, by, ch:[[field, from, to]]} + reviewedAt / reviewedBy (Sale changed it after the PN; the Planner confirms),
      cancelReason, cancelledAt / cancelledBy, createdAt/By, updatedAt/By, history (ISO 9001)}.
    Plans made from a booking carry task.jobId (↔ data.bu1wp.jobId) and its PN. Status of each step: Delay / On Process / Timely. */
-S.jobs=[];S.jobsReady=false;S.jbF={tab:'open',q:'',mine:false};
+S.jobs=[];S.jobsReady=false;S.jbF={tab:'open',q:'',mine:false,ins:false};
 /* the team's request form FLS-F-018 "ใบรับคำร้องขอรับบริการสอบเทียบ" (user, 15 Oct 2026: "ข้อมูลให้อ้างอิงตามไฟล์ที่แนบไป") */
 const JB_SVC=[['inhouse','In-house calibration','สอบเทียบในห้องปฏิบัติการ'],['onsite','On-site calibration','สอบเทียบนอกสถานที่'],['mobile','Mobile calibration','รถสอบเทียบเคลื่อนที่']];
 const JB_REPORTS=['Calibration certificate','Loop test transmitter report','Before calibration result','Input to flow computer (support technical data)','Gas meter calibration certificate','Configuration (support technical data)','Pressure / Temperature calibration certificate'];
@@ -30,6 +30,10 @@ const jbKpi=()=>Object.assign({acceptDays:1,urgentDays:3},(S.cfg&&S.cfg.jobKpi)|
 const isPlanner=()=>can('master');/* ผู้ดูแลระบบ / ผู้วางแผน */
 const canBook=()=>can('edit');
 const jbById=id=>S.jobs.find(j=>j.id===id)||null;
+/* Flow Meter only since 16 Oct 2026 (user: "ใบจองงาน ให้เน้นไปที่ flow meter เป็นหลัก"; chose Flow Meter only): new requests are line fm,
+   no line choice; Instrument requests made before stay readable but are left out of the list, the tiles and the KPI unless asked for */
+const jbIsIns=j=>!!j&&j.line==='ins';
+const jbFmJobs=()=>S.jobs.filter(j=>!jbIsIns(j));
 const jbNeedsReview=j=>!!j&&j.state==='accepted'&&!!j.review&&!j.reviewedAt;
 
 /* ---------- time: working days are Mon–Sat without public holidays (isWorkDay, js/core/holidays.js) ---------- */
@@ -108,7 +112,7 @@ function jbTabOf(j){if(j.state==='cancelled')return 'cancelled';if(j.state==='pe
 function jbMatch(j,tab){const t=jbTabOf(j);return tab==='all'||(tab==='open'?t==='pending'||t==='review'||t==='noplan':t===tab)}
 function jbFiltered(){
   const q=norm(S.jbF.q);const me=String(S.me||'').toLowerCase();
-  return S.jobs.filter(j=>jbMatch(j,S.jbF.tab)&&(!S.jbF.mine||String(j.bookedBy||'').toLowerCase()===me)
+  return S.jobs.filter(j=>jbMatch(j,S.jbF.tab)&&(S.jbF.ins||!jbIsIns(j))&&(!S.jbF.mine||String(j.bookedBy||'').toLowerCase()===me)
       &&(!q||norm([j.jobNo,j.planNo,j.customer,j.location,j.sale,j.detail,j.poNo,jbTypeName(j)].join(' ')).includes(q)))
     .sort((a,b)=>String(b.bookedAt||'').localeCompare(String(a.bookedAt||'')));
 }
@@ -117,22 +121,22 @@ const jbWant=j=>j.wantFrom?(j.wantTo&&j.wantTo>j.wantFrom?`${fmtDay(j.wantFrom)}
 const jbStatePill=j=>{const s=JB_STATE[j.state]||JB_STATE.pending;return `<span class="ncr-st" style="--c:${s.c}">${esc(s.th)}</span>`};
 function jbRow(j){
   const lead=jbLead(j);const ps=jbPlans(j);
-  return `<tr data-job-open="${esc(j.id)}"><td><b class="mono">${esc(j.jobNo||'—')}</b><span class="sub">จอง ${esc(jbWhen(j.bookedAt))}</span></td>
+  return `<tr data-job-open="${esc(j.id)}"><td><b class="mono">${esc(j.jobNo||'—')}</b><span class="sub">รับ ${esc(jbWhen(j.bookedAt))}</span></td>
     <td>${esc(j.customer||'—')}${j.location?`<span class="sub">${esc(j.location)}</span>`:''}</td>
     <td>${esc(jbTypeName(j))}${j.detail?`<span class="sub jb-clamp">${esc(j.detail)}</span>`:''}</td>
-    <td class="num">${esc(jbWant(j))}${lead!=null?`<span class="sub${jbShort(j)?' bad':''}">${lead<0?'จองหลังวันงาน':`ล่วงหน้า ${lead} วันทำงาน`}</span>`:''}${jbUrgent(j)?'<span class="jb-urgent">ด่วน</span>':''}</td>
+    <td class="num">${esc(jbWant(j))}${lead!=null?`<span class="sub${jbShort(j)?' bad':''}">${lead<0?'ส่งหลังวันงาน':`ล่วงหน้า ${lead} วันทำงาน`}</span>`:''}${jbUrgent(j)?'<span class="jb-urgent">ด่วน</span>':''}</td>
     <td>${esc(j.sale||'—')}</td>
     <td class="mono">${esc(j.planNo||'—')}${ps.length?`<span class="sub">${ps.length} แผน</span>`:''}</td>
     <td>${jbStatePill(j)}${jbNeedsReview(j)?'<span class="jb-rev">รอ review</span>':''}${flowChip(jobFlow(j,ps))}</td></tr>`;
 }
 function fillJobs(){
   const tb=$('#jbRows');if(!tb)return;const list=jbFiltered();
-  tb.innerHTML=list.map(jbRow).join('')||`<tr><td colspan="7" class="hint">${S.jobs.length?'ไม่พบใบจองที่ตรงกับตัวกรอง':'ยังไม่มีใบจอง · Sale กด "+ จองงาน" เพื่อส่งงานให้ Planner'}</td></tr>`;
+  tb.innerHTML=list.map(jbRow).join('')||`<tr><td colspan="7" class="hint">${S.jobs.length?'ไม่พบใบรับคำร้องที่ตรงกับตัวกรอง':'ยังไม่มีใบรับคำร้อง · Sale กด "+ ใบรับคำร้องใหม่" เพื่อส่งงานให้ Planner'}</td></tr>`;
   const c=$('#jbCount');if(c)c.textContent=`${list.length} ใบ`;
 }
 /* KPI of the bookings made in the last 90 days: answer time, answered in time, short-notice share — per Sale too */
 function jbKpiRows(){
-  const from=Date.now()-90*864e5;const list=S.jobs.filter(j=>j.state!=='cancelled'&&new Date(j.bookedAt||0).getTime()>=from);
+  const from=Date.now()-90*864e5;const list=jbFmJobs().filter(j=>j.state!=='cancelled'&&new Date(j.bookedAt||0).getTime()>=from);
   const one=l=>{const acc=l.filter(j=>j.acceptedAt);const ms=acc.map(j=>new Date(j.acceptedAt)-new Date(j.bookedAt));
     const ok=acc.filter(j=>new Date(j.acceptedAt)<=jbDue(j)).length;
     return {n:l.length,acc:acc.length,avg:ms.length?ms.reduce((a,b)=>a+b,0)/ms.length:null,ok,pct:acc.length?Math.round(ok/acc.length*100):null,short:l.filter(jbShort).length,urg:l.filter(jbUrgent).length}};
@@ -142,20 +146,21 @@ function jbKpiRows(){
 function renderJobs(){
   if(notReady()||(S.mode==='live'&&!S.jobsReady))return loading();
   allTasks();/* every plan, so a booking knows its plans in any week */
-  const cnt=t=>S.jobs.filter(j=>jbTabOf(j)===t).length;const late=S.jobs.filter(j=>j.state==='pending'&&(acceptFlow(j)||[])[0]==='delay').length;
+  const FM=jbFmJobs();const insN=S.jobs.length-FM.length;
+  const cnt=t=>FM.filter(j=>jbTabOf(j)===t).length;const late=FM.filter(j=>j.state==='pending'&&(acceptFlow(j)||[])[0]==='delay').length;
   const K=jbKpiRows();const k=jbKpi();
   const tile=(id,lbl,n,cls,note)=>`<button type="button" class="tile ncr-tile${cls?' '+cls:''}" data-jb-tab="${id}" aria-pressed="${S.jbF.tab===id}"><span class="lbl">${lbl}</span><span class="val">${n}<small>ใบ</small></span>${note?`<span class="note">${note}</span>`:''}</button>`;
   const pct=v=>v==null?'—':v+'%';
   return `<div class="sum">
-    <div class="tiles">${tile('pending','รอ Planner รับงาน',cnt('pending'),late?'alert':cnt('pending')?'warnt':'',late?`Delay ${late} ใบ`:'')}${tile('review','Sale แก้ไข · รอ review',cnt('review'),cnt('review')?'alert':'')}${tile('noplan','รับแล้ว · รอลงแผน',cnt('noplan'),cnt('noplan')?'warnt':'')}${tile('planned','ลงแผนแล้ว',cnt('planned'))}${tile('all','ทั้งหมด',S.jobs.length)}</div>
-    <section class="panel span-12"><header><h2>ใบจองงาน <span class="md-count" id="jbCount"></span></h2><p>Sale จองงาน → Planner รับงาน (ออก PN) → ลงแผนรายวันจากใบจองเดียวกัน · กดแถวเพื่อเปิด · ระบบบันทึกวัน-เวลาทุกขั้นตอน</p></header>
-      <div class="jb-tabs" role="tablist" aria-label="สถานะใบจอง">${JB_TABS.map(([id,l])=>`<button type="button" role="tab" data-jb-tab="${id}" aria-selected="${S.jbF.tab===id}">${l}</button>`).join('')}</div>
-      <div class="ncr-tools"><input type="search" id="jb-q" placeholder="ค้นหาเลขที่จอง PN ลูกค้า สถานที่ Sale" value="${esc(S.jbF.q)}" autocomplete="off" aria-label="ค้นหาใบจอง">
-        <label class="jb-mine"><input type="checkbox" id="jb-mine"${S.jbF.mine?' checked':''}> เฉพาะที่ฉันจอง</label>${canBook()?'<button type="button" class="btn primary" data-job-new>+ จองงาน</button>':''}</div>
-      <div class="scroll-x plain"><table class="mini ftab jb-tab"><thead><tr><th>เลขที่จอง</th><th>ลูกค้า</th><th>งาน</th><th>วันที่ต้องการ</th><th>Sale</th><th>PN No.</th><th>สถานะ</th></tr></thead><tbody id="jbRows"></tbody></table></div></section>
-    <section class="panel span-12"><header><h2>KPI การรับงาน · 90 วันล่าสุด</h2><p>เป้าหมาย: Planner ตอบรับภายใน ${k.acceptDays} วันทำงานหลังจอง · งานกระชั้น = จองล่วงหน้าน้อยกว่า ${k.urgentDays} วันทำงาน (ตั้งค่าที่ ข้อมูลหลัก › KPI ใบจองงาน)</p></header>
-      <div class="scroll-x plain"><table class="mini jb-kpi"><thead><tr><th>Sale</th><th>ใบจอง</th><th>ตอบรับแล้ว</th><th>ตอบรับเฉลี่ย</th><th>ทันเวลา (Timely)</th><th>จองกระชั้น</th><th>ด่วนทั้งหมด</th></tr></thead><tbody>
-        ${K.sales.map(s=>`<tr><td>${esc(s.name)}</td><td class="num">${s.n}</td><td class="num">${s.acc}</td><td class="num">${s.avg==null?'—':jbDur(s.avg)}</td><td class="num">${pct(s.pct)}</td><td class="num">${s.short}</td><td class="num">${s.urg}</td></tr>`).join('')||'<tr><td colspan="7" class="hint">ยังไม่มีใบจองใน 90 วันล่าสุด</td></tr>'}
+    <div class="tiles">${tile('pending','รอ Planner รับงาน',cnt('pending'),late?'alert':cnt('pending')?'warnt':'',late?`Delay ${late} ใบ`:'')}${tile('review','Sale แก้ไข · รอ review',cnt('review'),cnt('review')?'alert':'')}${tile('noplan','รับแล้ว · รอลงแผน',cnt('noplan'),cnt('noplan')?'warnt':'')}${tile('planned','ลงแผนแล้ว',cnt('planned'))}${tile('all','ทั้งหมด',FM.length)}</div>
+    <section class="panel span-12"><header><h2>ใบรับคำร้องขอรับบริการสอบเทียบ · Flow Meter <span class="md-count" id="jbCount"></span></h2><p>Sale ส่งคำร้อง (FLS-F-018) → Planner รับงาน (ออก PN) → ลงแผนรายวันสาย Flow Meter จากใบรับคำร้องเดียวกัน · รายการเครื่องเข้า Weekly plan calibration ให้เอง · กดแถวเพื่อเปิด</p></header>
+      <div class="jb-tabs" role="tablist" aria-label="สถานะใบรับคำร้อง">${JB_TABS.map(([id,l])=>`<button type="button" role="tab" data-jb-tab="${id}" aria-selected="${S.jbF.tab===id}">${l}</button>`).join('')}</div>
+      <div class="ncr-tools"><input type="search" id="jb-q" placeholder="ค้นหาเลขที่คำร้อง PN ลูกค้า สถานที่ Sale" value="${esc(S.jbF.q)}" autocomplete="off" aria-label="ค้นหาใบรับคำร้อง">
+        <label class="jb-mine"><input type="checkbox" id="jb-mine"${S.jbF.mine?' checked':''}> เฉพาะที่ฉันส่ง</label>${insN?`<label class="jb-mine" title="ใบรับคำร้องสาย Instrument ที่ทำไว้ก่อนเปลี่ยนเป็น Flow Meter อย่างเดียว"><input type="checkbox" id="jb-ins"${S.jbF.ins?' checked':''}> แสดงใบ Instrument เดิม (${insN})</label>`:''}${canBook()?'<button type="button" class="btn primary" data-job-new>+ ใบรับคำร้องใหม่</button>':''}</div>
+      <div class="scroll-x plain"><table class="mini ftab jb-tab"><thead><tr><th>เลขที่คำร้อง</th><th>ลูกค้า</th><th>งาน</th><th>วันที่ต้องการ</th><th>Sale</th><th>PN No.</th><th>สถานะ</th></tr></thead><tbody id="jbRows"></tbody></table></div></section>
+    <section class="panel span-12"><header><h2>KPI การรับงาน · 90 วันล่าสุด</h2><p>เป้าหมาย: Planner ตอบรับภายใน ${k.acceptDays} วันทำงานหลังส่งคำร้อง · งานกระชั้น = ส่งล่วงหน้าน้อยกว่า ${k.urgentDays} วันทำงาน (ตั้งค่าที่ ข้อมูลหลัก › KPI ใบรับคำร้องขอรับบริการสอบเทียบ)</p></header>
+      <div class="scroll-x plain"><table class="mini jb-kpi"><thead><tr><th>Sale</th><th>ใบรับคำร้อง</th><th>ตอบรับแล้ว</th><th>ตอบรับเฉลี่ย</th><th>ทันเวลา (Timely)</th><th>คำร้องกระชั้น</th><th>ด่วนทั้งหมด</th></tr></thead><tbody>
+        ${K.sales.map(s=>`<tr><td>${esc(s.name)}</td><td class="num">${s.n}</td><td class="num">${s.acc}</td><td class="num">${s.avg==null?'—':jbDur(s.avg)}</td><td class="num">${pct(s.pct)}</td><td class="num">${s.short}</td><td class="num">${s.urg}</td></tr>`).join('')||'<tr><td colspan="7" class="hint">ยังไม่มีใบรับคำร้องใน 90 วันล่าสุด</td></tr>'}
         ${K.sales.length?`<tr class="tot"><td>รวม</td><td class="num">${K.all.n}</td><td class="num">${K.all.acc}</td><td class="num">${K.all.avg==null?'—':jbDur(K.all.avg)}</td><td class="num">${pct(K.all.pct)}</td><td class="num">${K.all.short}${K.all.n?` <small>(${Math.round(K.all.short/K.all.n*100)}%)</small>`:''}</td><td class="num">${K.all.urg}</td></tr>`:''}</tbody></table></div>
       <p class="hint jb-hint">ถ้างานกระชั้นมีสัดส่วนสูงต่อเนื่อง ใช้ตัวเลขนี้ประกอบการตัดสินใจ เช่น ควรมีคนสำรองรองานด่วนหรือไม่</p></section>
   </div>`;
@@ -167,19 +172,22 @@ function jbSaleOptions(cur){
   const sl=sales().map(s=>s.name);DEFAULT_SALES.forEach(n=>{if(!sl.some(x=>norm(x)===norm(n)))sl.push(n)});if(cur&&!sl.some(n=>norm(n)===norm(cur)))sl.push(cur);
   return `<option value="">— เลือก Sale —</option>`+sl.map(n=>`<option value="${esc(n)}"${norm(n)===norm(cur||'')?' selected':''}>${esc(n)}</option>`).join('');
 }
-function jbTypeOptions(cur){return `<option value="">— เลือกหัวข้องาน —</option>`+activeTypes().filter(t=>!isLeaveId(t.id)).concat(cur&&!activeTypes().some(t=>t.id===cur)&&jobTypes().find(t=>t.id===cur)?[jobTypes().find(t=>t.id===cur)]:[]).map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name)}</option>`).join('')}
+/* Flow Meter job types first, then the ones used by both lines; Instrument-only types are not offered (a saved one stays selectable) */
+function jbTypeOptions(cur){const fmFirst=(a,b)=>(a.line==='fm'?0:1)-(b.line==='fm'?0:1);
+  return `<option value="">— เลือกหัวข้องาน —</option>`+activeTypes().filter(t=>!isLeaveId(t.id)&&t.line!=='ins').sort(fmFirst).concat(cur&&activeTypes().some(t=>t.id===cur&&t.line==='ins')?[activeTypes().find(t=>t.id===cur)]:[]).concat(cur&&!activeTypes().some(t=>t.id===cur)&&jobTypes().find(t=>t.id===cur)?[jobTypes().find(t=>t.id===cur)]:[]).map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name)}</option>`).join('')}
 function openJob(id){
   const j=id?jbById(id):null;if(id&&!j)return;
   const ed=j?j.state!=='cancelled'&&canBook():canBook();const dis=ed?'':' disabled';
-  const v=Object.assign({svcType:'inhouse',period:'full',sale:'',line:S.line||'',certSame:true,materialBy:'',installBy:'',transportBy:'',adjust:''},j||{});
-  jbEdit={id:j?j.id:null,items:(Array.isArray(v.items)&&v.items.length?v.items:[{}]).map(x=>Object.assign({id:x.id||newId('u'),witness:[]},x)),ed};
+  const v=Object.assign({svcType:'inhouse',period:'full',sale:'',line:'fm',certSame:true,materialBy:'',installBy:'',transportBy:'',adjust:''},j||{});
+  /* line: Flow Meter for every new request; an older one keeps what it had (Instrument requests stay Instrument) */
+  jbEdit={id:j?j.id:null,line:j?(j.line||''):'fm',items:(Array.isArray(v.items)&&v.items.length?v.items:[{product:'Flowmeter'}]).map(x=>Object.assign({id:x.id||newId('u'),witness:[]},x)),ed};
   const f=(k,label,html,cls)=>`<div class="field${cls?' '+cls:''}"><label for="jb-${k}">${label}</label>${html}</div>`;
   const inp=(k,attrs)=>`<input id="jb-${k}" name="${k}" value="${esc(v[k]==null?'':v[k])}"${attrs||''}${dis}>`;
   const rad=(k,list)=>`<div class="jb-rad" role="radiogroup">${list.map(([val,l,sub])=>`<label><input type="radio" name="jb-${k}" value="${val}"${v[k]===val?' checked':''}${dis}><span>${esc(l)}${sub?`<small>${esc(sub)}</small>`:''}</span></label>`).join('')}</div>`;
   const chk=(k,list)=>`<div class="jb-chk">${list.map(x=>`<label><input type="checkbox" data-jbchk="${k}" value="${esc(x)}"${(v[k]||[]).includes(x)?' checked':''}${dis}><span>${esc(x)}</span></label>`).join('')}</div>`;
   const hist=S.tasks.concat(ALL.data||[...known.values()]);const opt=list=>[...new Set(list.map(x=>String(x||'').trim()).filter(Boolean))].slice(0,400).map(c=>`<option value="${esc(c)}">`).join('');
-  $('#jbTitle').textContent=j?`${j.jobNo} · ${j.customer||''}`:'จองงานใหม่';
-  $('#jbSub').textContent=j?`${(JB_STATE[j.state]||JB_STATE.pending).th}${j.planNo?' · Request No. '+j.planNo:''} · จองเมื่อ ${jbWhen(j.bookedAt)}`:'ใบรับคำร้องขอรับบริการสอบเทียบ (FLS-F-018) · ระบบบันทึกวัน-เวลาที่จองให้อัตโนมัติ แล้วส่งให้ Planner รับงาน';
+  $('#jbTitle').textContent=j?`${j.jobNo} · ${j.customer||''}`:'ใบรับคำร้องขอรับบริการสอบเทียบ · ใบใหม่';
+  $('#jbSub').textContent=j?`${(JB_STATE[j.state]||JB_STATE.pending).th}${j.planNo?' · Request No. '+j.planNo:''} · รับคำร้องเมื่อ ${jbWhen(j.bookedAt)}`:'ใบรับคำร้องขอรับบริการสอบเทียบ (FLS-F-018) · ระบบบันทึกวัน-เวลาที่ส่งคำร้องให้อัตโนมัติ แล้วส่งให้ Planner รับงาน';
   $('#jbBody').innerHTML=`${j?jbStatusHtml(j):''}${j&&jbNeedsReview(j)?jbReviewHtml(j):''}${j&&j.state==='pending'&&isPlanner()?jbAcceptHtml(j):''}
     <fieldset class="jb-sec"><legend>ส่วนที่ 1 · สำหรับ Sale · ข้อมูลลูกค้า</legend>
       ${f('svcType','ความต้องการรับบริการ <b class="req">*</b>',rad('svcType',JB_SVC),'wide')}
@@ -208,12 +216,12 @@ function openJob(id){
     <fieldset class="jb-sec"><legend>สำหรับวางแผน</legend><div class="ncr-grid jb-grid">
       ${f('jobType','หัวข้องาน <b class="req">*</b>',`<select id="jb-jobType" name="jobType"${dis}>${jbTypeOptions(v.jobType)}</select>`)}
       ${f('jobTypeOther','หัวข้องาน (ถ้าเลือก อื่นๆ)',inp('jobTypeOther',' maxlength="80"'))}
-      ${f('line','สายงาน',`<select id="jb-line" name="line"${dis}>${lineOptions(v.line)}</select>`)}
+      <div class="field"><span class="lbl">สายงาน</span><span class="jb-line${jbIsIns(v)?' ins':''}">${jbIsIns(v)?'Instrument · ใบเดิม (ก่อนเปลี่ยนเป็น Flow Meter อย่างเดียว)':jbEdit.line==='fm'?'Flow Meter':'Flow Meter / ทั้งสองสาย · ใบเดิม'}</span></div>
       ${f('teamNeed','จำนวนคนที่ใช้ (ประมาณ)',`<input id="jb-teamNeed" name="teamNeed" type="number" min="0" max="50" value="${v.teamNeed>0?v.teamNeed:''}"${dis}>`)}
       ${f('wantFrom','วันที่ลูกค้าต้องการ <b class="req">*</b>',inp('wantFrom',' type="date"'))}
       ${f('wantTo','ถึงวันที่ (งานหลายวัน)',inp('wantTo',' type="date"'))}
       ${f('period','ช่วงเวลา',`<select id="jb-period" name="period"${dis}>${PERIODS.map(p=>`<option value="${p.id}"${(v.period||'full')===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`)}
-      <div class="field"><label class="jb-urg"><input type="checkbox" id="jb-urgent" name="urgent"${v.urgent?' checked':''}${dis}> งานด่วน (ลูกค้าขอเร่ง)</label><small class="hint">ระบบนับ "จองกระชั้น" เองเมื่อจองล่วงหน้าน้อยกว่า ${jbKpi().urgentDays} วันทำงาน</small></div>
+      <div class="field"><label class="jb-urg"><input type="checkbox" id="jb-urgent" name="urgent"${v.urgent?' checked':''}${dis}> งานด่วน (ลูกค้าขอเร่ง)</label><small class="hint">ระบบนับ "คำร้องกระชั้น" เองเมื่อส่งล่วงหน้าน้อยกว่า ${jbKpi().urgentDays} วันทำงาน</small></div>
       ${f('detail','รายละเอียดงาน / ขอบเขต (Scope) <b class="req">*</b>',`<textarea id="jb-detail" name="detail" rows="4" maxlength="3000" placeholder="เช่น Switch Flowmeter Coriolis · Remove → Cal ที่ Lab → Install คืน · ต้องมี Work Permit"${dis}>${esc(v.detail||'')}</textarea>`,'wide')}
       ${f('note','หมายเหตุถึง Planner',`<textarea id="jb-note" name="note" rows="2" maxlength="1000" placeholder="เช่น ลูกค้าขอทีมเดิม · ต้องเข้าก่อน 08.00 น."${dis}>${esc(v.note||'')}</textarea>`,'wide')}
     </div></fieldset>
@@ -221,11 +229,11 @@ function openJob(id){
     <datalist id="jb-dl-out">${JB_OUTPUTS.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
     ${j&&j.state==='accepted'?jbPlansHtml(j):''}
     ${j&&typeof csJobHtml==='function'?csJobHtml(j):''}
-    ${j&&j.state!=='cancelled'&&canBook()?`<details class="jb-cancel"><summary>ยกเลิกใบจองนี้</summary><div class="field"><label for="jb-cancelWhy">เหตุผลที่ยกเลิก</label><textarea id="jb-cancelWhy" rows="2" maxlength="500" placeholder="เช่น ลูกค้ายกเลิกงาน · เลื่อนไม่มีกำหนด"></textarea></div><button type="button" class="btn danger sm" data-job-cancel>ยืนยันยกเลิกใบจอง</button></details>`:''}
+    ${j&&j.state!=='cancelled'&&canBook()?`<details class="jb-cancel"><summary>ยกเลิกใบรับคำร้องนี้</summary><div class="field"><label for="jb-cancelWhy">เหตุผลที่ยกเลิก</label><textarea id="jb-cancelWhy" rows="2" maxlength="500" placeholder="เช่น ลูกค้ายกเลิกงาน · เลื่อนไม่มีกำหนด"></textarea></div><button type="button" class="btn danger sm" data-job-cancel>ยืนยันยกเลิกใบรับคำร้อง</button></details>`:''}
     ${j&&j.state==='cancelled'?`<div class="reason-box cancelled"><b>ยกเลิกเมื่อ ${esc(jbWhen(j.cancelledAt))}${j.cancelledBy?' โดย '+esc(String(j.cancelledBy).split('@')[0]):''}</b><span>${esc(j.cancelReason||'—')}</span></div>`:''}
     ${j?isoHistoryHtml(j):''}
     <p class="form-err" id="jbErr" hidden></p>`;
-  $('#jbSave').hidden=!ed;$('#jbSave').textContent=j?'บันทึกใบจอง':'ส่งใบจองให้ Planner';$('#jbDel').hidden=!j||!can('del');$('#jbPrint').hidden=!j;$('#jbPdf').hidden=!j;
+  $('#jbSave').hidden=!ed;$('#jbSave').textContent=j?'บันทึกใบรับคำร้อง':'ส่งใบรับคำร้องให้ Planner';$('#jbDel').hidden=!j||!can('del');$('#jbPrint').hidden=!j;$('#jbPdf').hidden=!j;
   const ns=j?jbSheets(j).length:0;$('#jbPdfAll').hidden=!ns;$('#jbPdfAll').textContent=`PDF ทั้งชุด (${ns+1} ใบ)`;
   const d=$('#jbDlg');if(!d.open)d.showModal();
   if(j&&j.state==='accepted')jbLoadPlans(j).then(()=>{if(jbEdit&&jbEdit.id===j.id){const b=$('#jbPlans');if(b)b.outerHTML=jbPlansHtml(jbById(j.id)||j)}});
@@ -236,11 +244,13 @@ function jbItemsHtml(){
   const ed=jbEdit&&jbEdit.ed;const dis=ed?'':' disabled';const L=jbEdit?jbEdit.items:[];
   const c=(i,k,label,attrs,cls)=>`<label class="${cls||''}"><span>${label}</span><input data-jbit="${i}|${k}" value="${esc(L[i][k]||'')}"${attrs||''}${dis}></label>`;
   return L.map((it,i)=>`<div class="jb-item"><div class="jb-ih"><b>ITEM ${i+1}</b>${it.tag?`<span>${esc(jbItemText(it))}</span>`:''}${ed&&L.length>1?`<button type="button" class="ph-x2" data-jbit-del="${i}" aria-label="ลบเครื่องที่ ${i+1}">×</button>`:''}</div>
-    <div class="jb-ig">${c(i,'tag','TAG No. *',' maxlength="60" class="mono"')}${c(i,'product','Product',' maxlength="60"')}${c(i,'type','Type',' maxlength="60" placeholder="เช่น Coriolis"')}
-      ${c(i,'size','Size (inch)',' maxlength="12" placeholder="3"')}${c(i,'cls','Class',' maxlength="12" placeholder="150#"')}${c(i,'output','Output signal',' maxlength="40" list="jb-dl-out"')}
+    <div class="jb-ig">${c(i,'tag','TAG No. *',' maxlength="60" class="mono"')}${c(i,'product','Product',' maxlength="60" placeholder="Flowmeter"')}
+      <label class="w2"><span>Type (Flowmeter)</span><select data-jbit="${i}|type"${dis}><option value="">—</option>${CAL_TYPES.filter(x=>x!=='None').concat(it.type&&!CAL_TYPES.includes(it.type)?[it.type]:[]).map(x=>`<option${x===it.type?' selected':''}>${esc(x)}</option>`).join('')}</select></label>
+      <label><span>Size (inch)</span><select data-jbit="${i}|size"${dis}><option value="">—</option>${CAL_SIZES.map(s=>s.replace(/"$/,'')).concat(it.size&&!CAL_SIZES.some(s=>s.replace(/"$/,'')===it.size)?[it.size]:[]).map(s=>`<option value="${esc(s)}"${s===String(it.size||'')?' selected':''}>${esc(s)}"</option>`).join('')}</select></label>
+      ${c(i,'cls','Class',' maxlength="12" placeholder="150#"')}${c(i,'output','Output signal',' maxlength="40" list="jb-dl-out"')}
       ${c(i,'range','Flow range',' maxlength="60" placeholder="0–136,080 kg/h"','w2')}${c(i,'points','Calibration point',' maxlength="120" placeholder="@ 1500, 2500, 3000 … kg/h"','w2')}
       ${c(i,'acc','ความถูกต้อง (±) Accuracy',' maxlength="20"')}${c(i,'interval','Calibration interval',' maxlength="20" placeholder="1 ปี"')}
-      <label><span>Method</span><select data-jbit="${i}|method"${dis}><option value="">—</option>${JB_METHODS.map((m,k)=>`<option value="${k+1}"${String(it.method)===String(k+1)?' selected':''}>${esc(m)}</option>`).join('')}</select></label>
+      <label class="w2"><span>Method</span><select data-jbit="${i}|method"${dis}><option value="">—</option>${JB_METHODS.map((m,k)=>`<option value="${k+1}"${String(it.method)===String(k+1)?' selected':''}>${esc(m)}</option>`).join('')}</select></label>
       <label><span>Round</span><select data-jbit="${i}|round"${dis}><option value="">—</option>${CAL_ROUNDS.concat(it.round&&!CAL_ROUNDS.includes(it.round)?[it.round]:[]).map(r=>`<option${r===it.round?' selected':''}>${esc(r)}</option>`).join('')}</select></label>
       ${c(i,'refer','Refer Job No.',' maxlength="40"')}
       <div class="jb-wit w2"><span>Witness</span>${JB_WITNESS.map(([k,l])=>`<label><input type="checkbox" data-jbitw="${i}|${k}"${(it.witness||[]).includes(k)?' checked':''}${dis}>${l}</label>`).join('')}</div></div></div>`).join('');
@@ -248,16 +258,16 @@ function jbItemsHtml(){
   const af=acceptFlow(j);const lead=jbLead(j);
   const who=b=>b?esc(String(b).split('@')[0]):'—';
   return `<div class="jb-steps">
-    <div class="jb-step done"><b>1 · Sale จองงาน</b><span>${esc(jbWhen(j.bookedAt))} · ${who(j.bookedBy)}</span>${lead!=null?`<span class="${jbShort(j)?'bad':''}">${lead<0?'จองหลังวันที่ลูกค้าต้องการ':`จองล่วงหน้า ${lead} วันทำงาน`}${jbUrgent(j)?' · <b class="jb-urgent">ด่วน</b>':''}</span>`:''}</div>
+    <div class="jb-step done"><b>1 · Sale ส่งคำร้อง</b><span>${esc(jbWhen(j.bookedAt))} · ${who(j.bookedBy)}</span>${lead!=null?`<span class="${jbShort(j)?'bad':''}">${lead<0?'ส่งหลังวันที่ลูกค้าต้องการ':`ส่งล่วงหน้า ${lead} วันทำงาน`}${jbUrgent(j)?' · <b class="jb-urgent">ด่วน</b>':''}</span>`:''}</div>
     <div class="jb-step${j.state==='accepted'?' done':j.state==='pending'?' now':''}"><b>2 · Planner รับงาน · ออก PN</b>${j.acceptedAt?`<span>${esc(jbWhen(j.acceptedAt))} · ${who(j.acceptedBy)} · <b class="mono">${esc(j.planNo||'')}</b></span>`:`<span>${j.state==='cancelled'?'—':'รอ Planner'}</span>`}${flowChip(af)}${j.acceptNote?`<span class="sub">📝 ${esc(j.acceptNote)}</span>`:''}</div>
     <div class="jb-step${jbPlans(j).length?' done':j.state==='accepted'?' now':''}"><b>3 · ลงแผนรายวัน (Weekly)</b><span>${jbPlans(j).length?`${jbPlans(j).length} แผน`:'ยังไม่ลงแผน'}</span>${j.state==='accepted'?flowChip(jobFlow(j)):''}</div>
   </div>`;
 }
 function jbReviewHtml(j){
   const r=j.review||{};
-  return `<div class="jb-review"><b>⚠ Sale แก้ไขใบจองหลังออก PN แล้ว · รอ Planner review และปรับแผน</b><span>แก้เมื่อ ${esc(jbWhen(r.at))} โดย ${esc(String(r.by||'—').split('@')[0])}</span>
+  return `<div class="jb-review"><b>⚠ Sale แก้ไขใบรับคำร้องหลังออก PN แล้ว · รอ Planner review และปรับแผน</b><span>แก้เมื่อ ${esc(jbWhen(r.at))} โดย ${esc(String(r.by||'—').split('@')[0])}</span>
     <ul>${(r.ch||[]).map(([k,a,b])=>`<li><b>${esc(JB_LABEL[k]||k)}</b> <s>${esc(a||'—')}</s> → ${esc(b||'—')}</li>`).join('')}</ul>
-    ${isPlanner()?`<div class="v-row"><button type="button" class="btn primary sm" data-job-review="push">รับทราบ + อัปเดตแผนที่ลงไว้</button><button type="button" class="btn sm" data-job-review="ok">รับทราบ (ปรับแผนเอง)</button></div><small class="hint">"อัปเดตแผน" คัดลอก ${JB_SHARED.map(k=>JB_LABEL[k]).join(' · ')} ที่เปลี่ยนไปใส่ทุกแผนของใบจองนี้ · วันที่ คน และรายละเอียดรายวันให้ปรับเองในแผน</small>`:'<small class="hint">Planner จะเห็นรายการนี้ในหน้าใบจองงาน (ป้าย "รอ review")</small>'}</div>`;
+    ${isPlanner()?`<div class="v-row"><button type="button" class="btn primary sm" data-job-review="push">รับทราบ + อัปเดตแผนที่ลงไว้</button><button type="button" class="btn sm" data-job-review="ok">รับทราบ (ปรับแผนเอง)</button></div><small class="hint">"อัปเดตแผน" คัดลอก ${JB_SHARED.map(k=>JB_LABEL[k]).join(' · ')} ที่เปลี่ยนไปใส่ทุกแผนของใบรับคำร้องนี้ · วันที่ คน และรายละเอียดรายวันให้ปรับเองในแผน</small>`:'<small class="hint">Planner จะเห็นรายการนี้ในหน้าใบรับคำร้องขอรับบริการสอบเทียบ (ป้าย "รอ review")</small>'}</div>`;
 }
 function jbAcceptHtml(j){
   return `<div class="jb-accept"><b>Planner รับงาน · ออก PN No.</b><div class="jb-acc-row"><input id="jb-pn" class="mono" maxlength="40" value="${esc(j.planNo||nextPlanNo(j.wantFrom))}" aria-label="PN No." placeholder="PN-YY-MMNNN">
@@ -266,22 +276,23 @@ function jbAcceptHtml(j){
 }
 function jbPlansHtml(j){
   const ps=jbPlans(j);
-  return `<div class="jb-plans" id="jbPlans"><div class="jb-ph"><b>แผนรายวันจากใบจองนี้ (${ps.length})</b>${S.canWrite?'<button type="button" class="btn sm primary" data-job-plan>+ ลงแผนรายวัน</button>':''}</div>
+  return `<div class="jb-plans" id="jbPlans"><div class="jb-ph"><b>แผนรายวันจากใบรับคำร้องนี้ (${ps.length})</b>${S.canWrite?'<button type="button" class="btn sm primary" data-job-plan>+ ลงแผนรายวัน</button>':''}</div>
     ${ps.length?`<ul>${ps.map(t=>`<li><button type="button" class="jb-pl" data-edit="${esc(t.id)}"><span class="num">${esc(fmtDay(t.date))} · ${esc(pName(t))}</span><span>${esc(typeLabel(t))}${(t.staffIds||[]).length?' · '+esc(teamNames(t).join(', ')):' · ยังไม่จัดคน'}</span>${noStatus(t)?'':`<span class="ncr-st" style="--c:${(STATUS[t.status]||STATUS.planned).color}">${esc(stTh(t.status))}</span>`}${flowChip(planFlow(t))}</button></li>`).join('')}</ul>`
-      :'<p class="hint">ยังไม่ลงแผน · กด "+ ลงแผนรายวัน" ระบบนำข้อมูลจากใบจองไปกรอกในแผนให้ (ลูกค้า สถานที่ ผู้ติดต่อ Sale รายละเอียด PN วันที่) ไม่ต้องพิมพ์ซ้ำ</p>'}</div>`;
+      :'<p class="hint">ยังไม่ลงแผน · กด "+ ลงแผนรายวัน" ระบบนำข้อมูลจากใบรับคำร้องไปกรอกในแผนให้ (ลูกค้า สถานที่ ผู้ติดต่อ Sale รายละเอียด PN วันที่) ไม่ต้องพิมพ์ซ้ำ</p>'}</div>`;
 }
 function jbErr(m){const e=$('#jbErr');if(e){e.textContent=m||'';e.hidden=!m}}
 function jbRead(){
   const g=k=>{const el=$('#jb-'+k);return el?String(el.value||'').trim():''};
   const r=k=>(document.querySelector(`input[name="jb-${k}"]:checked`)||{}).value||'';
   const c=k=>[...document.querySelectorAll(`[data-jbchk="${k}"]:checked`)].map(x=>x.value);
-  const items=(jbEdit?jbEdit.items:[]).map(it=>{const o={id:it.id,witness:(it.witness||[]).slice()};JB_ITEM_F.forEach(k=>{o[k]=String(it[k]||'').trim()});return o}).filter(it=>JB_ITEM_F.some(k=>it[k])||it.witness.length);
+  const items=(jbEdit?jbEdit.items:[]).map(it=>{const o={id:it.id,witness:(it.witness||[]).slice()};JB_ITEM_F.forEach(k=>{o[k]=String(it[k]||'').trim()});return o})
+    .filter(it=>JB_ITEM_F.some(k=>it[k]&&!(k==='product'&&it[k]==='Flowmeter'))||it.witness.length);/* a row with only the default Product is an unused row */
   const certSame=!!($('#jb-certSame')||{}).checked;
   return {svcType:r('svcType'),customer:g('customer'),address:g('address'),location:g('location'),contact:g('contact'),contactTel:g('contactTel'),email:g('email'),sale:g('sale'),poNo:g('poNo'),
     certSame,certName:certSame?'':g('certName'),certAddress:certSame?'':g('certAddress'),items,qty:items.length?`${items.length} เครื่อง`:'',
     reports:c('reports'),reportOther:g('reportOther'),materialBy:r('materialBy'),materials:c('materials'),adjust:r('adjust'),adjustPoints:g('adjustPoints'),highPressure:!!($('#jb-highPressure')||{}).checked,
     installBy:r('installBy'),disconnectDate:g('disconnectDate'),installDate:g('installDate'),transportBy:r('transportBy'),receiveDate:g('receiveDate'),returnDate:g('returnDate'),
-    jobType:g('jobType'),jobTypeOther:g('jobTypeOther'),line:g('line'),wantFrom:g('wantFrom'),wantTo:g('wantTo'),period:g('period')||'full',teamNeed:Math.max(0,Math.floor(Number(g('teamNeed'))||0)),
+    jobType:g('jobType'),jobTypeOther:g('jobTypeOther'),line:jbEdit?jbEdit.line:'fm',wantFrom:g('wantFrom'),wantTo:g('wantTo'),period:g('period')||'full',teamNeed:Math.max(0,Math.floor(Number(g('teamNeed'))||0)),
     detail:g('detail'),note:g('note'),urgent:!!($('#jb-urgent')||{}).checked};
 }
 const jbText=(k,v)=>Array.isArray(v)?(k==='items'?v.map(it=>it.tag||'?').join(', '):v.join(', ')):v===true?'ใช่':v===false?'ไม่':k==='svcType'?((JB_SVC.find(x=>x[0]===v)||[])[1]||v||''):(k==='materialBy'||k==='installBy'||k==='transportBy')?(JB_BY[v]||''):k==='adjust'?(v==='accept'?'ACCEPT':v==='notaccept'?'NOT ACCEPT':''):
@@ -304,8 +315,8 @@ const jbItemsKey=l=>(l||[]).map(it=>JB_ITEM_F.map(k=>it[k]||'').join('|')+'|'+(i
     if(ch.length){const prev=jbNeedsReview(old)?(old.review.ch||[]):[];data.review={at:now,by:S.me||null,ch:prev.filter(p=>!ch.some(c=>c[0]===p[0])).concat(ch)};data.reviewedAt='';data.reviewedBy='';rev=true}
   }
   const btn=$('#jbSave');btn.disabled=true;
-  try{await Store.set('jobs',id,data);jbEdit.saved=true;$('#jbDlg').close();
-    toast(old?(rev?`บันทึก ${data.jobNo} แล้ว · แจ้ง Planner ให้ review การแก้ไขแล้ว`:`บันทึก ${data.jobNo} แล้ว`):`ส่งใบจอง ${data.jobNo} ให้ Planner แล้ว · จองเมื่อ ${jbWhen(now)}`)}
+  try{await Store.set('jobs',id,data);jbEdit.saved=true;$('#jbDlg').close();if(!old)jbDoneAsk(Object.assign({id},data));
+    toast(old?(rev?`บันทึก ${data.jobNo} แล้ว · แจ้ง Planner ให้ review การแก้ไขแล้ว`:`บันทึก ${data.jobNo} แล้ว`):`ส่งใบรับคำร้อง ${data.jobNo} ให้ Planner แล้ว · รับคำร้องเมื่อ ${jbWhen(now)}`)}
   catch(err){jbErr(errText(err));noteWriteError(err)}
   finally{btn.disabled=false}
 }
@@ -313,7 +324,7 @@ async function acceptJob(){
   const j=jbEdit&&jbById(jbEdit.id);if(!j||!isPlanner()||j.state!=='pending')return;
   const pn=cleanPlan(($('#jb-pn')||{}).value);
   if(!PLAN_RE.test(pn)){jbErr('PN No. ต้องเป็นรูปแบบ PN-YY-MMNNN เช่น PN-26-10015');$('#jb-pn').focus();return}
-  const dup=S.jobs.find(o=>o.id!==j.id&&o.planNo===pn&&o.state!=='cancelled');if(dup){jbErr(`PN ${pn} ใช้กับใบจอง ${dup.jobNo} แล้ว`);$('#jb-pn').focus();return}
+  const dup=S.jobs.find(o=>o.id!==j.id&&o.planNo===pn&&o.state!=='cancelled');if(dup){jbErr(`PN ${pn} ใช้กับใบรับคำร้อง ${dup.jobNo} แล้ว`);$('#jb-pn').focus();return}
   const now=new Date().toISOString();const note=String(($('#jb-accNote')||{}).value||'').trim().slice(0,300);
   try{await Store.update('jobs',j.id,{state:'accepted',planNo:pn,acceptedAt:now,acceptedBy:S.me||null,acceptNote:note,updatedAt:now,updatedBy:S.me||null});
     const f=acceptFlow(Object.assign({},j,{state:'accepted',acceptedAt:now}));
@@ -334,14 +345,14 @@ async function cancelJob(){
   const j=jbEdit&&jbById(jbEdit.id);if(!j||!canBook()||j.state==='cancelled')return;
   const why=String(($('#jb-cancelWhy')||{}).value||'').trim();if(!why){jbErr('ใส่เหตุผลที่ยกเลิก');$('#jb-cancelWhy').focus();return}
   const n=jbPlans(j).filter(t=>t.status!=='cancelled').length;
-  if(!await askConfirm('ยกเลิกใบจอง?',`ยกเลิก ${j.jobNo} · ${j.customer}${n?`\nแผนที่ลงไว้ ${n} แผน ยังอยู่ — ตั้งสถานะ "ยกเลิก" ที่แผนเองถ้าไม่ทำแล้ว`:''}`,'ยกเลิกใบจอง'))return;
+  if(!await askConfirm('ยกเลิกใบรับคำร้อง?',`ยกเลิก ${j.jobNo} · ${j.customer}${n?`\nแผนที่ลงไว้ ${n} แผน ยังอยู่ — ตั้งสถานะ "ยกเลิก" ที่แผนเองถ้าไม่ทำแล้ว`:''}`,'ยกเลิกใบรับคำร้อง'))return;
   const now=new Date().toISOString();
   try{await Store.update('jobs',j.id,{state:'cancelled',cancelReason:why,cancelledAt:now,cancelledBy:S.me||null,updatedAt:now,updatedBy:S.me||null});$('#jbDlg').close();toast(`ยกเลิก ${j.jobNo} แล้ว`)}
   catch(err){jbErr(errText(err));noteWriteError(err)}
 }
 async function deleteJob(btn){
   const j=jbEdit&&jbById(jbEdit.id);if(!j||!can('del'))return;
-  if(!arm(btn,'job:'+j.id,'ลบใบจอง','กดอีกครั้งเพื่อลบใบจอง'))return;
+  if(!arm(btn,'job:'+j.id,'ลบใบรับคำร้อง','กดอีกครั้งเพื่อลบใบรับคำร้อง'))return;
   try{await Store.del('jobs',j.id);$('#jbDlg').close();toast(`ลบ ${j.jobNo} แล้ว · แผนที่ลงไว้ยังอยู่`)}catch(err){jbErr(errText(err));noteWriteError(err)}
 }
 /* + ลงแผนรายวัน: the plan form filled from the booking (user: "แต่ละทีมวางแผนต่อจากข้อมูลต้นทางชุดเดียวกัน") */
@@ -359,6 +370,25 @@ function jbSheets(j){
   return (S.checks||[]).filter(c=>c.state!=='rejected'&&(c.jobId===j.id||c.itemId&&(j.items||[]).some(it=>it.id===c.itemId)))
     .sort((a,b)=>CS_ORDER.indexOf(a.form)-CS_ORDER.indexOf(b.form)||idx(a.itemId)-idx(b.itemId)||String(a.no).localeCompare(String(b.no)));
 }
+/* print / PDF from what is on the screen (user, 16 Oct 2026: "พิมพ์ pdf ได้ หลังจากกรอกข้อมูล"): the stored request with the form's
+   current values on top, so edits print before they are saved; a read-only request prints as stored */
+function jbOnScreen(){
+  const j=jbEdit&&jbById(jbEdit.id);if(!j)return null;
+  return jbEdit.ed&&$('#jbDlg').open?Object.assign({},j,jbRead(),{id:j.id,jobNo:j.jobNo,planNo:j.planNo,bookedAt:j.bookedAt}):j;
+}
+/* a new request has just been sent: offer its print / PDF at once (with its real JB number) */
+function jbDoneAsk(j){
+  let d=$('#jbDoneDlg');
+  if(!d){d=document.createElement('dialog');d.id='jbDoneDlg';d.className='confirm-dlg';d.setAttribute('aria-labelledby','jbDoneT');document.body.appendChild(d);
+    d.addEventListener('click',e=>{const b=e.target.closest('[data-jbdone]');if(!b){if(e.target===d)d.close();return}const k=b.dataset.jbdone;
+      if(k==='pdf')jbPdf(d._job,false,b);else if(k==='print')jbPrintForm(d._job);else d.close()})}
+  d._job=j;const n=(j.items||[]).length;
+  d.innerHTML=`<div class="confirm-wrap"><div class="confirm-ico ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></svg></div>
+    <h2 id="jbDoneT">ส่งใบรับคำร้อง ${esc(j.jobNo)} ให้ Planner แล้ว</h2>
+    <p>${esc(j.customer||'')}${n?` · ${n} เครื่อง`:''} · รับคำร้องเมื่อ ${esc(jbWhen(j.bookedAt))}<br>พิมพ์หรือเก็บไฟล์ PDF ของใบรับคำร้องขอรับบริการสอบเทียบ (FLS-F-018) ใบนี้ได้เลย</p>
+    <div class="confirm-act"><button type="button" class="btn" data-jbdone="close">ปิด</button><button type="button" class="btn" data-jbdone="print">พิมพ์</button><button type="button" class="btn primary" data-jbdone="pdf">ดาวน์โหลด PDF</button></div></div>`;
+  d.showModal();setTimeout(()=>{const b=d.querySelector('[data-jbdone="pdf"]');if(b)b.focus()},30);
+}
 function jbPdf(j,all,btn){
   const docs=[jbPdfDoc(j)].concat(all?jbSheets(j).map(csPdfDoc):[]);const n=j.planNo||j.jobNo;
   pdfExport(docs,all?`${n}_ชุดเอกสาร.pdf`:`${n}_FLS-F-018.pdf`,btn);
@@ -375,8 +405,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #6b7c96;padding
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.foot{margin-top:6px;text-align:right;color:#4a5b75}
 @media print{.bar{display:none}body{margin:0}}${typeof isoPageCss==='function'?isoPageCss('jobs'):''}</style></head><body>
 <div class="bar"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวนอน · FLS-F-018</span></div>
-<div class="top"><div><b>${esc(typeof DASH_ORG!=='undefined'?DASH_ORG:'FLOWLAB & SERVICE CO., LTD.')}</b><h1>ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div>
-<div class="req"><b>REQUEST No. ${esc(j.planNo||'(รอ Planner ออก PN)')}</b><br>CONTACT SALE : ${esc(j.sale||'')}<br>เลขที่จอง : ${esc(j.jobNo)} · จองเมื่อ ${esc(jbWhen(j.bookedAt))}</div></div>
+<div class="top"><div style="display:flex;gap:12px;align-items:center">${orgLogo(52)}<div><b>${esc(ORG_NAME)}</b><h1 style="text-align:left">ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div></div>
+<div class="req"><b>REQUEST No. ${esc(j.planNo||'(รอ Planner ออก PN)')}</b><br>CONTACT SALE : ${esc(j.sale||'')}<br>เลขที่คำร้อง : ${esc(j.jobNo)} · รับคำร้องเมื่อ ${esc(jbWhen(j.bookedAt))}</div></div>
 <p><b>ส่วนที่ 1 สำหรับ SALE</b> &nbsp; ${svc('inhouse')} In-house calibration &nbsp; ${svc('onsite')} On-site calibration &nbsp; ${svc('mobile')} Mobile calibration</p>
 <table><tr><th style="width:16%">บริษัท / Customer</th><td>${esc(j.customer)}</td><th style="width:12%">ผู้ติดต่อ / Contact</th><td>${esc(j.contact)}</td><th style="width:9%">โทร / Tel</th><td>${esc(j.contactTel)}</td></tr>
 <tr><th>ที่อยู่ / Address</th><td colspan="3">${esc(j.address||'')} ${j.location?'· สถานที่ '+esc(j.location):''}</td><th>Email</th><td>${esc(j.email||'')}</td></tr>
@@ -393,21 +423,21 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #6b7c96;padding
 }/* the booking box in a plan's view */
 function jbPlanBox(t){
   const j=t&&t.jobId?jbById(t.jobId):null;if(!j)return '';
-  return `<div class="jb-box${jbNeedsReview(j)?' rev':''}"><b>ใบจอง ${esc(j.jobNo)}${j.planNo?' · '+esc(j.planNo):''}</b><span>จอง ${esc(jbWhen(j.bookedAt))}${j.sale?' · Sale '+esc(j.sale):''}${j.acceptedAt?` · รับงาน ${esc(jbWhen(j.acceptedAt))}`:''}</span>${jbNeedsReview(j)?'<span class="bad">⚠ Sale แก้ไขใบจอง · รอ Planner review</span>':''}<button type="button" class="btn sm" data-job-open="${esc(j.id)}">เปิดใบจอง</button></div>`;
+  return `<div class="jb-box${jbNeedsReview(j)?' rev':''}"><b>ใบรับคำร้อง ${esc(j.jobNo)}${j.planNo?' · '+esc(j.planNo):''}</b><span>รับคำร้อง ${esc(jbWhen(j.bookedAt))}${j.sale?' · Sale '+esc(j.sale):''}${j.acceptedAt?` · รับงาน ${esc(jbWhen(j.acceptedAt))}`:''}</span>${jbNeedsReview(j)?'<span class="bad">⚠ Sale แก้ไขใบรับคำร้อง · รอ Planner review</span>':''}<button type="button" class="btn sm" data-job-open="${esc(j.id)}">เปิดใบรับคำร้อง</button></div>`;
 }
 /* in-app notice (user chose "ในระบบอย่างเดียว"): the menu badge = bookings waiting for the Planner (to accept or to review) */
 function jbBadge(){
   const b=$('#jobBadge');if(!b)return;const n=isPlanner()?S.jobs.filter(j=>j.state==='pending'||jbNeedsReview(j)).length:0;b.hidden=!n;b.textContent=n;
   const m=$('#jobBadgeM');if(m){m.hidden=!n;m.textContent=n}
 }
-/* ข้อมูลหลัก › KPI ใบจองงาน */
+/* ข้อมูลหลัก › KPI ใบรับคำร้องขอรับบริการสอบเทียบ */
 function jobKpiSection(){
   const k=jbKpi();const dis=can('master')?'':' disabled';
-  return {id:'jobkpi',title:'KPI ใบจองงาน',sub:`ตอบรับ ${k.acceptDays} วัน · กระชั้น < ${k.urgentDays} วัน`,count:'KPI',
-    desc:'เป้าหมายที่ใช้ตัดสถานะ Delay / On Process / Timely ของใบจองงาน · นับเฉพาะวันทำงาน (จันทร์–เสาร์ ไม่รวมวันหยุดในข้อมูลหลัก)',
-    body:`<div class="jb-kset"><label>Planner ต้องตอบรับ (ออก PN) ภายใน <input type="number" min="0" max="30" class="w-num" data-jbkpi="acceptDays" value="${k.acceptDays}"${dis}> วันทำงานหลัง Sale จอง</label>
-      <label>นับเป็น "จองกระชั้น" เมื่อจองล่วงหน้าน้อยกว่า <input type="number" min="0" max="60" class="w-num" data-jbkpi="urgentDays" value="${k.urgentDays}"${dis}> วันทำงาน</label>
-      <p class="hint">ตัวอย่าง: ตั้ง 1 วัน แล้ว Sale จองวันจันทร์ 10:00 น. Planner ต้องออก PN ภายในสิ้นวันอังคาร ถ้าเกินขึ้น Delay</p></div>`};
+  return {id:'jobkpi',title:'KPI ใบรับคำร้องขอรับบริการสอบเทียบ',sub:`ตอบรับ ${k.acceptDays} วัน · กระชั้น < ${k.urgentDays} วัน`,count:'KPI',
+    desc:'เป้าหมายที่ใช้ตัดสถานะ Delay / On Process / Timely ของใบรับคำร้องขอรับบริการสอบเทียบ · นับเฉพาะวันทำงาน (จันทร์–เสาร์ ไม่รวมวันหยุดในข้อมูลหลัก)',
+    body:`<div class="jb-kset"><label>Planner ต้องตอบรับ (ออก PN) ภายใน <input type="number" min="0" max="30" class="w-num" data-jbkpi="acceptDays" value="${k.acceptDays}"${dis}> วันทำงานหลัง Sale ส่งคำร้อง</label>
+      <label>นับเป็น "คำร้องกระชั้น" เมื่อส่งล่วงหน้าน้อยกว่า <input type="number" min="0" max="60" class="w-num" data-jbkpi="urgentDays" value="${k.urgentDays}"${dis}> วันทำงาน</label>
+      <p class="hint">ตัวอย่าง: ตั้ง 1 วัน แล้ว Sale ส่งคำร้องวันจันทร์ 10:00 น. Planner ต้องออก PN ภายในสิ้นวันอังคาร ถ้าเกินขึ้น Delay</p></div>`};
 }
 
 /* ---------- events ---------- */
@@ -428,10 +458,10 @@ document.addEventListener('input',e=>{const t=e.target;if(t.id==='jb-q'){S.jbF.q
 /* the meters of FLS-F-018: add / remove a row, witness boxes, a select (method / round), the "As above" cert switch */
 document.addEventListener('click',e=>{
   if(!jbEdit)return;
-  if(e.target.closest('[data-jbit-add]')){jbEdit.items.push({id:newId('u'),witness:[]});$('#jbItems').innerHTML=jbItemsHtml();const l=document.querySelectorAll('#jbItems [data-jbit$="|tag"]');if(l.length)l[l.length-1].focus();return}
+  if(e.target.closest('[data-jbit-add]')){jbEdit.items.push({id:newId('u'),witness:[],product:'Flowmeter'});$('#jbItems').innerHTML=jbItemsHtml();const l=document.querySelectorAll('#jbItems [data-jbit$="|tag"]');if(l.length)l[l.length-1].focus();return}
   const del=e.target.closest('[data-jbit-del]');if(del){jbEdit.items.splice(Number(del.dataset.jbitDel),1);$('#jbItems').innerHTML=jbItemsHtml();return}
-  if(e.target.closest('#jbPrint')){const j=jbById(jbEdit.id);if(j)jbPrintForm(j)}
-  const pb=e.target.closest('#jbPdf,#jbPdfAll');if(pb){const j=jbById(jbEdit.id);if(j)jbPdf(j,pb.id==='jbPdfAll',pb)}
+  if(e.target.closest('#jbPrint')){const j=jbOnScreen();if(j)jbPrintForm(j)}
+  const pb=e.target.closest('#jbPdf,#jbPdfAll');if(pb){const j=jbOnScreen();if(j)jbPdf(j,pb.id==='jbPdfAll',pb)}
 });
 document.addEventListener('change',e=>{const t=e.target;if(!jbEdit)return;
   if(t.dataset&&t.dataset.jbit){const [i,k]=t.dataset.jbit.split('|');if(jbEdit.items[i])jbEdit.items[i][k]=t.value;return}
@@ -440,8 +470,9 @@ document.addEventListener('change',e=>{const t=e.target;if(!jbEdit)return;
 });
 document.addEventListener('change',e=>{
   if(e.target.id==='jb-mine'){S.jbF.mine=e.target.checked;fillJobs();return}
+  if(e.target.id==='jb-ins'){S.jbF.ins=e.target.checked;fillJobs();return}
   const k=e.target.dataset&&e.target.dataset.jbkpi;
-  if(k&&can('master')){const v=Math.max(0,Math.min(60,Math.floor(Number(e.target.value)||0)));saveCfg({jobKpi:Object.assign({},jbKpi(),{[k]:v})},'บันทึก KPI ใบจองงานแล้ว')}
+  if(k&&can('master')){const v=Math.max(0,Math.min(60,Math.floor(Number(e.target.value)||0)));saveCfg({jobKpi:Object.assign({},jbKpi(),{[k]:v})},'บันทึก KPI ใบรับคำร้องขอรับบริการสอบเทียบแล้ว')}
 });
 document.addEventListener('submit',e=>{if(e.target.id==='jbForm'){e.preventDefault();saveJob()}});
 /* Enter in the PN box accepts the job instead of saving the form */

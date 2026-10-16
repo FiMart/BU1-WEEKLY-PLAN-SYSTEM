@@ -146,10 +146,11 @@ function calWeekRows(tasks){
   tasks.filter(t=>!isLeave(t)&&isWorking(t)).sort(byTime).forEach(t=>calOf(t).forEach((x,i)=>rows.push({t,x,i,no:++no})));
   return rows;
 }
-function calWeekHtml(){
-  if(S.line==='ins')return '';
-  const rows=calWeekRows(S.tasks.filter(planMatch));
-  if(!rows.length&&S.line!=='fm')return '';
+/* list = the plans to use (page Weekly Cal / Ins passes every plan of the week and always shows the sheet, js/views/week-sheets.js) */
+function calWeekHtml(list){
+  const force=!!list;if(!force&&S.line==='ins')return '';
+  const rows=calWeekRows(list||S.tasks.filter(planMatch));
+  if(!rows.length&&!force&&S.line!=='fm')return '';
   const s=calStats(rows.map(r=>r.x));
   return `<section class="cal-week" aria-label="Weekly plan calibration">
     <header class="cw-head"><div class="cw-title">${CAL_ICON}<div><h2>Weekly plan calibration</h2><p>${esc(fmtShort(S.week))} – ${esc(fmtShort(addDays(S.week,6)))} ${be(addDays(S.week,6))} · รายการ Flow Meter ที่สอบเทียบในสัปดาห์นี้${S.canWrite&&rows.length?' · แก้ Lab / Status / Pass/Fail ในตารางได้ทันที':''}</p></div></div>

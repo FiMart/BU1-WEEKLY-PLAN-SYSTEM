@@ -9,7 +9,7 @@ const normTask=t=>{if(t&&t.status==='progress')t.status='planned';return t};
 const rows=m=>[...m].map(([id,d])=>normTask(Object.assign({id},d)));
 const docRows=s=>s.docs.map(d=>normTask(Object.assign({id:d.id},d.data())));
 function localPublish(){
-  S.staff=rows(L.staff);S.resources=rows(L.resources);S.projects=rows(L.projects);S.ncr=rows(L.ncr);S.jobs=rows(L.jobs);S.jobsReady=true;S.checks=rows(L.checks);S.checksReady=true;
+  S.staff=rows(L.staff);S.resources=rows(L.resources);S.projects=rows(L.projects);S.ncr=rows(L.ncr);S.ncrReady=true;S.jobs=rows(L.jobs);S.jobsReady=true;S.checks=rows(L.checks);S.checksReady=true;
   const {from,to}=weekRange();S.tasks=rows(L.tasks).filter(t=>t.date>=from&&t.date<=to);
   if(S.mpKey){const [tb,m]=S.mpKey.split('|');S.mpRows=rows(L[MP_ENT[tb]]).filter(r=>r.month===m)}/* Master Plan of the open tab and month */
   S.cfg=Object.assign({},L.config.get('main')||{});S.tasksReady=true;S.projReady=true;invalidate();render();
@@ -46,6 +46,7 @@ function errText(e){
   if(c==='quota_exceeded')return 'ฐานข้อมูลเต็ม ลบแผนเก่าที่ไม่ใช้แล้วออกก่อน แล้วบันทึกอีกครั้ง';
   if(c==='resource_exhausted')return 'ส่งคำขอถี่เกินไป รอสักครู่แล้วลองอีกครั้ง';
   if(c==='revoked')return 'สิทธิ์เข้าถึงถูกเปลี่ยน โหลดหน้าใหม่อีกครั้ง';
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return 'บันทึกไม่สำเร็จ: เครื่องนี้ไม่มีอินเทอร์เน็ต ต่ออินเทอร์เน็ตแล้วกดบันทึกอีกครั้ง (ข้อมูลที่กรอกยังอยู่ในฟอร์ม)';
   return 'บันทึกไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง';
 }
 function noteWriteError(e){if(e&&e.code==='invalid_argument'){S.canWrite=false;render()}}

@@ -87,7 +87,7 @@ function dashMpHtml(D,{tile,num,sec}){
   let h=sec(2,'แผนเทียบผล · Master Plan','Plan vs Actual');
   if(!M)return h+`<section class="panel span-12"><p class="hint mp-wait"><span class="sk-spin" aria-hidden="true"></span> กำลังโหลด Master Plan ของช่วงนี้…</p></section>`;
   const toB=(l,unit,tot)=>l.slice(0,8).map(([k,n])=>({label:k,n,extra:tot?pct(n,tot)+'%':''}));
-  const open='<button type="button" class="lnk" data-go="mplan">เปิด Master Plan</button>';
+  const open=`<button type="button" class="lnk" data-go="${S.line==='ins'?'mplanins':'mplan'}">เปิด Master Plan</button>`;
   h+=`<div class="tiles">
     ${showFm?tile(0,'Flow Meter แผนเทียบผล','FM Plan vs Actual',M.fmRate==null?'–':num(M.fmRate),M.fmRate==null?'':'%',`สอบเทียบแล้ว ${M.fmAct} จากแผน ${M.fmPlan} ครั้ง (C ${M.c} · W ${M.w})`,M.fmRate!=null&&M.fmRate<80?'warnt':'',M.fmRate):''}
     ${showFm?tile(1,'Cal &amp; Witness','W ใน Master Plan',num(M.w),'ครั้ง',`มิเตอร์ที่มีแผนสอบเทียบ ${M.fmCalMeters} ตัว`):''}

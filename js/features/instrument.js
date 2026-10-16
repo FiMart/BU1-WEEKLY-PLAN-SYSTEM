@@ -158,9 +158,10 @@ function insWeekRows(tasks){
   tasks.filter(t=>!isLeave(t)&&isWorking(t)).sort(byTime).forEach(t=>insOf(t).forEach(x=>rows.push({t,x,no:++no})));
   return rows;
 }
-function insWeekHtml(){
-  if(S.line!=='ins'&&(S.line||!insWeekRows(S.tasks.filter(planMatch)).length))return '';
-  const rows=insWeekRows(S.tasks.filter(planMatch));const s=insStats(rows.map(r=>r.x));
+function insWeekHtml(list){/* list: as calWeekHtml */
+  const force=!!list;const rows=insWeekRows(list||S.tasks.filter(planMatch));
+  if(!force&&S.line!=='ins'&&(S.line||!rows.length))return '';
+  const s=insStats(rows.map(r=>r.x));
   return `<section class="cal-week ins-week" aria-label="Weekly plan instrument">
     <header class="cw-head"><div class="cw-title ins">${INS_ICON}<div><h2>Weekly plan instrument</h2><p>${esc(fmtShort(S.week))} – ${esc(fmtShort(addDays(S.week,6)))} ${be(addDays(S.week,6))} · รายการเครื่องมือ Instrument ในสัปดาห์นี้${S.canWrite&&rows.length?' · แก้ Remove / Cal / install, Actual และ Remark ในตารางได้ทันที':''}</p></div></div>
       ${rows.length?`<div class="cw-stats"><span><b>${s.n}</b>รายการ</span><span><b>${s.plan}</b>Plan</span><span class="ok"><b>${s.actual}</b>Actual</span><span class="ok"><b>${s.done}</b>Completed</span>${s.certs?`<span><b>${s.certs}</b>Certificate</span>`:''}</div>`:''}</header>

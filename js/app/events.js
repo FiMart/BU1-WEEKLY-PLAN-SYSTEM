@@ -62,6 +62,8 @@ document.addEventListener('click',e=>{
     case 'add-sel':if(S.canWrite)openTask(null,{line:S.line,staff:[...S.sel]});break;
     case 'clear-sel':S.sel.clear();syncRowPicks();break;
     case 'close':closeTaskDlg();break;
+    case 'quick':qkOpen();break;/* ค้นหาด่วน (js/features/quick.js) */
+    case 'ntf':ntfPanel();break;/* การแจ้งเตือน (js/features/notify.js) */
     case 'del-task':deleteTask();break;
     case 'dup-task':duplicateTask();break;
     case 'copy-range':copyRange();break;

@@ -82,7 +82,7 @@ const csReqSecs=f=>CS_FORMS[f].secs.filter(s=>!s.opt&&(s.qc||s.ok||s.need));
 function csProgress(c){const req=csReqSecs(c.form);const n=req.filter(s=>s.sign?csSignOk(c,s):csSecDone(c,s)).length;return [n,req.length]}
 const csSignOk=(c,s)=>(s.need||[]).every(k=>c.sig&&c.sig[k]&&c.sig[k].img);
 
-/* Delay / On Process / Timely (the same chips as ใบจองงาน): 1 working day to approve after it is sent; a sheet still open
+/* Delay / On Process / Timely (the same chips as ใบรับคำร้องขอรับบริการสอบเทียบ): 1 working day to approve after it is sent; a sheet still open
    a working day after its date (plan date / receive date / made) is Delay */
 function csFlow(c){
   if(!c)return null;const days=Math.max(1,Number(((S.cfg||{}).jobKpi||{}).csDays)||1);
@@ -269,7 +269,7 @@ function fillChecks(){
       <td>${esc((c.h&&c.h.customer)||'—')}<span class="sub">${esc(c.title||'')}</span></td><td>${csWho(c.createdBy)}<span class="sub">${esc(jbWhen(c.createdAt))}</span></td>
       <td><div class="cs-bar"><i style="width:${t?Math.round(n/t*100):0}%"></i></div><span class="sub">${n}/${t} หัวข้อ</span></td>
       <td><span class="ncr-st" style="--c:${st.c}">${esc(st.th)}</span>${flowChip(csFlow(c))}</td></tr>`}).join('')
-    ||`<tr><td colspan="6" class="hint">${S.checks.length?'ไม่พบ Check Sheet ที่ตรงกับตัวกรอง':'ยังไม่มี Check Sheet · สร้างได้จากใบจองงาน (ต่อเครื่อง) หรือหน้าดูแผน (Service Report)'}</td></tr>`;
+    ||`<tr><td colspan="6" class="hint">${S.checks.length?'ไม่พบ Check Sheet ที่ตรงกับตัวกรอง':'ยังไม่มี Check Sheet · สร้างได้จากใบรับคำร้องขอรับบริการสอบเทียบ (ต่อเครื่อง) หรือหน้าดูแผน (Service Report)'}</td></tr>`;
   const n=$('#csCount');if(n)n.textContent=`${list.length} ใบ`;
 }
 function renderChecks(){
@@ -325,7 +325,7 @@ table{border-collapse:collapse;width:100%;margin:4px 0 6px}th,td{border:1px soli
 h2{font-size:12px;margin:10px 0 3px;padding:3px 6px;background:#e8eef8}h2 .ok{font-weight:400;font-size:10.5px;color:#1f6f43}.sgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sg{border:1px solid #9fb0c8;padding:5px;display:grid;gap:3px;min-height:70px}.sg img{max-width:100%;height:56px;object-fit:contain}.sg .ln{border-bottom:1px solid #0b1b33;height:40px}
 .ap{margin-top:10px;border:1.5px solid #0b1b33;padding:6px 8px}.foot{text-align:right;color:#4a5b75;margin-top:6px}@media print{.bar{display:none}body{margin:0;max-width:none}}${typeof isoPageCss==='function'?isoPageCss('docs'):''}</style></head><body>
 <div class="bar"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>${esc(F.code)} · ${esc(c.no)}</span></div>
-<div class="hd"><div><b>${esc(typeof DASH_ORG!=='undefined'?DASH_ORG:'FLOWLAB & SERVICE CO., LTD.')}</b><h1>${esc(F.name)}</h1></div><p>${esc(c.no)} · Request No. ${esc(c.planNo||'—')}<br>สถานะ: ${esc(st.th)}</p></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(42)}<div><b>${esc(ORG_NAME)} · ${esc(DASH_ORG)}</b><h1>${esc(F.name)}</h1></div></div><p>${esc(c.no)} · Request No. ${esc(c.planNo||'—')}<br>สถานะ: ${esc(st.th)}</p></div>
 <table>${F.head.map(hv).join('')}</table>${F.secs.map(sec).join('')}
 <div class="ap"><b>การอนุมัติ</b> · ส่งตรวจ ${c.submittedAt?`${csWho(c.submittedBy)} ${esc(jbWhen(c.submittedAt))}`:'—'} · ${c.state==='approved'?`อนุมัติโดย <b>${csWho(c.approvedBy)}</b> ${esc(jbWhen(c.approvedAt))}${c.approveNote?' · '+esc(c.approveNote):''}`:esc(st.th)}</div>
 <p class="foot">${esc(F.code)} · พิมพ์จากระบบ ${esc(jbWhen(new Date()))}</p></body></html>`;

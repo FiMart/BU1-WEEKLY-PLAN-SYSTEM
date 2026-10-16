@@ -356,7 +356,7 @@ async function dashPrint(){
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
 <style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:10.5px/1.5 "IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#0b1b33;margin:16px;max-width:190mm}
 .bar{display:flex;gap:10px;align-items:center;margin-bottom:12px;padding:10px 12px;background:#eef3fa;border-radius:8px;font-size:13px}.bar button{font:inherit;font-weight:600;padding:6px 14px;border-radius:6px;border:0;background:#1462d0;color:#fff;cursor:pointer}
-.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2.5px solid #1462d0;padding-bottom:8px;margin-bottom:12px}.hd .org{margin:0;color:#1462d0;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase}.hd h1{font-size:19px;margin:2px 0 0}.hd p{margin:0;color:#34496b;text-align:right}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2.5px solid #1462d0;padding-bottom:8px;margin-bottom:12px}.hd .org{margin:0;color:#1462d0;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase}.hd h1{font-size:19px;margin:2px 0 0}.hd>div{min-width:0}.hd>p{flex:none;white-space:nowrap}.hd p{margin:0;color:#34496b;text-align:right}
 h2{display:flex;align-items:center;gap:8px;font-size:14px;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #c6d9f1;break-after:avoid}h2 span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;background:#1462d0;color:#fff;font-size:11px}h2 small{font-weight:400;color:#62738f;font-size:11px}
 h3{font-size:11.5px;margin:10px 0 4px;break-after:avoid}
 .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.kpi div{border:1px solid #c6d9f1;border-radius:6px;padding:6px 8px;break-inside:avoid}.kpi b{display:block;font-size:16px;color:#0a2150}.kpi span{display:block;font-size:9.5px;color:#34496b}.kpi em{display:block;font-style:normal;font-size:9px;color:#62738f;margin-top:2px}
@@ -366,7 +366,7 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 .sig{display:flex;gap:30px;margin-top:34px;break-inside:avoid}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:34px 10px 4px}
 @media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}</style></head><body>
 <div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${LOGO_MARK}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h1></div></div>
+<div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h1></div></div>
 <p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml('dash')}
 ${sec(1,'สรุปภาพรวม','Summary')}
 <div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>

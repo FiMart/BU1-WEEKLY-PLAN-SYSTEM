@@ -32,7 +32,10 @@ insDl('dl-mpLab',INS_LABS);insDl('dl-mpBu',['-','BU1','BU2']);insDl('dl-mpRs',MP
 
 /* ---------- month, rows, codes ---------- */
 const mpMonth=()=>S.mp.month||(S.mp.month=ymd(new Date()).slice(0,7));
-const mpTab=()=>S.mp.tab||(S.line==='ins'?'ins':'fm');
+/* two pages since 16 Oct 2026 (user: "แยก master plan flow meter กับ master plan instrument เป็นอีกหน้า"): view mplan = Flow Meter,
+   mplanins = Instrument; S.mp.tab only matters off those pages (Excel import picking a tab) */
+const MP_VIEW={fm:'mplan',ins:'mplanins'};
+const mpTab=()=>S.view==='mplanins'?'ins':S.view==='mplan'?'fm':S.mp.tab||(S.line==='ins'?'ins':'fm');
 function mpDays(){const [y,m]=mpMonth().split('-').map(Number);return Array.from({length:new Date(y,m,0).getDate()},(_,i)=>new Date(y,m-1,i+1))}
 function mpShift(n){const [y,m]=mpMonth().split('-').map(Number);const d=n?new Date(y,m-1+n,1):new Date();S.mp.month=ymd(d).slice(0,7);S.anim='view';render()}
 /* typed codes in the sheet's spelling: "d/c/i" → "D/C/I", "c-os" → "C-OS"; other words stay as typed */
@@ -131,9 +134,7 @@ function renderMp(){
   const tab=mpTab();mpWatch();
   const [y,m]=mpMonth().split('-').map(Number);const isNow=mpMonth()===ymd(new Date()).slice(0,7);
   const ed=can('edit');
-  const sub={fm:'มิเตอร์ · รหัสงานรายวัน D / C / W / I …',ins:'Request · LAB · จำนวนสอบเทียบรายวัน'};
-  return `<div class="mp-tabs" role="tablist" aria-label="สายงาน">${LINES.map(l=>`<button type="button" role="tab" class="mp-tab${tab===l.id?' on':''}" data-mp-tab="${l.id}" aria-selected="${tab===l.id}" style="--lc:${l.color}"><span class="mp-tab-ico">${l.icon}</span><span class="mp-tab-t"><b>${l.id==='fm'?'Flow Meter':'Instrument'}</b><small>${sub[l.id]}</small></span></button>`).join('')}</div>
-    <section class="mp-bar" style="--lc:${LINE[tab].color}">
+  return `<section class="mp-bar" style="--lc:${LINE[tab].color}">
       <div class="mp-nav"><button type="button" class="icon-btn" data-mp-mon="-1" aria-label="เดือนก่อน">‹</button>
         <div class="mp-mon"><b>${EN_MON[m-1].toUpperCase()} ${y}</b><span>${TH_MON_FULL[m-1]} ${y+543} · ${isNow?'เดือนนี้':'<button type="button" class="lnk" data-mp-mon="0">กลับเดือนนี้</button>'}</span></div>
         <button type="button" class="icon-btn" data-mp-mon="1" aria-label="เดือนถัดไป">›</button>

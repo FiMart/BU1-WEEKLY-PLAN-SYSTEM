@@ -72,7 +72,7 @@ async function mdRenamed(kind,old,nw){
   const jobs=sale?(S.jobs||[]).filter(j=>norm(j.sale)===k):[];
   if(!hits.length&&!jobs.length)return;
   const what=sale?'Sale':'รถ';
-  if(!await askConfirm(`เปลี่ยน${what}ในแผนงานด้วย?`,`มีแผนงาน ${hits.length} แผน${jobs.length?` และใบจอง ${jobs.length} ใบ`:''} ที่ใช้${what} “${old}” · เปลี่ยนเป็น “${nw}” ตามข้อมูลหลักทั้งหมดหรือไม่`,'เปลี่ยนทั้งหมด'))return;
+  if(!await askConfirm(`เปลี่ยน${what}ในแผนงานด้วย?`,`มีแผนงาน ${hits.length} แผน${jobs.length?` และใบรับคำร้อง ${jobs.length} ใบ`:''} ที่ใช้${what} “${old}” · เปลี่ยนเป็น “${nw}” ตามข้อมูลหลักทั้งหมดหรือไม่`,'เปลี่ยนทั้งหมด'))return;
   const items=hits.map(t=>({coll:'tasks',id:t.id,ch:sale?{sale:nw}:{transport:carNames(t).map(n=>norm(n)===k?nw:n).filter((n,i,a)=>a.findIndex(x=>norm(x)===norm(n))===i).join(', ')}}))
     .concat(jobs.map(j=>({coll:'jobs',id:j.id,ch:{sale:nw}})));
   const r=await mdApply(items);
@@ -92,7 +92,7 @@ async function mdScan(){
   try{
     const tasks=await Store.all('tasks');const list=[];
     tasks.forEach(t=>{const f=mdFix(t);if(f)list.push({coll:'tasks',id:t.id,date:t.date||'',name:[t.planNo,typeLabel(t)].filter(Boolean).join(' · '),cust:t.customer||'',ch:f.ch,notes:f.notes})});
-    (S.jobs||[]).forEach(j=>{const s=mdSaleName(j.sale);if(s)list.push({coll:'jobs',id:j.id,date:j.wantFrom||'',name:`ใบจอง ${j.jobNo}${j.planNo?' · '+j.planNo:''}`,cust:j.customer||'',ch:{sale:s},notes:[['Sale',j.sale,s]]})});
+    (S.jobs||[]).forEach(j=>{const s=mdSaleName(j.sale);if(s)list.push({coll:'jobs',id:j.id,date:j.wantFrom||'',name:`ใบรับคำร้อง ${j.jobNo}${j.planNo?' · '+j.planNo:''}`,cust:j.customer||'',ch:{sale:s},notes:[['Sale',j.sale,s]]})});
     list.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     mds.list=list;mds.n=tasks.length;mds.sel=new Set(list.map(x=>x.coll+'|'+x.id));mds.at=new Date().toISOString();
   }catch(err){toast(errText(err));mds.list=null}
@@ -117,7 +117,7 @@ function mdSyncSection(){
     body:`<div class="mds-bar"><button type="button" class="btn primary" data-mds-scan${mds.busy||!can('master')?' disabled':''}>${mds.busy?'กำลังตรวจ…':L?'ตรวจอีกครั้ง':'ตรวจแผนงานทั้งหมด'}</button>
       ${L?`<span class="hint">ตรวจ ${mds.n} แผน · ${esc(jbWhen(mds.at))}</span>`:''}<span class="grow"></span>
       ${n?`<button type="button" class="btn" data-mds-all>${mds.sel.size===n?'ไม่เลือกทั้งหมด':'เลือกทั้งหมด'}</button><button type="button" class="btn primary" data-mds-apply${mds.sel.size&&S.canWrite?'':' disabled'}>ปรับที่เลือก (${mds.sel.size})</button>`:''}</div>
-      ${L==null?'':n?`<div class="scroll-x plain md-scroll"><table class="mini mds-table"><thead><tr><th></th><th>วันที่</th><th>แผนงาน / ใบจอง</th><th>ปรับเป็น</th></tr></thead><tbody>${L.map(row).join('')}</tbody></table></div>`
+      ${L==null?'':n?`<div class="scroll-x plain md-scroll"><table class="mini mds-table"><thead><tr><th></th><th>วันที่</th><th>แผนงาน / ใบรับคำร้อง</th><th>ปรับเป็น</th></tr></thead><tbody>${L.map(row).join('')}</tbody></table></div>`
         :'<p class="mds-ok">✓ แผนงานทั้งหมดตรงกับข้อมูลหลักแล้ว</p>'}`};
 }
 document.addEventListener('click',e=>{const t=e.target;

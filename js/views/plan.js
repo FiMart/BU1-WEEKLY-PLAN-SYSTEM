@@ -205,7 +205,7 @@ function renderPlan(){
   let ci=0;
   let h=S.staff.length?'':`<div class="banner warn"><b>ยังไม่มีรายชื่อพนักงาน</b> เพิ่มรายชื่อก่อนเพื่อเลือก Team Service ในแผน <button type="button" class="lnk" data-go="settings">ไปที่จัดการข้อมูล</button></div>`;
   h+=`<section class="wp-panel" aria-label="แผนงานสัปดาห์ ${esc(weekName(S.week))}${scopeName()?' · '+esc(scopeName()):''}"><header class="wp-head">
-    <div class="wp-brand"><span class="wp-bt">BU1 · Weekly Planning</span>${S.line?`<span class="wp-line" style="--lc:${LINE[S.line].color}">${esc(lineName())}</span>`:''}${S.team?`<span class="wp-line" style="--lc:${TEAM[S.team].color}">${esc(teamName(S.team))}</span>`:''}</div>
+    <div class="wp-brand"><span class="org-chip"><img src="${orgLogoUrl()}" alt="FLOWLAB &amp; SERVICE"></span><span class="wp-bt">BU1 · Weekly Planning</span>${S.line?`<span class="wp-line" style="--lc:${LINE[S.line].color}">${esc(lineName())}</span>`:''}${S.team?`<span class="wp-line" style="--lc:${TEAM[S.team].color}">${esc(teamName(S.team))}</span>`:''}</div>
     <div class="wp-nav"><button type="button" class="icon-btn" data-action="prev" aria-label="สัปดาห์ก่อน">‹</button>
       <div class="wp-wk"><b>${fmtShort(S.week)} – ${fmtShort(last)} ${last.getFullYear()}</b><span>สัปดาห์ที่ ${isoWeek(S.week)} · ${esc(weekName(S.week))} · ${isThis?'สัปดาห์นี้':'<button type="button" class="lnk" data-action="thisweek">กลับสัปดาห์นี้</button>'}</span></div>
       <button type="button" class="icon-btn" data-action="next" aria-label="สัปดาห์ถัดไป">›</button>
@@ -216,7 +216,7 @@ function renderPlan(){
   const total=LT.filter(t=>!isLeave(t)).length;const vis=shown.reduce((a,g)=>a+g.tasks.filter(t=>!isLeave(t)).length,0);const lvN=LT.filter(isLeave).length;
   $('#pf-count').textContent=(vis!==total?`แสดง ${vis} จาก ${total} แผน`:`${total} แผน`)+(lvN?` · ลา ${lvN}`:'');
   if(planDayMode()){const i=days.findIndex(d=>ymd(d)===planDay());
-    return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+calWeekHtml()+insWeekHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
+    return h+planDayHtml({days,today,conf,shown,avail,showAv})+'</section>'+wsLinkHtml()+(showAv?availPanel([days[i]],[avail[i]],today):'')}
   h+=`<div class="scroll-x wp-scroll"><table class="wp"><colgroup><col class="c-g">${days.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="corner">${S.pf.by==='cust'?'ลูกค้า':'หัวข้องาน'} \\ วัน</th>`;
   /* the date only: no "n/20" plans a day any more (user, 14 Oct 2026); then "n แผน" without the leave types */
   days.forEach(d=>{const k=ymd(d);const we=isOffDay(d);const hol=holidayOf(k);const a=freeOn(k);const nj=dayJobs(LT,k);
@@ -230,8 +230,8 @@ function renderPlan(){
     h+='</tr>';
   }
   h+='</tbody></table></div></section>';
-  /* Flow Meter: the week's "Weekly plan calibration" sheet, then ผู้ปฏิบัติงานที่ว่าง below the board */
-  h+=calWeekHtml()+insWeekHtml();
+  /* the week's calibration / instrument sheets have their own page since 16 Oct 2026 (js/views/week-sheets.js): a link bar here */
+  h+=wsLinkHtml();
   if(showAv)h+=availPanel(days,avail,today);
   return h;
 }

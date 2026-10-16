@@ -7,7 +7,7 @@ function openTask(id,preset){
   const t=id?findTask(id):null;if(id&&!t)return;
   editing=t;const p=preset||{};const jb=!t&&p.job?p.job:null;formJobId=jb?jb.id:'';
   const v=t||{jobType:p.type||'',customer:p.customer||'',period:PERIOD[p.period]?p.period:'full',status:'planned',date:p.date||defaultDate(),staffIds:Array.isArray(p.staff)?p.staff.slice():p.staff?[p.staff]:[]};
-  /* ใบจอง → แผน: every field the booking has, so nothing from the customer is typed twice (user, 15 Oct 2026) */
+  /* ใบรับคำร้อง → แผน: every field the booking has, so nothing from the customer is typed twice (user, 15 Oct 2026) */
   if(jb)Object.assign(v,{location:jb.location||'',contact:jb.contact||'',contactTel:jb.contactTel||'',sale:jb.sale||'',detail:[jb.detail||''].concat((jb.items||[]).map((it,i)=>`- ${jbItemText(it)}`)).filter(Boolean).join('\n'),planNo:jb.planNo||'',calItems:jb.line==='fm'?(jb.items||[]).map(it=>({id:newId('c'),reqNo:jb.planNo||'',tag:it.tag||'',size:it.size?it.size+'\"':'',type:it.type||'',fluid:'',range:it.range||'',points:it.points||'',round:it.round||'',lab:'',status:'add',result:'',detail:''})):[],teamNeed:jb.teamNeed||0,request:[jb.qty,jb.poNo?'PO / ใบเสนอราคา '+jb.poNo:'',jb.note].filter(Boolean).join('\n')});
   const tid=t?typeIdOf(t):(p.type&&jobTypes().some(x=>x.id===p.type)?p.type:'');
   $('#f-type').innerHTML=typeOptions(tid,'— เลือกหัวข้องาน —');$('#f-type').value=tid;
@@ -176,7 +176,7 @@ function readForm(){
     detail:$('#f-detail').value.replace(/\s+$/,'').replace(/^\s*\n/,''),request:$('#f-request').value.trim(),
     ...carForm(),contact:$('#f-contact').value.trim(),contactTel:$('#f-contactTel').value.trim(),
     prep:prepForSave(),calItems:calForSave(),insItems:insForSave(),teamNeed:isLeaveId(typeId)?0:teamNeedIn(),staffIds:[...pickSel],guests:pickGuests.concat(g&&!pickGuests.some(x=>norm(x)===norm(g))?[g.slice(0,80)]:[]),
-    jobId:editing?editing.jobId||'':formJobId,/* ใบจองงาน it was made from */
+    jobId:editing?editing.jobId||'':formJobId,/* ใบรับคำร้องขอรับบริการสอบเทียบ it was made from */
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():'',
     /* สรุปงาน: written while เสร็จแล้ว is picked; another status keeps the stored one */
     ...(curStatus()==='done'&&!isLeaveId(typeId)?sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing):{})});/* mdClean: Sale / รถ / หัวข้องาน saved in the master spelling */

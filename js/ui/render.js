@@ -4,11 +4,14 @@
 let pendingRender=false;
 const PAGES={
   plan:['Weekly Plan',''],
+  my:['งานของฉัน','สิ่งที่ต้องทำตอนนี้ แผนงาน ใบรับคำร้องขอรับบริการสอบเทียบ Check Sheet และการแจ้งเตือนของคุณ ตามสิทธิ์ของบัญชีนี้'],
   safety:['Safety Training','บัตรเข้าพื้นที่ของทีม คำขออบรม บันทึกอบรมย้อนหลัง และเอกสาร · ข้อมูลจากระบบ Safety ของบริษัท'],
-  jobs:['ใบจองงาน','Sale จองงาน → Planner รับงาน (ออก PN No.) → ลงแผนรายวัน · ทุกขั้นตอนบันทึกวัน-เวลา และบอกสถานะ Delay / On Process / Timely'],
+  jobs:['ใบรับคำร้องขอรับบริการสอบเทียบ','FLS-F-018 · Flow Meter · Sale ส่งคำร้อง → Planner รับงาน (ออก PN No.) → ลงแผนรายวัน · ทุกขั้นตอนบันทึกวัน-เวลา และบอกสถานะ Delay / On Process / Timely'],
   checks:['Check Sheet','QC LAB · Data Flow Meter · Remove-Reinstall · Service Report — ทำทีละหัวข้อ (ลงชื่อและเวลาให้เอง) → ส่งตรวจ → ผู้อนุมัติอนุมัติ / ตีกลับ'],
-  booking:['Booking Plan','ภาพรวมแผนงานทุกสัปดาห์ในตารางเดียว · กรองด้วย drop down · กดแถวเพื่อเปิดแผน (จองงานที่หน้าใบจองงาน แก้แผนที่ Weekly Plan)'],
-  mplan:['Master Plan','แผนรายเดือนตามสายงาน · Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน กรอกและแก้ที่นี่ · Instrument: Request No. LAB Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน · กรอกและแก้ที่นี่'],
+  booking:['Booking Plan','ภาพรวมแผนงานทุกสัปดาห์ในตารางเดียว · กรองด้วย drop down · กดแถวเพื่อเปิดแผน (ส่งคำร้องที่หน้าใบรับคำร้องขอรับบริการสอบเทียบ แก้แผนที่ Weekly Plan)'],
+  mplan:['Master Plan · Flow Meter','แผนรายเดือน Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน (D / C / W / I …) กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
+  mplanins:['Master Plan · Instrument','แผนรายเดือน Instrument: Request No. · LAB · Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
+  wsheet:['Weekly Cal / Ins','Weekly plan calibration (Flow Meter) และ Weekly plan instrument ของสัปดาห์ · แก้ Lab / Status / ผล ในตารางได้ทันที · เปลี่ยนสัปดาห์ที่แถบด้านบน (สัปดาห์เดียวกับ Weekly Plan)'],
   people:['สรุปรายคนรายวัน','ช่วงเวลาของงานแรกและงานสุดท้าย จำนวนงาน และใครว่างในแต่ละวัน ติ๊กชื่อเพื่อลงแผนให้หลายคนพร้อมกัน'],
   projects:['แผนกำลังคนโปรเจกต์ยาว','ใส่ชื่องาน จำนวนคน และช่วงวันที่ ระบบรวมจำนวนคนที่ต้องใช้ต่อวันทั้งเดือน แล้วเทียบกับคนที่มี'],
   search:['ค้นหางานย้อนหลัง','ค้นด้วย Plan No. ชื่อลูกค้า หรือชื่อพนักงาน จากแผนทุกสัปดาห์'],
@@ -17,12 +20,12 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,jobs:renderJobs,checks:renderChecks,booking:renderBooking,mplan:renderMp,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,my:renderMy,jobs:renderJobs,checks:renderChecks,booking:renderBooking,mplan:renderMp,mplanins:renderMp,wsheet:renderWsheet,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   document.body.dataset.page=S.view;/* page-specific phone layout (css/compact.css, "Weekly Plan on phones") */
   {const mb=document.querySelector('.bn-more');if(mb)mb.classList.toggle('on',!!document.querySelector(`#bnSheet [data-view="${S.view}"]`))}
-  const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];
+  const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];renderPageTip();
   renderSync();renderBanners();renderLineBar();renderWeekbar();renderPlanbar();renderChips();renderActions();renderAccountCard();moveInd();
   updateSelbar();
   if($('#dlg').open)renderTrGrid();/* vehicle list may have changed (e.g. a car just added) */
@@ -45,9 +48,10 @@ function render(){
   if(S.view==='jobs')fillJobs();
   if(S.view==='checks')fillChecks();
   csBadge();/* Check Sheet waiting for this approver */
-  jbBadge();/* ใบจองงาน waiting for the Planner */
-  if(S.view==='mplan')fillMp();else if(S.mpKey)mpStop();/* the Master Plan month is read live only while it is open */
+  jbBadge();/* ใบรับคำร้องขอรับบริการสอบเทียบ waiting for the Planner */
+  if(S.view==='mplan'||S.view==='mplanins')fillMp();else if(S.mpKey)mpStop();/* the Master Plan month is read live only while it is open */
   {const b=$('#ncrBadge');if(b){const n=S.ncr.filter(x=>x.state!=='closed').length;b.hidden=!n;b.textContent=n}}
+  ntfBadges();ntfSoon();/* การแจ้งเตือน: look again shortly after the data changed (js/features/notify.js) */
   {const on=main.querySelector('.pd-strip.scroll .pd-day.on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}
   if(ready){if(anim&&(S.view==='dash'||S.view==='plan'))countUp(main);S.anim=null;flashIds.clear()}
 }
@@ -58,6 +62,8 @@ function moveInd(){
   if(!b||!b.offsetHeight){ind.style.opacity='0';return}
   ind.style.opacity='1';ind.style.height=b.offsetHeight+'px';ind.style.transform=`translateY(${b.offsetTop}px)`;
 }
+/* the menu items share the sidebar height, so they move when it changes (the company logo loading, the window height) */
+if(window.ResizeObserver){const nav=document.querySelector('.side>.sb-nav');if(nav)new ResizeObserver(()=>moveInd()).observe(nav)}
 window.addEventListener('resize',moveInd);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(moveInd);
 function countUp(root){
@@ -120,8 +126,8 @@ function renderBanners(){
 }
 let wkExportHtml=null;
 function renderWeekbar(){
-  const show=S.view==='people'||(S.view==='dash'&&S.dash.mode==='week');
-  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety'||S.view==='jobs';/* Safety has its own "+ ขออบรม", ใบจองงาน its "+ จองงาน" */
+  const show=S.view==='people'||S.view==='wsheet'||(S.view==='dash'&&S.dash.mode==='week');
+  $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety'||S.view==='jobs';/* Safety has its own "+ ขออบรม", ใบรับคำร้องขอรับบริการสอบเทียบ its "+ ใบรับคำร้องใหม่" */
   if(!show)return;
   const last=addDays(S.week,6);
   $('#wkTitle').textContent=weekName(S.week);
