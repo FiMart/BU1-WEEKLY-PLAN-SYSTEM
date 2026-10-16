@@ -19,8 +19,13 @@ function renderMy(){
   if(notReady())return loading('dash');
   const tasks=ntfTasks().filter(t=>!isLeave(t));const td=ymd(new Date());
   const range={today:[td,td],tomorrow:[ymd(addDays(new Date(),1)),ymd(addDays(new Date(),1))],week:[td,ymd(addDays(new Date(),6))]}[S.my.day]||[td,td];
-  const all=S.my.all==null?isPlanner():S.my.all;
-  const plans=tasks.filter(t=>t.date>=range[0]&&t.date<=range[1]&&(all||ntfMyPlan(t))).sort((a,b)=>a.date.localeCompare(b.date)||byTime(a,b));
+  /* ทุกแผน: the Planner's default only until "ฉันคือพนักงาน" is set (user, 16 Oct 2026: picking a name showed nothing new — the Planner's list stayed on ทุกแผน) */
+  const meStaff=ntfMeStaff();const all=S.my.all==null?(isPlanner()&&!meStaff):S.my.all;
+  const pool=tasks.filter(t=>all||ntfMyPlan(t)).sort((a,b)=>a.date.localeCompare(b.date)||byTime(a,b));
+  const inR=(t,r)=>t.date>=r[0]&&t.date<=r[1];
+  const R={today:[td,td],tomorrow:[ymd(addDays(new Date(),1)),ymd(addDays(new Date(),1))],week:[td,ymd(addDays(new Date(),6))]};
+  const plans=pool.filter(t=>inR(t,range));
+  const nextPlans=plans.length?[]:pool.filter(t=>t.date>range[1]).slice(0,5);/* none in the chosen days: the next ones (up to 30 days ahead) */
   const live=NTF.live;const name=S.account&&S.account.name||(S.me?String(S.me).split('@')[0]:'');
   const me=ntfMe();
   const myJobs=canBook()||isPlanner()?S.jobs.filter(j=>j.state!=='cancelled'&&((me&&norm(j.bookedBy)===me)||ntfMySale(j.sale))).sort((a,b)=>String(b.bookedAt).localeCompare(String(a.bookedAt))).slice(0,8):[];
@@ -28,15 +33,16 @@ function renderMy(){
   const myCs=me?S.checks.filter(c=>c.state!=='approved'&&(norm(c.createdBy)===me||norm(c.submittedBy)===me)).slice(0,8):[];
   const jobRow=j=>{const f=jobFlow(j);return `<button type="button" class="my-row" data-job-open="${esc(j.id)}"><span class="my-pt"><b>${esc(j.jobNo)}${j.planNo?' · '+esc(j.planNo):''}</b><span>${esc(j.customer||'—')}${j.sale?' · Sale '+esc(j.sale):''}${j.wantFrom?' · ต้องการ '+esc(fmtDay(j.wantFrom)):''}</span></span>${f?flowChip(f):''}<span class="badge">${esc((JB_STATE[j.state]||{}).th||j.state)}</span></button>`};
   const csRow=c=>`<button type="button" class="my-row" data-cs-open="${esc(c.id)}"><span class="my-pt"><b>${esc(c.no)} · ${esc((CS_FORMS[c.form]||{}).name||'')}</b><span>${esc(c.title||c.planNo||'')}</span></span>${(()=>{const st=CS_STATE[c.state]||CS_STATE.draft;const [n,t]=csProgress(c);return `<span class="badge" style="--c:${st.c}"><i></i>${esc(st.th)} ${n}/${t}</span>`})()}</button>`;
-  const dayTab=(k,l)=>`<button type="button" role="tab" data-my-day="${k}" aria-selected="${S.my.day===k}">${l}</button>`;
+  const dayTab=(k,l)=>`<button type="button" role="tab" data-my-day="${k}" aria-selected="${S.my.day===k}">${l} <small>${pool.filter(t=>inR(t,R[k])).length}</small></button>`;
+  const whose=all?'ทั้งหมด':meStaff?`ของ ${staffName(meStaff)}`:'ของฉัน';
   return `<section class="panel my-hero"><div><b>${name?`สวัสดี ${esc(name)}`:'งานของฉัน'}</b><span>${esc(roleInfo().label)}${isPlanner()?' · เห็นทุกแผนและใบรับคำร้องที่รอ':''}</span></div>${myStaffPick()}
       <div class="my-quick">${canBook()?'<button type="button" class="btn" data-job-new>+ ใบรับคำร้องใหม่</button>':''}<button type="button" class="btn" data-action="quick">ค้นหา</button></div></section>
     <section class="panel"><h2 class="my-h">ต้องทำตอนนี้ <span class="md-count">${live.length}</span></h2>
       ${live.length?`<div class="my-live">${live.map(ntfRow).join('')}</div>`:`<p class="my-ok">✓ ไม่มีงานค้างที่ต้องตาม${NTF.ready?'':' (กำลังตรวจข้อมูล…)'}</p>`}</section>
-    <section class="panel"><div class="my-bar"><h2 class="my-h">แผนงาน${all?'ทั้งหมด':'ของฉัน'} <span class="md-count">${plans.length}</span></h2><span class="grow"></span>
+    <section class="panel"><div class="my-bar"><h2 class="my-h">แผนงาน${esc(whose)} <span class="md-count">${plans.length}</span></h2><span class="grow"></span>
       <div class="seg my-seg" role="tablist" aria-label="ช่วงวัน">${dayTab('today','วันนี้')}${dayTab('tomorrow','พรุ่งนี้')}${dayTab('week','7 วันข้างหน้า')}</div>
       <label class="my-all"><input type="checkbox" data-my-all${all?' checked':''}> ทุกแผน</label></div>
-      ${plans.length?`<div class="my-plans">${plans.map(myPlanRow).join('')}</div>`:`<p class="my-ok">ไม่มีแผน${all?'':'ของคุณ'}ในช่วงนี้${!all&&!ntfMeStaff()?' · เลือก "ฉันคือพนักงาน" ด้านบนเพื่อเห็นแผนที่คุณอยู่ในทีม':''}</p>`}</section>
+      ${plans.length?`<div class="my-plans">${plans.map(myPlanRow).join('')}</div>`:`<p class="my-ok">ไม่มีแผน${esc(whose)}ใน${S.my.day==='today'?'วันนี้':S.my.day==='tomorrow'?'วันพรุ่งนี้':' 7 วันข้างหน้า'}${!all&&!meStaff?' · เลือก "ฉันคือพนักงาน" ด้านบนเพื่อเห็นแผนที่คุณอยู่ในทีม':''}${nextPlans.length?' · แผนถัดไป:':!all?' · ไม่มีแผนใน 30 วันข้างหน้า':''}</p>${nextPlans.length?`<div class="my-plans">${nextPlans.map(myPlanRow).join('')}</div>`:''}`}</section>
     ${waitJobs.length?`<section class="panel"><h2 class="my-h">ใบรับคำร้องรอ Planner <span class="md-count">${waitJobs.length}</span></h2><div class="my-rows">${waitJobs.map(jobRow).join('')}</div></section>`:''}
     ${myJobs.length?`<section class="panel"><h2 class="my-h">ใบรับคำร้องของฉัน</h2><div class="my-rows">${myJobs.map(jobRow).join('')}</div></section>`:''}
     ${myCs.length?`<section class="panel"><h2 class="my-h">Check Sheet ของฉันที่ยังไม่อนุมัติ</h2><div class="my-rows">${myCs.map(csRow).join('')}</div></section>`:''}
@@ -49,5 +55,7 @@ document.addEventListener('click',e=>{const t=e.target;
 document.addEventListener('change',e=>{const t=e.target;
   if(t.matches&&t.matches('[data-my-all]')){S.my.all=t.checked;render();return}
   if(t.matches&&t.matches('[data-my-staff]')){try{t.value?localStorage.setItem('bu1wp.meStaff',t.value):localStorage.removeItem('bu1wp.meStaff')}catch(e){}
-    toast(t.value?`ตั้งเป็น ${staffName(t.value)} แล้ว · แผนที่คุณอยู่ในทีมจะแสดงและแจ้งเตือน`:'ไม่ระบุพนักงานแล้ว');NTF.sig='';render();ntfTick(true)}
+    S.my.all=t.value?false:null;/* show this person's plans right away (a Planner's list was on ทุกแผน) */
+    const n=t.value?ntfTasks().filter(x=>!isLeave(x)&&x.date>=ymd(new Date())&&(x.staffIds||[]).includes(t.value)).length:0;
+    toast(t.value?`ตั้งเป็น ${staffName(t.value)} แล้ว · มีแผนที่อยู่ในทีม ${n} แผนใน 30 วันข้างหน้า · แผนเหล่านี้จะแสดงและแจ้งเตือน`:'ไม่ระบุพนักงานแล้ว');NTF.sig='';render();ntfTick(true)}
 });
