@@ -151,3 +151,9 @@
 @media (max-width:760px){.cs-tab thead{display:none}.cs-tab,.cs-tab tbody{display:block;min-width:0;width:100%}.cs-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 2px;border-bottom:1px solid var(--line-2)}.cs-tab tbody td{padding:0;border:0;min-width:0}.cs-tab td:nth-child(6){grid-column:2;grid-row:1;text-align:right}.cs-tab td[colspan]{grid-column:1/-1}}
 #view .sum>.panel{min-width:0;max-width:100%}#view .sum>.panel .ncr-tools>*{min-width:0}
 #view .sum>.panel{grid-template-columns:minmax(0,1fr)}.cs-tab td.hint,.jb-tab td.hint{white-space:normal}@media (max-width:760px){.cs-tab td{white-space:normal}}
+
+/* สายงาน of a request: Flow Meter only since 16 Oct 2026 (read-only chip, no choice) */
+.jb-line{display:inline-flex;align-items:center;gap:6px;width:fit-content;padding:6px 12px;border-radius:999px;background:color-mix(in srgb,#0EA5E9 14%,var(--surface));color:var(--ink);font:600 13px var(--f-body);border:1px solid color-mix(in srgb,#0EA5E9 35%,var(--line))}
+.jb-line::before{content:'';width:8px;height:8px;border-radius:50%;background:#0EA5E9}
+.jb-line.ins{background:color-mix(in srgb,#8b5cf6 12%,var(--surface));border-color:color-mix(in srgb,#8b5cf6 35%,var(--line))}.jb-line.ins::before{background:#8b5cf6}
+.confirm-ico.ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));color:var(--good-ink)}/* ส่งใบรับคำร้องแล้ว · พิมพ์ / PDF */
