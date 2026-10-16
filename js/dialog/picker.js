@@ -20,9 +20,22 @@ function availOf(id){
 }
 function pickPeople(){return S.staff.filter(s=>s.active!==false||pickSel.has(s.id)).sort(sortPeople)}
 let pickGuests=[];
-function renderPickSel(){
-  const el=$('#tpSel');const ids=[...pickSel];
-  const tags=ids.map(id=>{const n=staffName(id);const c=formCard(id);return `<span class="tp-tag"><span class="avatar xs" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${cardBadge(c)}<button type="button" data-tp-remove="${esc(id)}" aria-label="เอา ${esc(n)} ออก">×</button></span>`})
+/* the order of the picked names = the order everywhere (card, plan view, LINE "👷 ทีมงาน 1. 2. 3.", print) — user, 16 Oct 2026:
+   "เลือกชื่อเสร็จแล้ว สามารถลากชื่อย้ายที่ด้วยได้มั้ย"; chose drag + ← → buttons. Mouse: drag the name; touch: drag the ⋮⋮ grip (the rest
+   of the chip still scrolls the page); tap a name for ⇤ ← →; ← / → / Home on a focused name. pickSel is rebuilt in the new order. */
+let pickFocus=null,tpDrag=null,tpDragEnd=0;
+const tpCanEdit=()=>!$('#formFields').disabled&&!form.classList.contains('ga-only');
+function pickMove(id,to){
+  const a=[...pickSel];const i=a.indexOf(id);if(i<0)return;a.splice(i,1);
+  const j=to==='first'?0:Math.max(0,Math.min(a.length,i+Number(to)));a.splice(j,0,id);
+  pickSel=new Set(a);renderPickSel(true);checkConflicts();
+  const el=document.querySelector(`#tpSel [data-tp-tag="${CSS.escape(id)}"]`);if(el)el.focus({preventScroll:true});
+}
+function renderPickSel(still){
+  const el=$('#tpSel');const ids=[...pickSel];el.classList.toggle('no-anim',!!still);
+  const sort=ids.length>1&&tpCanEdit();if(pickFocus&&!pickSel.has(pickFocus))pickFocus=null;
+  const tags=ids.map((id,i)=>{const n=staffName(id);const c=formCard(id);const on=sort&&pickFocus===id;
+    return `<span class="tp-tag${sort?' sortable':''}${on?' on':''}" data-tp-tag="${esc(id)}"${sort?` tabindex="0" title="ลากเพื่อย้ายลำดับ · หรือแตะชื่อแล้วกด ← →"`:''}>${sort?'<span class="tp-grip" aria-hidden="true">⋮⋮</span>':''}<span class="avatar xs" aria-hidden="true">${esc(initialOf(n))}</span>${esc(n)}${cardBadge(c)}${on?`<span class="tp-mv"><button type="button" data-tp-mv="first"${i?'':' disabled'} aria-label="ย้าย ${esc(n)} ไปหน้าสุด" title="ไปหน้าสุด">⇤</button><button type="button" data-tp-mv="-1"${i?'':' disabled'} aria-label="ย้าย ${esc(n)} ไปทางซ้าย" title="ไปทางซ้าย">←</button><button type="button" data-tp-mv="1"${i<ids.length-1?'':' disabled'} aria-label="ย้าย ${esc(n)} ไปทางขวา" title="ไปทางขวา">→</button></span>`:''}<button type="button" data-tp-remove="${esc(id)}" aria-label="เอา ${esc(n)} ออก">×</button></span>`})
     .concat(pickGuests.map((g,i)=>`<span class="tp-tag guest"><span class="avatar xs" aria-hidden="true">${esc(initialOf(g))}</span>${esc(g)} <small>แผนกอื่น</small><button type="button" data-tp-guest-remove="${i}" aria-label="เอา ${esc(g)} ออก">×</button></span>`));
   el.innerHTML=tags.length?tags.join(''):'<span class="hint">ยังไม่ได้เลือก (ไม่บังคับ บันทึกแผนก่อนแล้วเพิ่มทีมทีหลังได้) · ติ๊กชื่อจากรายการด้านล่าง หรือพิมพ์ชื่อคนจากแผนกอื่น</span>';
   $('#tpCount').textContent=tags.length?`เลือกแล้ว ${tags.length} คน${pickGuests.length?` (ในแผนก ${ids.length} · แผนกอื่น ${pickGuests.length})`:''}`:'';
@@ -146,9 +159,37 @@ form.addEventListener('click',e=>{
   /* สีของแผน: in the form it waits for บันทึก; in the plan view it is saved at once */
   const pc=e.target.closest('[data-pc]');if(pc){$('#f-color').value=pc.dataset.pc;renderColorPick();return}
   const pv=e.target.closest('[data-pcv]');if(pv){setPlanColor(pv.dataset.pcv);return}
+  const mv=e.target.closest('[data-tp-mv]');if(mv){if(pickFocus)pickMove(pickFocus,mv.dataset.tpMv);return}
   const rm=e.target.closest('[data-tp-remove]');if(rm){pickSel.delete(rm.dataset.tpRemove);renderPickSel();renderPickerList();checkConflicts();return}
+  const tg=e.target.closest('#tpSel [data-tp-tag].sortable');if(tg){if(Date.now()-tpDragEnd<300)return;pickFocus=pickFocus===tg.dataset.tpTag?null:tg.dataset.tpTag;renderPickSel(true);
+    const f=document.querySelector(`#tpSel [data-tp-tag="${CSS.escape(tg.dataset.tpTag)}"]`);if(f)f.focus({preventScroll:true});return}
   const gr=e.target.closest('[data-tp-guest-remove]');if(gr){pickGuests.splice(Number(gr.dataset.tpGuestRemove),1);renderPickSel();return}
   if(e.target.closest('#tpGuestAdd')){addGuest();$('#tpGuest').focus();return}
   if(e.target.id==='tpClear'){pickSel.clear();pickGuests=[];renderPickSel();renderPickerList();checkConflicts()}
 });
+/* drag a picked name to its new place (the chip moves live among the others; the order is read back on release) */
+form.addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('#tpSel [data-tp-tag].sortable');if(!t||e.target!==t)return;
+  const k={ArrowLeft:'-1',ArrowRight:'1',Home:'first'}[e.key];if(k){e.preventDefault();pickFocus=t.dataset.tpTag;pickMove(t.dataset.tpTag,k)}});
+form.addEventListener('pointerdown',e=>{
+  const tag=e.target.closest('#tpSel [data-tp-tag].sortable');if(!tag||e.target.closest('button')||e.button>0)return;
+  if(e.pointerType!=='mouse'&&!e.target.closest('.tp-grip'))return;/* touch / pen: only the grip drags */
+  tpDrag={el:tag,x:e.clientX,y:e.clientY,on:false,pid:e.pointerId};
+});
+document.addEventListener('pointermove',e=>{
+  const d=tpDrag;if(!d||e.pointerId!==d.pid)return;
+  if(!d.on){if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<6)return;d.on=true;d.el.classList.add('dragging');document.body.classList.add('tp-dragging');$('#tpSel').classList.add('no-anim')}
+  e.preventDefault();
+  const over=document.elementFromPoint(e.clientX,e.clientY);const t=over&&over.closest('#tpSel [data-tp-tag]');
+  if(!t||t===d.el||!t.classList.contains('sortable'))return;
+  const kids=[...$('#tpSel').querySelectorAll('[data-tp-tag]')];
+  if(kids.indexOf(d.el)<kids.indexOf(t))t.after(d.el);else t.before(d.el);
+},{passive:false});
+function tpDrop(cancel){
+  const d=tpDrag;tpDrag=null;if(!d||!d.on)return;document.body.classList.remove('tp-dragging');d.el.classList.remove('dragging');tpDragEnd=Date.now();
+  if(!cancel){const order=[...$('#tpSel').querySelectorAll('[data-tp-tag]')].map(x=>x.dataset.tpTag).filter(id=>pickSel.has(id));
+    if(order.length===pickSel.size)pickSel=new Set(order);pickFocus=d.el.dataset.tpTag}
+  renderPickSel(true);checkConflicts();
+}
+document.addEventListener('pointerup',()=>tpDrop(false));
+document.addEventListener('pointercancel',()=>tpDrop(true));
 function syncTypeOther(){const on=$('#f-type').value==='other';$('#f-typeOther').hidden=!on}
