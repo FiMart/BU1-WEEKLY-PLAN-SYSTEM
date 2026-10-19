@@ -947,3 +947,26 @@ html[data-sbh~=xxs] .side>.sb-nav button{min-height:22px}html[data-sbh~=xxs] .si
 .tp-tag.dragging{opacity:.55;cursor:grabbing;border-style:dashed;transform:scale(1.04)}
 body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
 @media (pointer:coarse){.tp-tag .tp-grip{width:24px;height:28px;font-size:13px}.tp-tag .tp-mv button{width:32px;height:30px}}
+
+/* Utilization Manpower Onsite (js/views/dash-util.js) — the team's Excel sheet as a table, EST months tinted — v4.26.0 */
+.uto>header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.uto>header>p{flex:1 1 100%;max-width:none;margin:0}
+.uto-nav{display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+.uto-nav b{min-width:46px;text-align:center;font-size:15px}
+.uto-t{min-width:980px}
+.uto-t th[scope=row]{text-align:left;white-space:nowrap;font-weight:600}
+.uto-t thead th{white-space:nowrap}
+.uto-t .est{background:color-mix(in srgb,var(--warn) 13%,transparent)}
+.uto-t thead th.est small{display:block;font-size:9.5px;line-height:1.1;font-weight:700;color:var(--warn-ink)}
+.uto-t thead th.cur{box-shadow:inset 0 -3px 0 var(--accent)}
+.uto-t tr.tot>*,.uto-t tr.pct>*{font-weight:700}
+.uto-t tr.tot>*{border-top:2px solid var(--line)}
+.uto-t tr.acc td{color:var(--ink-2)}
+.uto-t tr.pct>*{background:var(--accent-soft)}
+.uto-t tr.pct td.over{color:var(--crit-ink)}
+.uto-t tr.pct td.low{color:var(--warn-ink)}
+.uto-t tr.sub>*{color:var(--ink-2);font-size:12px}
+.uto-t tr.sub:first-of-type>*,.uto-t tr.pct+tr>*{border-top:2px solid var(--line)}
+.uto-t tr.ot>*{color:var(--muted);font-style:italic}
+.uto-t .avg{font-weight:700;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.uto-foot{margin:8px 0 0}
