@@ -100,7 +100,7 @@ function renderSettings(){
   const us=usersSection();if(us)secs.unshift(us);
   secs.splice(secs.findIndex(s=>s.id==='periods')+1,0,holidaySection());
   if(can('master'))secs.push(mdSyncSection());/* ตรวจแผนให้ตรงข้อมูลหลัก (js/features/md-sync.js) */
-  secs.push(jobKpiSection(),csApproverSection(),isoSection(),backupSection(),prefsSection(),aboutSection());
+  secs.push(jobKpiSection(),utoSection(),csApproverSection(),isoSection(),backupSection(),prefsSection(),aboutSection());
   const cur=secs.find(s=>s.id===S.md)||secs[0];
   return `
   <div class="md">
