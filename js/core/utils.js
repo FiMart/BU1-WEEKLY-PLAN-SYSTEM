@@ -48,8 +48,9 @@ function typeLabel(t){const ty=typeOf(t);if(ty.id==='other')return String(t.jobT
 /* ประเภทระบบ = cannot be deleted or switched off: the built-in ones (SYSTEM_TYPES) + the ones ticked in ข้อมูลหลัก › หัวข้องาน (t.sys, user 14 Oct 2026) */
 const isSysType=t=>!!t&&(SYSTEM_TYPES.has(t.id)||!!t.sys);
 /* plans with no สถานะงาน (user, 14 Oct 2026: "ประเภทระบบ เวลาลงแผนงานไม่ต้องให้ปรับสถานะงาน"): the leave types and every job type
-   ticked ประเภทระบบ — except อื่นๆ, whose plans are real jobs typed by hand; saved as planned, no status shown anywhere */
-const noStatusId=id=>isLeaveId(id)||(id!=='other'&&!!(jobTypes().find(x=>x&&x.id===id)||{}).sys);
+   ticked ประเภทระบบ; since 19 Oct 2026 (user: "หัวข้องานอื่นๆ รวมถึงพิมพ์เอง ไม่ได้อยู่ในข้อมูลหลัก นับเป็นประเภทระบบทั้งหมด") also
+   อื่นๆ (= a name typed by hand) and any id that is not in ข้อมูลหลัก › หัวข้องาน; saved as planned, no status shown anywhere */
+const noStatusId=id=>{if(isLeaveId(id)||id==='other')return true;const ty=jobTypes().find(x=>x&&x.id===id);return !ty||!!ty.sys};
 const noStatus=t=>!!t&&noStatusId(typeIdOf(t));
 const isLeave=t=>isLeaveId(typeIdOf(t));/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ */
 /* สายงาน of a plan: its own, else its job type's; '' = not set (leave never has one) */
