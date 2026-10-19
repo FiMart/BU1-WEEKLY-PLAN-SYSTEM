@@ -29,7 +29,7 @@ function dashCompute(){
   const P=dashPeriod();const {from,to}=P;
   /* the open สายงาน tab (lineMatch): its plans, plans without a line, and leave */
   const lt=l=>l&&l.filter(lineMatch);
-  const tasks=lt(P.mode==='week'?S.tasks:rangeTasks(from,to));const prev=lt(rangeTasks(P.pFrom,P.pTo));
+  const raw=P.mode==='week'?S.tasks:rangeTasks(from,to);const tasks=lt(raw);const prev=lt(rangeTasks(P.pFrom,P.pTo));
   if(!tasks)return {P,loading:true};
   const today=ymd(new Date());const inR=t=>t.date>=from&&t.date<=to;
   const all=tasks.filter(inR);const work=all.filter(isWorking);const jobs=work.filter(t=>!isLeave(t));const leaves=work.filter(isLeave);
@@ -45,14 +45,26 @@ function dashCompute(){
   /* people */
   const pst=new Map();
   const ps=id=>{if(!pst.has(id))pst.set(id,{jobs:0,am:0,pm:0,full:0,days:new Map(),dates:new Set(),leave:new Set(),conf:0,types:new Map()});return pst.get(id)};
-  jobs.forEach(t=>{const per=periodOf(t);const PR=PERIOD[per];(t.staffIds||[]).forEach(id=>{const p=ps(id);p.jobs++;p[per]++;
-    const sl=p.days.get(t.date)||{am:false,pm:false};sl.am=sl.am||PR.a===0;sl.pm=sl.pm||PR.b===1;p.days.set(t.date,sl);p.dates.add(t.date);
+  /* man-days (user, 19 Oct 2026: "อยากให้ตัวเลขตรงขึ้น"): only plans that hold the team (holdsTeam — not เลื่อน / ยกเลิก) fill a day;
+     a person's capacity = working days minus their leave on those days (half-day leave = 0.5) */
+  const wkSet=new Set(workDays.map(ymd));
+  jobs.forEach(t=>{const per=periodOf(t);(t.staffIds||[]).forEach(id=>{const p=ps(id);p.jobs++;p[per]++;
     const k=typeLabel(t);p.types.set(k,(p.types.get(k)||0)+1);if((conf.get(t.id)||[]).some(c=>c.staff.includes(id)))p.conf++})});
-  leaves.forEach(t=>(t.staffIds||[]).forEach(id=>{const p=ps(id);p.leave.add(t.date);p.dates.add(t.date)}));
+  /* busy days come from plans of EVERY สายงาน (user, 19 Oct 2026): people work on both lines, so a day on a Flow Meter plan is not
+     free capacity on the Instrument tab — man-days / Utilization / ว่าง (วัน) are the same whatever tab is open */
+  raw.filter(t=>inR(t)&&!isLeave(t)&&isWorking(t)).forEach(t=>{const PR=PERIOD[periodOf(t)];const holds=holdsTeam(t);(t.staffIds||[]).forEach(id=>{const p=ps(id);
+    if(holds){const sl=p.days.get(t.date)||{am:false,pm:false};sl.am=sl.am||PR.a===0;sl.pm=sl.pm||PR.b===1;p.days.set(t.date,sl)}p.dates.add(t.date)})});
+  const lvSlot=new Map();/* id|date → {am, pm} of leave on a working day */
+  leaves.forEach(t=>{const PR=PERIOD[periodOf(t)];(t.staffIds||[]).forEach(id=>{const p=ps(id);p.leave.add(t.date);p.dates.add(t.date);
+    if(!wkSet.has(t.date))return;const k=id+'|'+t.date;const sl=lvSlot.get(k)||{am:false,pm:false};sl.am=sl.am||PR.a===0;sl.pm=sl.pm||PR.b===1;lvSlot.set(k,sl)})});
   const people=S.staff.filter(s=>s.active!==false||pst.has(s.id)).map(s=>{const p=ps(s.id);const wd=[...p.days.values()].reduce((a,x)=>a+(x.am&&x.pm?1:.5),0);
-    const top=[...p.types].sort((a,b)=>b[1]-a[1])[0];return Object.assign({s,wd,free:workDays.filter(d=>!p.dates.has(ymd(d))).length,top:top?`${top[0]} (${top[1]})`:''},p)})
+    const lv=workDays.reduce((a,d)=>{const sl=lvSlot.get(s.id+'|'+ymd(d));return a+(!sl?0:sl.am&&sl.pm?1:.5)},0);
+    const top=[...p.types].sort((a,b)=>b[1]-a[1])[0];return Object.assign({s,wd,lv,cap:Math.max(0,workDays.length-lv),free:workDays.filter(d=>!p.dates.has(ymd(d))).length,top:top?`${top[0]} (${top[1]})`:''},p)})
     .sort((a,b)=>b.jobs-a.jobs||b.wd-a.wd||sortPeople(a.s,b.s));
-  const manDays=people.reduce((a,p)=>a+p.wd,0);const capDays=active.length*workDays.length;const util=pct(manDays,capDays);
+  /* Utilization = the open ทีม's active people only (all active people when no team is picked), numerator and denominator alike */
+  const uPeople=people.filter(p=>p.s.active!==false&&inTeam(p.s));
+  const manDays=uPeople.reduce((a,p)=>a+p.wd,0);const lvCap=uPeople.reduce((a,p)=>a+p.lv,0);
+  const capDays=Math.max(0,uPeople.length*workDays.length-lvCap);const util=pct(manDays,capDays);
   const busyN=people.filter(p=>p.jobs>0).length;const leaveDays=people.reduce((a,p)=>a+p.leave.size,0);
   const avgTeam=totalJ?jobs.reduce((a,t)=>a+(t.staffIds||[]).length+(t.guests||[]).length,0)/totalJ:0;
   const prevJobs=prev?prev.filter(t=>t.date>=P.pFrom&&t.date<=P.pTo&&isWorking(t)&&!isLeave(t)):null;
@@ -60,8 +72,8 @@ function dashCompute(){
 
   /* roles: capacity = people × working days (Mon–Sat) */
   const groupRows=keyOf=>{const m=new Map();active.forEach(s=>{const k=keyOf(s);if(!m.has(k))m.set(k,{k,n:0,ids:new Set()});const x=m.get(k);x.n++;x.ids.add(s.id)});
-    return [...m.values()].map(x=>{const md=people.filter(p=>x.ids.has(p.s.id)).reduce((a,p)=>a+p.wd,0);
-      return Object.assign(x,{jobs:jobs.filter(t=>(t.staffIds||[]).some(id=>x.ids.has(id))).length,md,util:pct(md,x.n*workDays.length)})})};
+    return [...m.values()].map(x=>{const g=people.filter(p=>x.ids.has(p.s.id));const md=g.reduce((a,p)=>a+p.wd,0);const cap=g.reduce((a,p)=>a+p.cap,0);
+      return Object.assign(x,{jobs:jobs.filter(t=>(t.staffIds||[]).some(id=>x.ids.has(id))).length,md,util:pct(md,cap)})})};
   const order=positions();const roleRows=groupRows(roleOf)
     .sort((a,b)=>((order.indexOf(a.k)+1)||999)-((order.indexOf(b.k)+1)||999)||a.k.localeCompare(b.k,'th'));
 
@@ -139,7 +151,7 @@ function dashCompute(){
   const kpis=[
     {name:'งานทั้งหมด (Total Jobs)',value:`${totalJ} แผน`,note:prevJobs?chg(totalJ,prevJobs.length):''},
     {name:'อัตราปิดงาน (Completion Rate)',value:doneRate==null?'–':`${doneRate}%`,note:due.length?`ปิดแล้ว ${doneDue} จาก ${due.length} แผนที่ถึงกำหนด${prevDoneRate!=null?` · ${P.pLabel} ${prevDoneRate}%`:''}`:'ยังไม่มีแผนที่ถึงกำหนด'},
-    {name:'อัตราใช้กำลังคน (Utilization)',value:`${util}%`,note:`${f1(manDays)} จาก ${capDays} คน-วัน (${active.length} คน × ${workDays.length} วันทำงาน จ.–ส. ไม่รวมวันหยุด)`},
+    {name:'อัตราใช้กำลังคน (Utilization)',value:`${util}%`,note:`${f1(manDays)} จาก ${f1(capDays)} คน-วัน (${uPeople.length} คน${S.team&&TEAM[S.team]?' ทีม '+TEAM[S.team].name:''} × ${workDays.length} วันทำงาน จ.–ส. ไม่รวมวันหยุด${lvCap?` − ลา ${f1(lvCap)} คน-วัน`:''} · ไม่นับแผนเลื่อน / ยกเลิก${S.line?' · นับงานทุกสายงาน':''})`},
     {name:'คน-วันทำงาน (Man-days)',value:`${f1(manDays)} คน-วัน`,note:`ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน`},
     {name:'กำลังคนที่มีงาน (Active Manpower)',value:`${busyN} / ${active.length} คน`,note:`ว่างทั้งช่วง ${Math.max(0,active.length-busyN)} คน · ลา ${leaveDays} คน-วัน`},
     {name:'อัตราเลื่อน / ยกเลิก (Postpone & Cancel)',value:`${pcRate}%`,note:`เลื่อน ${stc.postponed} · ยกเลิก ${stc.cancelled} จาก ${allJ} แผน`},
@@ -153,7 +165,7 @@ function dashCompute(){
   const findings=[];
   findings.push({t:'',s:`มีแผนงานทั้งหมด ${totalJ} แผน${prevJobs?` ${chg(totalJ,prevJobs.length)}`:''} ใช้ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน`});
   if(due.length)findings.push({t:doneRate>=90?'good':doneRate<70?'warn':'',s:`ปิดงานแล้ว ${doneDue} จาก ${due.length} แผนที่ถึงกำหนด (${doneRate}%)${lateN?` ยังไม่ปิด ${lateN} แผน`:''}`});
-  findings.push({t:util>=90?'bad':util>=75?'warn':'',s:`ใช้กำลังคน ${util}% (${f1(manDays)} จาก ${capDays} คน-วัน) ${util>=90?'ภาระงานสูงมาก ควรเกลี่ยงานหรือเพิ่มกำลังคน':util>=75?'ภาระงานค่อนข้างสูง':util<40?'ยังมีกำลังคนว่างรองรับงานเพิ่มได้':'อยู่ในระดับปกติ'}`});
+  findings.push({t:util>=90?'bad':util>=75?'warn':'',s:`ใช้กำลังคน ${util}% (${f1(manDays)} จาก ${f1(capDays)} คน-วัน) ${util>=90?'ภาระงานสูงมาก ควรเกลี่ยงานหรือเพิ่มกำลังคน':util>=75?'ภาระงานค่อนข้างสูง':util<40?'ยังมีกำลังคนว่างรองรับงานเพิ่มได้':'อยู่ในระดับปกติ'}`});
   if(types[0])findings.push({t:'',s:`งานหลักคือ ${types[0].label} ${types[0].n} แผน (${pct(types[0].n,totalJ)}%)${types[1]?` รองลงมาคือ ${types[1].label} ${types[1].n} แผน`:''}`});
   if(custList[0])findings.push({t:'',s:`ลูกค้าที่มีงานมากที่สุดคือ ${custList[0][0]} ${custList[0][1]} แผน (${pct(custList[0][1],totalJ)}%) จากลูกค้าทั้งหมด ${cust.size} ราย`});
   const topP=people.find(p=>p.jobs);if(topP)findings.push({t:'',s:`พนักงานที่มีงานมากที่สุดคือ ${topP.s.name} ${topP.jobs} แผน (${f1(topP.wd)} คน-วัน)`});
@@ -261,12 +273,12 @@ function renderDash(){
   /* ---- 4. manpower ---- */
   h+=sec(4,'กำลังคน','Manpower');
   const grpTable=(rows,first)=>`<table class="mini"><thead><tr><th>${first}</th><th class="n">คน</th><th class="n">แผน</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.k)}</td><td class="n">${x.n}</td><td class="n">${x.jobs}</td><td class="n">${f1(x.md)}</td><td class="n"><span class="ibar sm"><i style="width:${Math.min(100,x.util)}%"></i></span>${x.util}%</td></tr>`).join('')||'<tr><td colspan="5" class="hint">ยังไม่มีข้อมูล</td></tr>'}</tbody></table>`;
-  h+=`<section class="panel span-12" style="--d:5"><header><h2>ภาระงานตามตำแหน่ง</h2><p>เรียงตามลำดับตำแหน่งในข้อมูลหลัก · ใช้กำลังคน = คน-วันทำงาน ÷ (จำนวนคนในตำแหน่ง × วันทำงาน จ.–ส. ไม่รวมวันหยุดนักขัตฤกษ์)</p></header>${grpTable(D.roleRows,'ตำแหน่ง')}</section>`;
+  h+=`<section class="panel span-12" style="--d:5"><header><h2>ภาระงานตามตำแหน่ง</h2><p>เรียงตามลำดับตำแหน่งในข้อมูลหลัก · ใช้กำลังคน = คน-วันทำงาน (ไม่นับแผนเลื่อน / ยกเลิก) ÷ (จำนวนคนในตำแหน่ง × วันทำงาน จ.–ส. ไม่รวมวันหยุดนักขัตฤกษ์ − วันลา)</p></header>${grpTable(D.roleRows,'ตำแหน่ง')}</section>`;
   const maxJ=Math.max(1,...D.people.map(p=>p.jobs));const wdN=D.workDays.length;
   h+=`<section class="panel span-12" style="--d:6"><header><h2>รายละเอียดรายคน</h2><p>คน-วัน นับงานครึ่งวัน (เช้าหรือบ่าย) เป็น 0.5 · ว่าง = วันทำงาน (จันทร์–เสาร์ ไม่รวมวันหยุดนักขัตฤกษ์) ที่ไม่มีแผนเลย · เรียงจากงานมากไปน้อย</p></header>
     <div class="scroll-x plain" style="max-height:520px;overflow:auto"><table class="mini ptab"><thead><tr><th>#</th><th>ชื่อ</th><th>งาน (แผน)</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th><th class="n">เช้า</th><th class="n">บ่าย</th><th class="n">ทั้งวัน</th><th class="n">ลา (วัน)</th><th class="n">ว่าง (วัน)</th><th class="n">จัดชน</th><th>งานที่ทำมากสุด</th></tr></thead><tbody>
     ${D.people.map((p,i)=>`<tr${p.jobs?'':' class="idle"'}><td class="n hint">${i+1}</td><td><b>${esc(p.s.name)}</b><span class="sub">${esc(p.s.role||'—')}</span></td>
-      <td><span class="ibar"><i style="width:${p.jobs/maxJ*100}%"></i></span><b class="num">${p.jobs}</b></td><td class="n">${f1(p.wd)}</td><td class="n">${pct(p.wd,wdN)}%</td><td class="n">${p.am||'–'}</td><td class="n">${p.pm||'–'}</td><td class="n">${p.full||'–'}</td>
+      <td><span class="ibar"><i style="width:${p.jobs/maxJ*100}%"></i></span><b class="num">${p.jobs}</b></td><td class="n">${f1(p.wd)}</td><td class="n">${pct(p.wd,p.cap)}%</td><td class="n">${p.am||'–'}</td><td class="n">${p.pm||'–'}</td><td class="n">${p.full||'–'}</td>
       <td class="n">${p.leave.size||'–'}</td><td class="n${p.free===wdN?' free':''}">${p.free}</td><td class="n${p.conf?' bad':''}">${p.conf?'⚠ '+p.conf:'–'}</td><td>${esc(p.top||'—')}</td></tr>`).join('')||'<tr><td colspan="12" class="hint">ยังไม่มีรายชื่อพนักงาน</td></tr>'}
     </tbody></table></div></section>`;
   if(D.heat){const H=D.heat;const mx=Math.max(1,...H.rows.flatMap(g=>g.v));
@@ -322,7 +334,7 @@ function dashRows(D){
     status:{sheet:'สถานะ',title:'สถานะงาน',head:['สถานะ','แผน','%'],num:[1,2],rows:STATUSES.map(s=>[s.th,D.stc[s.id],pct(D.stc[s.id],D.allJ)])},
     role:{sheet:'ตำแหน่ง',title:'ภาระงานตามตำแหน่ง',head:['ตำแหน่ง','คน','แผน','คน-วัน','ใช้กำลังคน (%)'],num:[1,2,3,4],rows:D.roleRows.map(grp)},
     person:{sheet:'รายคน',title:'รายละเอียดรายคน',head:['#','ชื่อ','ตำแหน่ง','งาน (แผน)','คน-วัน','ใช้กำลังคน (%)','เช้า','บ่าย','ทั้งวัน','ลา (วัน)','ว่าง (วัน)','จัดชน','งานที่ทำมากสุด'],num:[0,3,4,5,6,7,8,9,10,11],
-      rows:D.people.map((p,i)=>[i+1,p.s.name,p.s.role||'',p.jobs,Math.round(p.wd*10)/10,pct(p.wd,D.workDays.length),p.am,p.pm,p.full,p.leave.size,p.free,p.conf,p.top||''])},
+      rows:D.people.map((p,i)=>[i+1,p.s.name,p.s.role||'',p.jobs,Math.round(p.wd*10)/10,pct(p.wd,p.cap),p.am,p.pm,p.full,p.leave.size,p.free,p.conf,p.top||''])},
     types:{sheet:'หัวข้องาน',title:'งานตามหัวข้องาน',head:['หัวข้องาน','แผน','%'],num:[1,2],rows:D.types.map(x=>[x.label,x.n,pct(x.n,D.totalJ)])},
     cust:{sheet:'ลูกค้า',title:'งานตามลูกค้า',head:['ลูกค้า','แผน','%'],num:[1,2],rows:D.custList.map(([k,n])=>[k,n,pct(n,D.totalJ)])},
     veh:{sheet:'รถ',title:'การใช้รถ',head:['รถ','แผน','วันที่ใช้'],num:[1,2],rows:D.vehList.map(x=>[x.label,x.n,x.days])},
