@@ -9,7 +9,7 @@ function renderSearch(){
     <label class="wk-jump">ถึง <input type="date" id="srch-to" value="${esc(S.srch.to)}"></label>
     <button type="button" class="btn sm ghost" data-action="srch-reload">โหลดข้อมูลล่าสุด</button>
   </div>
-  <div class="scroll-x"><table class="list"><thead><tr><th>วันที่</th><th>Plan No.</th><th>หัวข้องาน</th><th>Customer / Location</th><th>ช่วงเวลา</th><th>Team Service</th><th>Transport</th><th>Sale</th><th>สถานะ</th></tr></thead><tbody id="srchBody"></tbody></table><div class="count-note" id="srchCount"></div></div>`;
+  <div class="scroll-x"><table class="list srch-t"><thead><tr><th>วันที่</th><th>Plan No.</th><th>หัวข้องาน</th><th>Customer / Location</th><th>ช่วงเวลา</th><th>Team Service</th><th>Transport</th><th>Sale</th><th>สถานะ</th></tr></thead><tbody id="srchBody"></tbody></table><div class="count-note" id="srchCount"></div></div>`;
 }
 function fillSearch(){
   const body=$('#srchBody');if(!body)return;
@@ -25,9 +25,9 @@ function fillSearch(){
   list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||byTime(a,b));
   const shown=list.slice(0,300);
   body.innerHTML=shown.map(t=>{const ty=typeOf(t);return `<tr><td class="num"><button type="button" class="ttl" data-edit="${esc(t.id)}">${esc(fmtDayY(t.date))}</button><span class="sub">สัปดาห์ ${esc(weekName(mondayOf(parseD(t.date))))} · <button type="button" class="lnk" data-goweek="${esc(t.date)}">เปิดสัปดาห์</button></span></td>
-    <td class="num">${esc(t.planNo||'–')}</td><td><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span></td>
-    <td>${esc(t.customer||'–')}<span class="sub">${esc(t.location||'')}</span></td><td>${esc(pName(t))}${t.timeNote?`<span class="sub">${esc(t.timeNote)}</span>`:''}</td>
-    <td>${esc(teamNames(t).join(', ')||'–')}</td><td>${esc(t.transport||t.needGA?transportText(t):'–')}</td><td>${esc(t.sale||'–')}</td><td>${noStatus(t)?'–':`<span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span>`}${!noStatus(t)&&NEEDS_REASON.has(t.status)&&t.statusNote?`<span class="sub">${esc(t.statusNote)}</span>`:''}</td></tr>`}).join('')
+    <td class="num" data-l="Plan No.">${esc(t.planNo||'–')}</td><td data-l="หัวข้องาน"><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span></td>
+    <td data-l="Customer / Location">${esc(t.customer||'–')}<span class="sub">${esc(t.location||'')}</span></td><td data-l="ช่วงเวลา">${esc(pName(t))}${t.timeNote?`<span class="sub">${esc(t.timeNote)}</span>`:''}</td>
+    <td data-l="Team Service">${esc(teamNames(t).join(', ')||'–')}</td><td data-l="Transport">${esc(t.transport||t.needGA?transportText(t):'–')}</td><td data-l="Sale">${esc(t.sale||'–')}</td><td data-l="สถานะ">${noStatus(t)?'–':`<span class="pill">${statusIcon(t.status)} ${esc((STATUS[t.status]||STATUS.planned).th)}</span>`}${!noStatus(t)&&NEEDS_REASON.has(t.status)&&t.statusNote?`<span class="sub">${esc(t.statusNote)}</span>`:''}</td></tr>`}).join('')
     ||`<tr><td colspan="9" style="color:var(--muted);padding:20px 12px">ไม่พบแผนงานที่ตรงกับคำค้น</td></tr>`;
   $('#srchCount').textContent=`พบ ${list.length.toLocaleString('th-TH')} แผน${list.length>300?' (แสดง 300 รายการล่าสุด)':''} จากทั้งหมด ${all.length.toLocaleString('th-TH')} แผนในระบบ`;
 }

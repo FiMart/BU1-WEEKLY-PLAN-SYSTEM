@@ -22,6 +22,14 @@ function dashPeriod(){
     return {mode,from:ymd(s),to:ymd(new Date(y,q*3+3,0)),label:`ไตรมาส ${q+1}/${be(s)} (${TH_MON[q*3]} – ${TH_MON[q*3+2]})`,pFrom:ymd(new Date(y,q*3-3,1)),pTo:ymd(new Date(y,q*3,0)),pLabel:'ไตรมาสก่อน',unit:'week'}}
   return {mode:'year',from:`${y}-01-01`,to:`${y}-12-31`,label:`ปี ${be(m)}`,pFrom:`${y-1}-01-01`,pTo:`${y-1}-12-31`,pLabel:'ปีก่อน',unit:'month'};
 }
+/* bucket ranges of a period: days (week, month), Monday weeks (quarter) or months (year) — the trend chart's columns */
+function dashRanges(from,to,unit){
+  const out=[];
+  if(unit==='day')for(let d=parseD(from);ymd(d)<=to;d=addDays(d,1))out.push({a:ymd(d),b:ymd(d)});
+  else if(unit==='week')for(let w=mondayOf(parseD(from));ymd(w)<=to;w=addDays(w,7))out.push({a:ymd(w)<from?from:ymd(w),b:ymd(addDays(w,6))>to?to:ymd(addDays(w,6))});
+  else for(let i=0;i<12;i++){const s=new Date(parseD(from).getFullYear(),i,1);out.push({a:ymd(s),b:ymd(new Date(s.getFullYear(),i+1,0))})}
+  return out;
+}
 function dashStep(dir){const st={month:1,quarter:3,year:12}[S.dash.mode]||1;setMonth(dir?new Date(S.month.getFullYear(),S.month.getMonth()+dir*st,1):new Date())}
 
 /* every figure the report shows, computed once and shared by the page, the A4 print and the Excel file */
@@ -87,7 +95,7 @@ function dashCompute(){
   const custKeyOf=t=>String(t.customer||'').trim()||'(ไม่ระบุลูกค้า)';
   const cust=new Map();jobs.forEach(t=>{const k=custKeyOf(t);cust.set(k,(cust.get(k)||0)+1)});const custList=[...cust].sort((a,b)=>b[1]-a[1]);
   const veh=new Map();jobs.forEach(t=>deptCars(t).forEach(v=>{if(!veh.has(v))veh.set(v,{n:0,d:new Set()});const x=veh.get(v);x.n++;x.d.add(t.date)}));/* each department vehicle of a plan (up to 2) */
-  const vehList=[...veh].sort((a,b)=>b[1].n-a[1].n).map(([k,x])=>({label:k==='GA'?'รถ GA':k,n:x.n,days:x.d.size}));
+  const vehList=[...veh].sort((a,b)=>b[1].n-a[1].n).map(([k,x])=>({k,label:k==='GA'?'รถ GA':k,n:x.n,days:x.d.size}));
   const noCar=jobs.filter(t=>!deptCars(t).length&&!t.needGA).length;
   const sale=new Map();jobs.forEach(t=>{const k=String(t.sale||'').trim()||'(ไม่ระบุ Sale)';sale.set(k,(sale.get(k)||0)+1)});const saleList=[...sale].sort((a,b)=>b[1]-a[1]);
 
@@ -134,6 +142,20 @@ function dashCompute(){
     buckets.push(Object.assign({from:a,to:b,lbl:String(parseD(a).getDate()),sub:TH_MON[parseD(a).getMonth()],td:today>=a&&today<=b,name:`สัปดาห์ ${weekName(w)}`},mk(a,b)))}
   else for(let i=0;i<12;i++){const s=new Date(parseD(from).getFullYear(),i,1);const a=ymd(s),b=ymd(new Date(s.getFullYear(),i+1,0));
     buckets.push(Object.assign({from:a,to:b,lbl:TH_MON[i],sub:'',td:today>=a&&today<=b,name:`${TH_MON_FULL[i]} ${be(s)}`},mk(a,b)))}
+
+  /* the same buckets in the period before (the trend chart's comparison line); null while that period loads */
+  const prevVals=prevJobs?dashRanges(P.pFrom,P.pTo,P.unit).map(r=>prevJobs.filter(t=>t.date>=r.a&&t.date<=r.b).length):null;
+  /* every day of the period for the calendar heatmap: plans (open tab), onsite works (every line), people free / on leave */
+  const byDay=new Map();raw.forEach(t=>{if(!inR(t))return;if(!byDay.has(t.date))byDay.set(t.date,[]);byDay.get(t.date).push(t)});
+  const calDays=days.map(d=>{const k=ymd(d);const l=byDay.get(k)||[];const busy=new Set(l.filter(holdsTeam).flatMap(t=>t.staffIds||[]));
+    return {k,d,n:l.filter(t=>!isLeave(t)&&holdsTeam(t)&&lineMatch(t)).length,ons:l.filter(utoOnsite).length,free:active.filter(s=>!busy.has(s.id)).length,
+      lv:new Set(l.filter(t=>isLeave(t)&&isWorking(t)).flatMap(t=>t.staffIds||[])).size,off:!isUtoDay(d),hol:holidayOf(k)||'',today:k===today}});
+  /* the period before, counted the same way, for the ranking ticks */
+  const cntBy=(l,f)=>{const m=new Map();l.forEach(t=>[].concat(f(t)).forEach(k=>{if(k!=null&&k!=='')m.set(k,(m.get(k)||0)+1)}));return m};
+  const prevBy=prevJobs?{cust:cntBy(prevJobs,custKeyOf),type:cntBy(prevJobs,t=>knownIds.has(typeIdOf(t))?typeIdOf(t):'__x'),
+    sale:cntBy(prevJobs,t=>String(t.sale||'').trim()||'(ไม่ระบุ Sale)'),veh:cntBy(prevJobs,t=>deptCars(t))}:null;
+  /* plans by team for the donut: one part each (On-Site only · Lab only · both · nobody of a team yet) */
+  const teamMix={onsite:0,lab:0,both:0,none:0};jobs.forEach(t=>{const ids=t.staffIds||[];const on=ids.some(id=>inT(id,'onsite')),lb=ids.some(id=>inT(id,'lab'));teamMix[on&&lb?'both':on?'onsite':lb?'lab':'none']++});
 
   /* person × week (month) or person × month (quarter, year) */
   let heat=null;
@@ -184,147 +206,10 @@ function dashCompute(){
 
   return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,docN,ncrIn,ncrOpen,ncrLate,
     people,manDays,otDays,U,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
-    pairs,follow,buckets,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
+    pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
 }
 
-function renderDash(){
-  if(notReady())return loading();
-  const D=dashCompute();const P=D.P;const mode=P.mode;
-  let h=`<div class="dash-bar"><div class="seg" role="radiogroup" aria-label="ช่วงรายงาน">${DASH_MODES.map(([v,l])=>`<label><input type="radio" name="dash-mode" id="dash-${v}" value="${v}"${mode===v?' checked':''}><span>${l}</span></label>`).join('')}</div>
-    ${mode!=='week'?`<div class="wk-nav"><button type="button" class="arrow" data-action="dprev" aria-label="${esc(P.pLabel)}">‹</button><button type="button" data-action="dthis">${{month:'เดือนนี้',quarter:'ไตรมาสนี้',year:'ปีนี้'}[mode]}</button><button type="button" class="arrow" data-action="dnext" aria-label="ช่วงถัดไป">›</button></div>`:''}
-    <span class="hint"><b>${esc(P.label)}</b> · ${esc(thDate(P.from))} – ${esc(thDate(P.to))}</span></div>`;
-  if(D.loading)return h+loading();
-  const now=new Date();
-  const sec=(n,th,en,id)=>`<h3 class="dsec"${id?` id="${id}"`:''}><span>${n}</span>${th}<small>${en}</small></h3>`;
-
-  /* ---- report header ---- */
-  h+=`<div class="sum"><header class="rpt-hd span-12"><div><p class="rpt-org">${DASH_ORG}</p><h2>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h2>
-      <p class="rpt-meta">ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))} · เปรียบเทียบกับ${esc(P.pLabel)} · ข้อมูล ณ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.</p></div>
-    ${downloads?`<div class="rpt-actions"><button type="button" class="btn" data-action="dash-print" title="ดาวน์โหลดรายงาน A4 สำหรับพิมพ์หรือบันทึกเป็น PDF">${PRINT_ICON} พิมพ์รายงาน / PDF</button><button type="button" class="btn" data-action="dash-xlsx" title="ดาวน์โหลดตัวเลขทุกตารางเป็นไฟล์ Excel">Excel รายงาน</button></div>`:''}</header>`;
-
-  /* ---- 1. executive summary ---- */
-  const num=n=>`<span data-n="${n}">${n}</span>`;
-  const tile=(i,lbl,en,val,unit,foot,cls,bar)=>`<div class="tile${cls?' '+cls:''}" style="--d:${i}"><span class="lbl">${lbl}<em>${en}</em></span><span class="val">${val}<small>${unit}</small></span>${bar!=null?`<span class="tbar"><i style="width:${Math.min(100,bar)}%"></i></span>`:''}<span class="foot">${foot}</span></div>`;
-  const delta=(cur,prv,unit)=>prv==null?'<span class="dl">กำลังโหลดข้อมูลช่วงก่อน…</span>':cur===prv?`<span class="dl">เท่ากับ${P.pLabel}</span>`:`<span class="dl ${cur>prv?'up':'down'}">${cur>prv?'▲':'▼'} ${Math.abs(cur-prv)}${unit||''} จาก${P.pLabel}</span>`;
-  const iss=D.confN+D.lateN+D.gaN+D.docN;
-  h+=sec(1,'สรุปภาพรวม','Summary');
-  h+=`<div class="tiles">
-    ${tile(0,'งานทั้งหมด','Total Jobs',num(D.totalJ),'แผน',delta(D.totalJ,D.prevJobs?D.prevJobs.length:null,' แผน'))}
-    ${tile(1,'อัตราปิดงาน','Completion Rate',D.doneRate==null?'–':num(D.doneRate),D.doneRate==null?'':'%',esc(D.kpis[1].note),'',D.doneRate)}
-    ${tile(2,'อัตราใช้กำลังคนหน้างาน','Utilization Onsite',num(D.util),'%',esc(D.kpis[2].note),D.util>100?'alert':D.util>=85?'warnt':'',D.util)}
-    ${tile(3,'กำลังคนที่มีงาน','Active Manpower',num(D.busyN),`/ ${D.active.length} คน`,esc(D.kpis[4].note))}
-    ${tile(4,'อัตราเลื่อน / ยกเลิก','Postpone & Cancel',num(D.pcRate),'%',esc(D.kpis[5].note),D.pcN?'warnt':'')}
-    ${tile(5,'งานไม่เสร็จ / NCR','Not done · NCR',num(D.stc.notdone||0),'แผน',`${esc(D.kpis[7].note)}${D.ncrIn.length?' · <button type="button" class="lnk" data-view="ncr">เปิดหน้า NCR</button>':''}`,D.ncrOpen?'alert':'')}
-    ${tile(6,'ประเด็นต้องติดตาม','Open Issues',(iss?'⚠ ':'')+num(iss),'รายการ',iss?`${esc(D.kpis[6].note)} · <button type="button" class="lnk" data-action="jump-conf" data-target="#dashIssues">ดูรายละเอียด ↓</button>`:'ไม่มีประเด็นค้าง',iss?'alert':'')}
-  </div>`;
-  h+=`<section class="panel span-12" style="--d:1"><header><h2>ประเด็นสำคัญ</h2><p>สรุปอัตโนมัติจากแผนงานในช่วงนี้ ใช้ประกอบการรายงานผลการปฏิบัติงาน</p></header><ul class="findings">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul></section>`;
-  /* สายงาน side by side (ทั้งหมด tab), then the Flow Meter calibration figures */
-  if(!S.line){const R=D.lineRows;const tot=Math.max(1,R.reduce((a,r)=>a+r.n,0)+D.noLineN);
-    h+=`<section class="panel span-12 dl-lines" style="--d:2"><header><h2>แยกตามสายงาน</h2><p>แผนงานของแต่ละสาย · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด · คน-วัน นับงานครึ่งวันเป็น 0.5${D.noLineN?` · ยังไม่ระบุสาย ${D.noLineN} แผน`:''}</p></header>
-      <div class="dl-split" role="img" aria-label="${esc(R.map(r=>`${r.l.name} ${r.n} แผน`).join(', '))}">${R.filter(r=>r.n).map(r=>`<span style="flex:${r.n};background:${r.l.color}" data-tip="${esc(r.l.name)} ${r.n} แผน (${pct(r.n,tot)}%)"></span>`).join('')}${D.noLineN?`<span style="flex:${D.noLineN};background:var(--line)" data-tip="ยังไม่ระบุสาย ${D.noLineN} แผน"></span>`:''}</div>
-      <div class="dl-cards">${R.map(r=>`<button type="button" class="dl-card" data-line-tab="${r.l.id}" style="--lc:${r.l.color}"><span class="dl-ico">${r.l.icon}</span><span class="dl-b"><b>${esc(r.l.name)}</b>
-        <span class="dl-k"><span><em>${num(r.n)}</em>แผน · ${r.share}%</span><span><em>${r.doneRate==null?'–':r.doneRate+'%'}</em>ปิดงาน</span><span><em>${f1(r.md)}</em>คน-วัน</span><span><em>${r.cust}</em>ลูกค้า</span></span>
-        <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}
-  /* ทีม side by side (ทุกทีม, once anyone has a team); a card opens that team */
-  if(!S.team&&teamsUsed()){const R=D.teamRows;
-    h+=`<section class="panel span-12 dl-lines dl-teams" style="--d:2"><header><h2>แยกตามทีม</h2><p>แผนที่มีคนของทีมนั้น (แผนเดียวอาจมีทั้งสองทีม) · คน All Team นับในทั้งสองทีม · คน-วัน นับเฉพาะคนของทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด${D.noTeamN?` · แผนที่ยังไม่มีคนของทีมใด ${D.noTeamN} แผน`:''}</p></header>
-      <div class="dl-cards">${R.map(r=>`<button type="button" class="dl-card" data-team-tab="${r.tm.id}" style="--lc:${r.tm.color}"><span class="dl-ico">${PERSON_ICON}</span><span class="dl-b"><b>${esc(r.tm.name)}</b>
-        <span class="dl-k"><span><em>${num(r.n)}</em>แผน</span><span><em>${r.doneRate==null?'–':r.doneRate+'%'}</em>ปิดงาน</span><span><em>${f1(r.md)}</em>คน-วัน</span><span><em>${r.people}</em>คน</span></span>
-        <span class="lt-bar"><i style="width:${r.n?Math.round(r.done/r.n*100):0}%"></i></span></span></button>`).join('')}</div></section>`}
-  if(S.line!=='ins'&&(D.cal.n||S.line==='fm')){const C=D.cal;const toB=l=>l.slice(0,8).map(([k,n])=>({label:k,n,extra:pct(n,C.n)+'%'}));
-    h+=`<section class="panel span-12 dl-cal" style="--d:3"><header><h2>${CAL_ICON} Flow Meter · Weekly plan calibration</h2><p>เครื่องที่สอบเทียบในช่วงนี้จากแผนงาน (ไม่รวมแผนที่ยกเลิก) · Status: ADD เลื่อน ยกเลิก Problem · PASS / FAIL ตามที่ Lab บันทึก</p></header>
-      ${C.n?`<div class="cal-tiles">
-        <div><b>${num(C.n)}</b><span>เครื่องทั้งหมด</span></div><div class="ok"><b>${num(C.pass)}</b><span>PASS${D.passRate!=null?` · ${D.passRate}%`:''}</span></div>
-        <div class="${C.fail?'bad':''}"><b>${num(C.fail)}</b><span>FAIL</span></div><div><b>${num(C.pending)}</b><span>รอผล (ADD)</span></div>
-        <div><b>${num(C.postponed+C.cancelled)}</b><span>เลื่อน ${C.postponed} · ยกเลิก ${C.cancelled}</span></div><div class="${C.problem?'bad':''}"><b>${num(C.problem)}</b><span>Problem</span></div></div>
-      <div class="cal-cols"><div><h3>ตามชนิด (Type)</h3>${hbars(toB(D.calTypes),'เครื่อง')}</div><div><h3>ตามขนาด (Size)</h3>${hbars(toB(D.calSizes),'เครื่อง')}</div>
-        <div><h3>ตาม Process Fluid</h3>${hbars(toB(D.calFluids),'เครื่อง')}</div><div><h3>ตาม Round</h3>${hbars(toB(D.calRounds),'เครื่อง')}</div>
-        <div><h3>ตาม Lab</h3>${hbars(toB(D.calLabs),'เครื่อง')}</div><div><h3>ตามลูกค้า</h3>${hbars(toB(D.calCust),'เครื่อง')}</div></div>`
-      :'<p class="hint">ยังไม่มีรายการสอบเทียบในช่วงนี้ · กรอกได้ที่หัวข้อ "Weekly plan calibration" ในแผนงาน Flow Meter</p>'}</section>`}
-  if(S.line!=='fm'&&(D.ins.n||S.line==='ins')){const I=D.ins;const toB=l=>l.slice(0,8).map(([k,n])=>({label:k,n,extra:pct(n,I.n)+'%'}));
-    h+=`<section class="panel span-12 dl-cal dl-ins" style="--d:4"><header><h2>${INS_ICON} Instrument · Weekly plan instrument</h2><p>รายการเครื่องมือ Instrument ในช่วงนี้จากแผนงาน (ไม่รวมแผนที่ยกเลิก) · Plan / Actual = จำนวนตามที่กรอก · Completed = Remark "Completed"</p></header>
-      ${I.n?`<div class="cal-tiles">
-        <div><b>${num(I.n)}</b><span>รายการ (Request)</span></div><div><b>${num(I.plan)}</b><span>Plan รวม</span></div>
-        <div class="ok"><b>${num(I.actual)}</b><span>Actual รวม${D.insRate!=null?` · ${D.insRate}%`:''}</span></div><div class="ok"><b>${num(I.done)}</b><span>Completed · ${pct(I.done,I.n)}%</span></div>
-        <div><b>${num(I.certs)}</b><span>Certificate</span></div><div><b>${num(D.insCust.length)}</b><span>ลูกค้า</span></div></div>
-      <div class="cal-cols"><div><h3>ตาม Type</h3>${hbars(toB(D.insTypes),'รายการ')}</div><div><h3>ตาม LAB</h3>${hbars(toB(D.insLabs),'รายการ')}</div><div><h3>ตาม Plant</h3>${hbars(toB(D.insPlants),'รายการ')}</div><div><h3>ตามลูกค้า</h3>${hbars(toB(D.insCust),'รายการ')}</div></div>`
-      :'<p class="hint">ยังไม่มีรายการ Instrument ในช่วงนี้ · กรอกได้ที่หัวข้อ "Weekly plan instrument" ในแผนงาน Instrument</p>'}</section>`}
-
-  /* ---- 2. Master Plan: plan vs actual ---- */
-  h+=dashMpHtml(D,{tile,num,sec});
-
-  /* ---- 3. performance: trend chart + status ---- */
-  h+=sec(3,'ผลการดำเนินงาน','Performance');
-  const B=D.buckets;const day=P.unit==='day';const unitName=day?'วัน':P.unit==='week'?'สัปดาห์':'เดือน';
-  const maxN=Math.max(1,...B.map(x=>x.n));const step=maxN<=5?1:maxN<=10?2:maxN<=20?5:maxN<=50?10:maxN<=100?20:50;const yMax=Math.max(step,Math.ceil(maxN/step)*step);
-  const ticks=[];for(let v=0;v<=yMax;v+=step)ticks.push(v);
-  h+=`<section class="panel span-8" style="--d:2"><header><h2>แนวโน้มงานราย${unitName}</h2><p>จำนวนแผนงานในแต่ละ${unitName} แยกตามสถานะ (ไม่รวมแผนลาและงานที่ยกเลิก)${day?' แถวล่างคือจำนวนคนที่ว่างทั้งวัน':''}</p></header>
-    <div class="scroll-x plain"><div class="dchart" style="--n:${B.length};min-width:${Math.max(420,B.length*(day?26:44))}px">
-      <div class="dc-plot">${ticks.map(v=>`<div class="dc-grid${v===0?' base':''}" style="bottom:${v/yMax*100}%"><span>${v}</span></div>`).join('')}${day&&yMax>=MAX_CARDS?`<div class="dc-grid cap" style="bottom:${MAX_CARDS/yMax*100}%"><span>${MAX_CARDS}</span></div>`:''}
-        ${B.map((x,j)=>{const tip=`${x.name}: ${x.n} งาน`+(x.n?` (${DASH_SEG.filter(([s])=>x.c[s]).map(([s])=>`${stTh(s)} ${x.c[s]}`).join(' · ')})`:'')+(day?` · ว่าง ${x.free} คน${x.lv?` · ลา ${x.lv} คน`:''}`:'');
-          return `<div class="dc-col${x.we?' we':''}${x.td?' td':''}" data-tip="${esc(tip)}" style="--j:${j}">${x.n?`<span class="dc-v" style="bottom:calc(${x.n/yMax*100}% + 3px)">${x.n}</span>`:''}<div class="dc-stack" style="height:${x.n/yMax*100}%">${DASH_SEG.filter(([s])=>x.c[s]).map(([s,c])=>`<i style="flex:${x.c[s]};background:${c}"></i>`).join('')}</div></div>`}).join('')}</div>
-      <div class="dc-x">${B.map(x=>`<span class="${x.td?'td':''}"><b>${esc(x.lbl)}</b>${esc(x.sub)}</span>`).join('')}</div>
-      ${day?`<div class="dc-x dc-free">${B.map(x=>`<span title="ว่าง ${x.free} คน">${x.free}</span>`).join('')}</div>`:''}
-    </div></div>
-    <ul class="legend">${DASH_SEG.map(([s,c])=>`<li><i style="background:${c}"></i>${stTh(s)} <b>${D.stc[s]}</b></li>`).join('')}${day?'<li><i style="background:var(--good-ink);border-radius:50%"></i>ตัวเลขแถวล่าง = คนว่าง</li>':''}</ul></section>`;
-  const pc={am:D.jobs.filter(t=>periodOf(t)==='am').length,pm:D.jobs.filter(t=>periodOf(t)==='pm').length,full:D.jobs.filter(t=>periodOf(t)==='full').length};
-  h+=`<section class="panel span-4" style="--d:3"><header><h2>สถานะงาน</h2><p>ทุกแผนงานในช่วงนี้ ${D.allJ} แผน (รวมที่ยกเลิก)</p></header>
-    <div class="stack" role="img" aria-label="${STATUSES.map(s=>`${s.th} ${D.stc[s.id]}`).join(', ')}">${D.allJ?STATUSES.filter(s=>D.stc[s.id]).map(s=>`<span style="flex:${D.stc[s.id]};background:${s.color}" data-tip="${s.th} ${D.stc[s.id]} แผน (${pct(D.stc[s.id],D.allJ)}%)"></span>`).join(''):''}</div>
-    <table class="mini"><tbody>${STATUSES.map(s=>`<tr><td><span class="s-${s.id}">${s.icon}</span> ${s.th}</td><td class="n"><b>${D.stc[s.id]}</b></td><td class="n hint">${pct(D.stc[s.id],D.allJ)}%</td></tr>`).join('')}</tbody></table>
-    <header style="margin-top:4px"><h2>ช่วงเวลาของงาน</h2></header>
-    <table class="mini"><tbody><tr><td>เช้า</td><td class="n"><b>${pc.am}</b></td></tr><tr><td>บ่าย</td><td class="n"><b>${pc.pm}</b></td></tr><tr><td>เช้า,บ่าย (ทั้งวัน)</td><td class="n"><b>${pc.full}</b></td></tr><tr><td>ทีมเฉลี่ยต่องาน</td><td class="n"><b>${f1(D.avgTeam)}</b> คน</td></tr></tbody></table></section>`;
-
-  /* ---- 4. manpower ---- */
-  h+=sec(4,'กำลังคน','Manpower');
-  const grpTable=(rows,first)=>`<table class="mini"><thead><tr><th>${first}</th><th class="n">คน</th><th class="n">แผน</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.k)}</td><td class="n">${x.n}</td><td class="n">${x.jobs}</td><td class="n">${f1(x.md)}</td><td class="n"><span class="ibar sm"><i style="width:${Math.min(100,x.util)}%"></i></span>${x.util}%</td></tr>`).join('')||'<tr><td colspan="5" class="hint">ยังไม่มีข้อมูล</td></tr>'}</tbody></table>`;
-  h+=utoPanelHtml();/* Utilization Manpower Onsite, Jan–Dec (js/views/dash-util.js) */
-  h+=`<section class="panel span-12" style="--d:5"><header><h2>ภาระงานตามตำแหน่ง</h2><p>เรียงตามลำดับตำแหน่งในข้อมูลหลัก · ใช้กำลังคน = คน-วันทำงาน จ.–ศ. (ไม่นับแผนเลื่อน / ยกเลิก และงานวันเสาร์–อาทิตย์ / วันหยุดซึ่งเป็น OT) ÷ (จำนวนคนในตำแหน่ง × วันทำงาน จ.–ศ. ไม่รวมวันหยุดนักขัตฤกษ์ − วันลา)</p></header>${grpTable(D.roleRows,'ตำแหน่ง')}</section>`;
-  const maxJ=Math.max(1,...D.people.map(p=>p.jobs));const wdN=D.workDays.length;
-  h+=`<section class="panel span-12" style="--d:6"><header><h2>รายละเอียดรายคน</h2><p>คน-วัน นับงานครึ่งวัน (เช้าหรือบ่าย) เป็น 0.5 เฉพาะ จ.–ศ. · OT = คน-วันที่ทำงานวันเสาร์–อาทิตย์ / วันหยุด · ว่าง = วันทำงาน (จันทร์–ศุกร์ ไม่รวมวันหยุดนักขัตฤกษ์) ที่ไม่มีแผนเลย · เรียงจากงานมากไปน้อย</p></header>
-    <div class="scroll-x plain" style="max-height:520px;overflow:auto"><table class="mini ptab"><thead><tr><th>#</th><th>ชื่อ</th><th>งาน (แผน)</th><th class="n">คน-วัน</th><th class="n">OT</th><th class="n">ใช้กำลังคน</th><th class="n">เช้า</th><th class="n">บ่าย</th><th class="n">ทั้งวัน</th><th class="n">ลา (วัน)</th><th class="n">ว่าง (วัน)</th><th class="n">จัดชน</th><th>งานที่ทำมากสุด</th></tr></thead><tbody>
-    ${D.people.map((p,i)=>`<tr${p.jobs?'':' class="idle"'}><td class="n hint">${i+1}</td><td><b>${esc(p.s.name)}</b><span class="sub">${esc(p.s.role||'—')}</span></td>
-      <td><span class="ibar"><i style="width:${p.jobs/maxJ*100}%"></i></span><b class="num">${p.jobs}</b></td><td class="n">${f1(p.wd)}</td><td class="n">${p.ot?f1(p.ot):'–'}</td><td class="n">${pct(p.wd,p.cap)}%</td><td class="n">${p.am||'–'}</td><td class="n">${p.pm||'–'}</td><td class="n">${p.full||'–'}</td>
-      <td class="n">${p.leave.size||'–'}</td><td class="n${p.free===wdN?' free':''}">${p.free}</td><td class="n${p.conf?' bad':''}">${p.conf?'⚠ '+p.conf:'–'}</td><td>${esc(p.top||'—')}</td></tr>`).join('')||'<tr><td colspan="13" class="hint">ยังไม่มีรายชื่อพนักงาน</td></tr>'}
-    </tbody></table></div></section>`;
-  if(D.heat){const H=D.heat;const mx=Math.max(1,...H.rows.flatMap(g=>g.v));
-    h+=`<section class="panel span-12" style="--d:7"><header><h2>งานต่อคนราย${H.by} · ${esc(P.label)}</h2><p>จำนวนแผนงานของแต่ละคนในแต่ละ${H.by} สีเข้มคืองานมาก</p></header><div class="scroll-x plain" style="max-height:480px;overflow:auto"><table class="mini heat"><thead><tr><th>ชื่อ</th>${H.cols.map(c=>`<th class="n">${esc(c.name)}</th>`).join('')}<th class="n">รวม</th></tr></thead><tbody>
-      ${H.rows.map(g=>`<tr><td>${esc(g.p.s.name)}</td>${g.v.map(v=>`<td class="n${v?' h':''}" style="--h:${Math.round(v/mx*55)}">${v||'–'}</td>`).join('')}<td class="n"><b>${g.p.jobs}</b></td></tr>`).join('')}</tbody></table></div></section>`}
-
-  /* ---- 5. customers & job types ---- */
-  h+=sec(5,'ลูกค้าและประเภทงาน','Customers & Job Types');
-  const top=D.custList.slice(0,10).map(([k,n])=>({label:k,n,extra:pct(n,D.totalJ)+'%'}));const restN=D.custList.slice(10).reduce((a,x)=>a+x[1],0);if(restN)top.push({label:`ลูกค้าอื่น ${D.custList.length-10} ราย`,n:restN});
-  h+=`<section class="panel span-6" style="--d:8"><header><h2>งานตามหัวข้องาน</h2><p>จำนวนแผนของแต่ละหัวข้องาน เรียงจากมากไปน้อย</p></header>${hbars(D.types.map(x=>Object.assign({},x,{extra:pct(x.n,D.totalJ)+'%'})),'แผน')}</section>`;
-  h+=`<section class="panel span-6" style="--d:9"><header><h2>งานตามลูกค้า</h2><p>ลูกค้า ${D.cust.size} ราย · 10 อันดับแรกตามจำนวนแผน</p></header>${hbars(top,'แผน')}</section>`;
-  const tcols=D.types.filter(x=>x.n&&x.id);const crow=D.custList.slice(0,10);
-  h+=`<section class="panel span-12" style="--d:10"><header><h2>ลูกค้า × หัวข้องาน</h2><p>จำนวนแผนของลูกค้าแต่ละรายแยกตามหัวข้องาน (10 รายแรก)</p></header>${crow.length&&tcols.length?`<div class="scroll-x plain"><table class="mini"><thead><tr><th>ลูกค้า</th>${tcols.map(c=>`<th class="n"><span class="tdot" style="--c:${safeColor(c.color)}"><i></i>${esc(c.label)}</span></th>`).join('')}<th class="n">รวม</th></tr></thead><tbody>${crow.map(([k,n])=>`<tr><td>${esc(k)}</td>${tcols.map(c=>{const v=D.jobs.filter(t=>D.custKeyOf(t)===k&&typeIdOf(t)===c.id).length;return `<td class="n">${v||'–'}</td>`}).join('')}<td class="n"><b>${n}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">ยังไม่มีข้อมูลในช่วงนี้</p>'}</section>`;
-
-  /* ---- 6. resources & sales ---- */
-  h+=sec(6,'ทรัพยากรและผู้ประสานงาน','Resources & Sales');
-  h+=`<section class="panel span-6" style="--d:11"><header><h2>การใช้รถ</h2><p>จำนวนแผนและจำนวนวันที่ใช้ของแต่ละคัน${D.noCar?` · ไม่ใช้รถ ${D.noCar} แผน`:''}</p></header>${hbars(D.vehList.map(x=>({label:x.label,n:x.n,extra:`${x.days} วัน`})),'แผน')}</section>`;
-  h+=`<section class="panel span-6" style="--d:12"><header><h2>งานตาม Sale</h2><p>จำนวนแผนงานที่ Sale แต่ละคนดูแล</p></header>${hbars(D.saleList.map(([k,n])=>({label:k,n,extra:pct(n,D.totalJ)+'%'})),'แผน')}</section>`;
-
-  /* ---- 7. issues & follow-up ---- */
-  h+=sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up','dashIssues');
-  if(D.pairs.length){
-    const overlapName=(a,b)=>{const am=pA(a)===0&&pA(b)===0,pm=pB(a)===1&&pB(b)===1;return am&&pm?'เช้า,บ่าย':am?'เช้า':'บ่าย'};
-    const planCell=t=>{const ty=typeOf(t);return `<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${planColor(t)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport||t.needGA?` · รถ: ${esc(transportText(t))}`:''}</small></button>`};
-    h+=`<section class="panel span-12" id="dashConf" style="--d:13"><header><h2>แผนงานที่จัดชน · ${D.pairs.length} คู่</h2><p>แต่ละแถวคือแผนงาน 2 แผน ซึ่งใช้คนหรือรถคันเดียวกันในช่วงเวลาที่ทับกัน หรือจัดคนที่ลาไปทำงาน กดที่แผนงานเพื่อเปิดแก้ไข</p></header>
-      <div class="scroll-x plain"><table class="mini ctab"><thead><tr><th>วันที่</th><th>ช่วงที่ทับกัน</th><th>แผนงาน</th><th>ชนกับแผนงาน</th><th>สาเหตุ</th></tr></thead><tbody>
-      ${D.pairs.map(p=>{const who=p.staff.map(staffName);
-        return `<tr><td class="num">${esc(fmtDay(p.a.date))}</td><td><span class="per">${esc(overlapName(p.a,p.b))}</span></td><td>${planCell(p.a)}</td><td>${planCell(p.b)}</td>
-          <td class="why">${who.length?`<span class="cchip ${p.leave?'l':'p'}">${p.leave?'ติดลา':'คนชน'}: ${esc(who.join(', '))}</span>`:''}${p.veh?`<span class="cchip v">รถที่ใช้งานซ้ำกัน: ${esc(p.veh)}</span>`:''}
-          <small>${p.leave?'เอาคนที่ลาออกจากแผนงาน หรือเปลี่ยนช่วงเวลา':p.veh&&!who.length?'เปลี่ยนรถ หรือเปลี่ยนช่วงเวลาของแผนใดแผนหนึ่ง':'เปลี่ยนคน หรือเปลี่ยนช่วงเวลาของแผนใดแผนหนึ่ง'}</small></td></tr>`}).join('')}
-      </tbody></table></div></section>`;
-  }
-  const F=D.follow;
-  h+=`<section class="panel span-12" style="--d:14"><header><h2>งานที่ต้องติดตาม · ${F.length} แผน</h2><p>งานที่เลื่อนหรือยกเลิก พร้อมเหตุผลจากหน้างาน งานที่เลยวันแล้วยังไม่ปิด${D.gaN?` แผนงานที่ขอรถส่วนกลาง ซึ่ง GA ยังไม่ได้ระบุรถ (${D.gaN} แผน)`:''}${D.docN?` และงานเสร็จที่ยังส่งเอกสารหลังจบงานไม่ครบ (${D.docN} แผน)`:''} กดที่แถวเพื่อเปิดแผน</p></header>
-    ${F.length?`<div class="scroll-x plain"><table class="mini ftab"><thead><tr><th>วันที่</th><th>งาน</th><th>ลูกค้า</th><th>สถานะ</th><th>เหตุผล / สิ่งที่ต้องทำ</th><th>ทีม</th></tr></thead><tbody>${F.map(t=>{const reason=NEEDS_REASON.has(t.status);const late=!reason&&isLate(t);const ty=typeOf(t);
-      const stat=reason?`<span class="fstat ${esc(t.status)}">${(STATUS[t.status]||{}).icon||''} ${esc(stTh(t.status))}</span>`:late?'<span class="fstat late">⏱ เลยวันแล้ว</span>':gaWaiting(t)?'<span class="fstat ga">รอรถ GA</span>':'<span class="fstat doc">เอกสารไม่ครบ</span>';
-      const why=reason?(t.statusNote?esc(t.statusNote):'<span class="hint">ยังไม่ได้ใส่เหตุผล</span>'):late?`<span class="hint">ยังเป็น "${esc(stTh(t.status))}" ควรอัปเดตสถานะ</span>${gaWaiting(t)?'<br><span class="hint">และยังรอ GA ระบุรถ</span>':''}`:gaWaiting(t)?'<span class="hint">ขอรถส่วนกลางแล้ว GA ยังไม่ได้ระบุรถและทะเบียน กรอกทะเบียนในแผนเมื่อได้รับแจ้ง</span>':`ยังไม่ได้ส่ง <b>${esc(docMissing(t).map(k=>DOC_NAME[k]).join(', '))}</b> <span class="hint">· เปิดแผนแล้วแนบไฟล์</span>`;
-      return `<tr data-edit="${esc(t.id)}"><td class="num">${esc(fmtDay(t.date))}</td><td><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span>${t.planNo?`<span class="sub mono">${esc(t.planNo)}</span>`:''}</td><td>${esc(t.customer||'–')}</td>
-        <td>${stat}</td><td class="why">${why}</td><td>${esc(teamNames(t).join(', ')||'–')}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="hint">ไม่มีงานที่ต้องติดตามในช่วงนี้</p>'}</section>`;
-  return h+'</div>';
-}
+/* the page itself (tabs, charts) is in js/views/dash-page.js — v4.27.0 */
 
 /* ---------- report tables shared by the A4 print and the Excel file ---------- */
 function dashRows(D){
@@ -382,12 +267,12 @@ ul.f{margin:8px 0 0;padding-left:18px}ul.f li{margin:2px 0}ul.f li.bad{color:#b4
 .t{border-collapse:collapse;width:100%;margin-bottom:4px}.t th,.t td{border:1px solid #c6d9f1;padding:3px 5px;text-align:left;vertical-align:top;font-size:9.5px;overflow-wrap:anywhere}.t thead th{background:#e6f1fd;font-weight:600}.t .n{text-align:right;white-space:nowrap}.t tr{break-inside:avoid}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}.e{color:#62738f;margin:2px 0 6px}
 .sig{display:flex;gap:30px;margin-top:34px;break-inside:avoid}.sig div{flex:1;text-align:center}.sig span{display:block;border-top:1px solid #0b1b33;margin:34px 10px 4px}
-@media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}</style></head><body>
+@media print{.bar{display:none}body{margin:0;max-width:none}}${isoPageCss('dash')}${DZ_PRINT_CSS}</style></head><body>
 <div class="bar">${printBackHtml()}<button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ตั้งค่า: กระดาษ A4 · แนวตั้ง (Portrait) · ติ๊ก Background graphics</span></div>
 <div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(44)}<div><p class="org">${esc(DASH_ORG)}</p><h1>รายงานผลการปฏิบัติงาน${scopeName()?' · '+esc(scopeName()):''} · ${esc(P.label)}</h1></div></div>
 <p>ช่วงข้อมูล ${esc(thDate(P.from))} – ${esc(thDate(P.to))}<br>จัดทำเมื่อ ${esc(thDate(ymd(now)))} ${pad(now.getHours())}:${pad(now.getMinutes())} น.${S.account&&S.account.name?`<br>ผู้จัดทำ ${esc(S.account.name)}`:''}</p></div>${isoHeadHtml('dash')}
 ${sec(1,'สรุปภาพรวม','Summary')}
-<div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>
+<div class="kpi">${D.kpis.map(k=>`<div><span>${esc(k.name)}</span><b>${esc(k.value)}</b><em>${esc(k.note)}</em></div>`).join('')}</div>${dzPrintCharts(D)}
 <ul class="f">${D.findings.map(f=>`<li class="${f.t}">${esc(f.s)}</li>`).join('')}</ul>
 ${!S.line?tbl(T.lines):''}${!S.team&&teamsUsed()?tbl(T.teams):''}${D.calR.length?tbl(Object.assign({},T.cal,{head:T.cal.head.filter((x,i)=>i!==CAL_HEAD.length-1),rows:T.cal.rows.map(r=>r.filter((x,i)=>i!==CAL_HEAD.length-1))})):''}${D.insR.length?tbl(Object.assign({},T.ins,{head:T.ins.head.filter((x,i)=>![7,13].includes(i)),num:[12,13],rows:T.ins.rows.map(r=>r.filter((x,i)=>![7,13].includes(i)))})):''}
 ${D.mp?`${sec(2,'แผนเทียบผล · Master Plan','Plan vs Actual')}${tbl(Object.assign({},T.mpTrend,S.line==='fm'?{head:T.mpTrend.head.slice(0,4),num:[1,2,3],rows:T.mpTrend.rows.map(r=>r.slice(0,4))}:S.line==='ins'?{head:[T.mpTrend.head[0],T.mpTrend.head[4]],num:[1],rows:T.mpTrend.rows.map(r=>[r[0],r[4]])}:{}))}<div class="two">${S.line!=='ins'?`<div>${tbl(T.mpCodes)}</div>`:''}${S.line!=='fm'?`<div>${tbl(Object.assign({},T.mpInsLab,{rows:T.mpInsLab.rows.slice(0,25)}))}</div>`:''}</div>`:''}

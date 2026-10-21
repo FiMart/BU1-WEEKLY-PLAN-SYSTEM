@@ -115,7 +115,7 @@ function autoArea(){
 function safetyRefreshUi(){
   if(typeof dlg==='undefined'||!dlg.open)return;
   if(dMode==='edit'){fillAreaSelect($('#f-area').value||(editing&&editing.areaId)||'');renderPickSel();renderPickerList()}
-  else if(editing){renderDrawerView(editing);renderPhotos();renderFiles()}
+  else if(editing)refreshDrawerView();/* waits while someone types in the plan view */
 }
 form.addEventListener('change',e=>{
   const t=e.target;

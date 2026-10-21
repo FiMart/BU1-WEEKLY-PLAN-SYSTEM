@@ -42,7 +42,7 @@ function render(){
   if(S.view==='search')fillSearch();
   if(S.view==='booking')fillBooking();
   if(S.view==='safety')fillSafety();
-  if(S.view==='settings')filterMd();
+  if(S.view==='settings'){filterMd();const on=main.querySelector('.md-list .md-item[aria-selected="true"]');if(on&&window.innerWidth<=760){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}/* phones: the topics are one sliding row */
   if(S.view==='people')syncRowPicks();
   if(S.view==='ncr')fillNcrTable();
   if(S.view==='jobs')fillJobs();
@@ -74,7 +74,26 @@ function countUp(root){
   });
 }
 function isTyping(el){return el.tagName==='TEXTAREA'||el.tagName==='SELECT'||(el.tagName==='INPUT'&&!/^(checkbox|radio|button|submit|color)$/.test(el.type))}
-document.addEventListener('focusout',()=>{if(pendingRender)setTimeout(()=>{const ae=document.activeElement;if(!ae||!$('#view').contains(ae)||!isTyping(ae))render()},0)});
+/* a held-back redraw runs after the mouse / finger is released, so a button pressed right after typing is not swapped out mid-click */
+let ptrDown=false;
+document.addEventListener('pointerdown',()=>{ptrDown=true},true);
+['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,()=>setTimeout(()=>{ptrDown=false},0),true));
+function afterPointer(fn){const go=()=>{if(ptrDown){setTimeout(go,120);return}fn()};setTimeout(go,0)}
+document.addEventListener('focusout',()=>{if(pendingRender)afterPointer(()=>{const ae=document.activeElement;if(pendingRender&&(!ae||!$('#view').contains(ae)||!isTyping(ae)))render()})});
+/* redraw a part of the page without losing what is being typed there (user, 21 Oct 2026: "กล่องข้อความ … ไม่ให้เด้งออกเวลาพิมพ์หรือแก้ไข"):
+   text fields (by id) that differ from what was drawn keep their text, the focused one keeps focus + caret, scroll boxes keep their place.
+   keep=false (a different record) just draws. */
+function keepTyping(root,draw,keep){
+  if(!root||keep===false){draw();return}
+  const ae=document.activeElement;const vals=[];
+  root.querySelectorAll('textarea[id],input[id]').forEach(el=>{if((el.tagName==='TEXTAREA'||isTyping(el))&&el.value!==el.defaultValue)vals.push([el.id,el.value])});
+  const foc=ae&&root.contains(ae)&&ae.id&&isTyping(ae)&&ae.tagName!=='SELECT'?{id:ae.id,s:ae.selectionStart,e:ae.selectionEnd,t:ae.scrollTop}:null;
+  const scr=[];for(let p=root;p&&p!==document.documentElement;p=p.parentElement)if(p.scrollTop)scr.push([p,p.scrollTop]);
+  draw();
+  vals.forEach(([id,v])=>{const el=document.getElementById(id);if(el&&root.contains(el)&&el.value!==v)el.value=v});
+  scr.forEach(([p,t])=>{p.scrollTop=t});
+  if(foc){const el=document.getElementById(foc.id);if(el&&root.contains(el)){el.focus({preventScroll:true});try{el.setSelectionRange(foc.s,foc.e)}catch(e){}el.scrollTop=foc.t}}
+}
 const notReady=()=>S.mode==='connecting'||(S.mode==='live'&&(!S.staffReady||!S.resReady||!S.tasksReady||!S.cfgReady));
 
 let pfTypeHtml='',pfStaffHtml='';

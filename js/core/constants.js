@@ -7,7 +7,7 @@
 const LINES=[
   {id:'fm',name:'Flow Meter',short:'Flow Meter',tag:'FM',color:'#0b8fd6',desc:'สอบเทียบมาตรวัดอัตราการไหล',
     icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9h4v6H2M22 9h-4v6h4"/><rect x="6" y="7.5" width="12" height="9" rx="2"/><path d="M9 12h6m-2-2 2 2-2 2"/><path d="M12 7.5V4.5M10 4.5h4"/></svg>'},
-  {id:'ins',name:'Instrument',short:'Instrument',tag:'INS',color:'#9a4fd8',desc:'อุปกรณ์ Instrument · Pressure · Temperature · Humidity',
+  {id:'ins',name:'Instrument',short:'Instrument',tag:'INS',color:'#b0479a',desc:'อุปกรณ์ Instrument · Pressure · Temperature · Humidity',
     icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M7.5 13h1M15.5 13h1M12 8.5v1"/><path d="M9 21h6"/></svg>'},
 ];
 const LINE=Object.fromEntries(LINES.map(l=>[l.id,l]));

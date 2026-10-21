@@ -24,6 +24,7 @@ const MD_ICONS={
   csappr:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 9h7M8.5 12.5h4"/><path d="m12.5 16.6 1.8 1.8 3.4-3.6"/>',
   jobkpi:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5v2h6v-2M8.5 11h7M8.5 14.5h4"/><circle cx="16" cy="16.5" r="2.6"/><path d="M16 15.3v1.3l.8.6"/>',
   prefs:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
+  util:'<path d="M4 19.5h16"/><path d="M6.5 16V11M10.5 16V7M14.5 16v-6M18.5 16V5"/>',
   mdsync:'<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/><path d="m9.5 12 1.8 1.8 3.2-3.4"/>',
 };
 function renderSettings(){

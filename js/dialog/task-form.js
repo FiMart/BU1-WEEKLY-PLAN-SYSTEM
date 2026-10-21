@@ -125,7 +125,23 @@ async function saveViewRemark(text){
   try{await Store.update('tasks',id,Object.assign({remark},meta()));editing=Object.assign({},editing,{remark});renderDrawerView(editing);renderPhotos();renderFiles();toast(remark?'บันทึกหมายเหตุแล้ว':'ลบหมายเหตุแล้ว')}
   catch(err){toast(errText(err));noteWriteError(err)}
 }
-function renderDrawerView(t){
+/* a redraw of the plan view never throws away what someone is typing (user, 21 Oct 2026: "กล่องข้อความตรง สรุปงาน กับ หมายเหตุ
+   เวลาพิมพ์หรือแก้ไข ไม่ให้เด้งออก … แก้ไขกล่องข้อความทั้งระบบ"): unsaved text in its fields, the caret and the scroll stay (keepTyping) */
+function renderDrawerView(t){const v=$('#dView');const same=v&&t&&v.dataset.tid===t.id;keepTyping(v,()=>{drawDrawerView(t);if(v&&t)v.dataset.tid=t.id},same)}
+/* background redraws (Safety re-read, an upload finishing, NCR / Check Sheet closed, …) wait while a field in the view is being typed in,
+   and keep an open สรุปงาน editor open with its text */
+let drawerLater=false;
+function refreshDrawerView(){
+  if(typeof dlg==='undefined'||!dlg.open||!editing||dMode!=='view')return;
+  const v=$('#dView');const ae=document.activeElement;
+  if(v&&ae&&v.contains(ae)&&isTyping(ae)){drawerLater=true;return}
+  drawerLater=false;const sum=$('#v-doneSum');const sumTxt=sum?sum.value:null;const conf=editing.status!=='done';/* not done yet = the editor confirms เสร็จแล้ว */
+  renderDrawerView(editing);renderPhotos();renderFiles();
+  if(sumTxt!=null&&!$('#v-doneSum')){sumSlot(sumEditHtml(editing,conf));const ta=$('#v-doneSum');if(ta)ta.value=sumTxt}
+}
+document.addEventListener('focusout',e=>{if(!drawerLater||!e.target.closest||!e.target.closest('#dView'))return;
+  afterPointer(()=>{const v=$('#dView');const ae=document.activeElement;if(drawerLater&&!(v&&ae&&v.contains(ae)&&isTyping(ae)))refreshDrawerView()})});
+function drawDrawerView(t){
   const ty=typeOf(t);const st=STATUS[t.status]||STATUS.planned;const d=parseD(t.date);
   const pool=S.tasks.some(x=>x.id===t.id)?S.tasks:[t];const conf=conflictsFor(t,pool);
   const confStaff=new Set(conf.flatMap(x=>x.staff));const tel=saleTel(t.sale);
@@ -148,7 +164,7 @@ function renderDrawerView(t){
       ${(t.files||[]).length?`<div class="wide" style="--k:9"><dt>ไฟล์แนบ (${t.files.length})</dt><dd class="dv-files" id="dvFiles"></dd></div>`:''}
       ${reportViewHtml(t,9)}
       ${calViewHtml(t,9)}${insViewHtml(t,9)}
-      ${f('Request',t.request)}
+      ${f('Request',t.request,'',true)}
       ${prepViewHtml(t,10)}
       <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${(t.selfDrive||OWN_CAR.includes(t.transport)&&!t.needGA)&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaNoteText(t)?`<small class="car-why">📝 ${esc(gaNoteText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ขอรถ GA แล้ว · แอปจองรถส่วนกลาง GA จะส่งข้อมูลรถ (ทะเบียน รถ คนขับ เวลาออก) มาที่แผนนี้เองเมื่อ GA จัดรถ</small>':''}</dd></div>
       ${f('Contact',[t.contact,t.contactTel].filter(Boolean).join(' · '))}${f('Sale',[t.sale,tel].filter(Boolean).join(' · '))}

@@ -242,7 +242,7 @@ async function mpExportPdf(){
 <style>@page{size:A3 landscape;margin:7mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font:8px/1.3 "IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#0b1b33;margin:12px}
 .bar{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px 12px;background:#eef3fa;border-radius:8px;font-size:13px}.bar button{font:inherit;font-weight:600;padding:6px 14px;border-radius:6px;border:0;background:#1462d0;color:#fff;cursor:pointer}
-.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid ${ins?'#9a4fd8':'#0b8fd6'};padding-bottom:5px;margin-bottom:6px}.hd h1{font-size:18px;margin:0;line-height:1.25}.hd p{margin:0;color:#34496b;font-size:10px}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid ${ins?'#b0479a':'#0b8fd6'};padding-bottom:5px;margin-bottom:6px}.hd h1{font-size:18px;margin:0;line-height:1.25}.hd p{margin:0;color:#34496b;font-size:10px}
 .st{display:flex;gap:6px;margin:0 0 6px}.st span{border:1px solid #c6d3e4;border-radius:5px;padding:2px 8px;font-size:9.5px;color:#34496b}.st b{color:#0b1b33;font-family:"IBM Plex Mono",monospace;margin-right:3px}
 table.mp{border-collapse:collapse;width:100%}.mp th,.mp td{border:1px solid #9fb0c6;padding:1.5px 3px;vertical-align:middle;overflow-wrap:anywhere}
 .mp thead th{background:${ins?'#eadcf7':'#d9ecf9'};font-weight:600;text-align:center}.mp th.y,.mp td.y{background:#ffff99}.mp th.tc,.mp td.tc{background:#c6e5a8}

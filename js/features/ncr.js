@@ -96,7 +96,7 @@ async function deleteNcr(btn){
   catch(err){ncrErr(errText(err));noteWriteError(err)}
 }
 /* redraw the open plan: shows the new NCR box after saving, or puts the status back after closing without saving */
-document.addEventListener('close',e=>{if(e.target&&e.target.id==='ncrDlg'){if(ncrEdit&&editing&&dlg.open)renderDrawerView(editing);if(editing&&dlg.open){renderPhotos();renderFiles()}render()}},true);
+document.addEventListener('close',e=>{if(e.target&&e.target.id==='ncrDlg'){if(ncrEdit&&editing&&dlg.open)refreshDrawerView();render()}},true);
 
 /* ---------- NCR page ---------- */
 function ncrRow(n){const st=ncrStateOf(n);const od=ncrOverdue(n);

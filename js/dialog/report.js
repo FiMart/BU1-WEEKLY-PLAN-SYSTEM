@@ -110,7 +110,7 @@ async function addReports(files,kind){
     if(editing&&editing.id===id)editing=Object.assign({},editing,{reports});
     toast(`${kname}: แนบ ${added.length} ไฟล์แล้ว${big?` · ข้าม ${big} ไฟล์ที่ใหญ่เกิน 4 MB`:''}${all.length-big>ok.length?` · แนบได้สูงสุด ${MAX_REPORTS} ไฟล์`:''}${docLeftToast(editing)}`);
   }catch(err){toast(errText(err));noteWriteError(err);if(added.length)cleanupFiles(added.map(f=>f.id))}/* nothing half-saved stays behind */
-  finally{repBusy=false;if(editing&&editing.id===id&&dMode==='view')redrawReportView()}
+  finally{repBusy=false;if(editing&&editing.id===id&&dMode==='view')refreshDrawerView()}
 }
 /* a file's label, typed or picked: saved at once ("qc" → "QC", "sr, qc" → "Service Report, QC") */
 async function setReportLabel(fid,val){

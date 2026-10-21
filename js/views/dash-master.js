@@ -7,7 +7,7 @@
      counts that fall in the period). Also Completed rows, by LAB / Type / SALE / รับ/ส่ง / customer.
    A row counts in the period when one of its day cells falls in it (a row with no day filled counts in its month).
    Shared by the page, the A4 print and the Excel file (dashRows). */
-const PVA_C={plan:'#93b4e8',act:'#1d5be0',ins:'#9a4fd8',book:'#d8c2f0'};
+const PVA_C={plan:'#93b4e8',act:'#1d5be0',ins:'#b0479a',book:'#d8c2f0'};
 
 /* the Master Plan rows of every month the period touches (cached like rangeTasks; refreshed by invalidate()) */
 function mpRangeRows(ent,from,to){
