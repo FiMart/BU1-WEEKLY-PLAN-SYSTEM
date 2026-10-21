@@ -970,3 +970,46 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
 .uto-t tr.ot>*{color:var(--muted);font-style:italic}
 .uto-t .avg{font-weight:700;background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .uto-foot{margin:8px 0 0}
+
+/* ===== Phone layout pass (user, 21 Oct 2026: "ปรับ layout ให้ดูดีในมือถือด้วย"; chose every page) — v4.27.2 ===== */
+@media (max-width:760px){
+  /* every dialog may use the whole width (the browser's own default keeps 2em + 6px free on the left) */
+  dialog{max-width:100%}
+  #dlg,#dlg.wide,#dlg.wide.sheets{width:100%;max-width:100%;border-radius:0}
+  #dlg .dlg-body{padding:12px 12px 16px;gap:10px}
+  #dlg .dlg-head{padding-left:16px;padding-right:12px}
+  #dlg .dlg-head h2{font-size:18px}
+  /* plan view: short facts two a row, wide ones (Detail, Request, Team, sheets) full width */
+  .dv-f{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .dv-f>div{padding:8px 10px;border-radius:11px}
+  .dv-f dt{font-size:10.5px}
+  .dv-f dd{font-size:13.5px;overflow-wrap:anywhere}
+  .v-sum textarea,.v-remark textarea{min-height:120px}
+  /* งานของฉัน: chips go under the text instead of squeezing it */
+  .my-row{flex-wrap:wrap;gap:6px 8px}
+  .my-row .my-pt{flex:1 1 100%}
+  /* ใบรับคำร้อง: service type choices full width, the KPI table scrolls instead of wrapping letter by letter */
+  .jb-rad{display:grid!important;grid-template-columns:minmax(0,1fr);gap:6px}
+  .jb-rad>label{width:100%}
+  table.jb-kpi{min-width:560px}
+  table.jb-kpi th{white-space:nowrap}
+  /* ข้อมูลหลัก: topics as one sliding row, tables keep readable fields and scroll sideways */
+  .md-list{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .md-list::-webkit-scrollbar{display:none}
+  .md-list .md-cap{display:none}
+  .md-list .md-item{flex:none;width:auto;max-width:72vw;padding:7px 10px;gap:8px;border:1px solid var(--line-2)}
+  .md-list .md-item[aria-selected="true"]{border-color:var(--accent)}
+  .md-list .md-item .md-txt small{display:none}
+  .md-list .md-ico{width:28px;height:28px}
+  .md-body{min-height:0}
+  .md-scroll .edit-table{min-width:620px}
+  .md-scroll .edit-table input,.md-scroll .edit-table select{min-width:0}
+  /* ค้นหางานย้อนหลัง: each plan is a card */
+  table.list.srch-t{min-width:0}
+  table.srch-t thead{display:none}
+  table.srch-t,table.srch-t tbody{display:block}
+  table.srch-t tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;padding:12px 14px;border-bottom:1px solid var(--line-2)}
+  table.srch-t td{display:block;padding:0!important;border:0!important;min-width:0;white-space:normal;overflow-wrap:anywhere}
+  table.srch-t td:first-child,table.srch-t td[colspan]{grid-column:1/-1}
+  table.srch-t td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+}

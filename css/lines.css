@@ -149,9 +149,9 @@
 
 /* ---------- Weekly plan instrument (สายงาน Instrument) ---------- */
 .ins-list{display:grid;gap:10px}
-.ins-item{border:1px solid color-mix(in srgb,#9a4fd8 35%,var(--line));border-radius:14px;background:color-mix(in srgb,#9a4fd8 4%,var(--surface));padding:10px 12px 12px;animation:rise .3s var(--ease) both}
-.ci-no.ins{background:#9a4fd8}
-.ins-add{color:#9a4fd8;border-color:color-mix(in srgb,#9a4fd8 45%,var(--line))}
+.ins-item{border:1px solid color-mix(in srgb,#b0479a 35%,var(--line));border-radius:14px;background:color-mix(in srgb,#b0479a 4%,var(--surface));padding:10px 12px 12px;animation:rise .3s var(--ease) both}
+.ci-no.ins{background:#b0479a}
+.ins-add{color:#b0479a;border-color:color-mix(in srgb,#b0479a 45%,var(--line))}
 .ci-grid .y>span::before{content:"";width:8px;height:8px;border-radius:2px;background:#f5d90a}
 .ins-certs{margin-top:10px;padding:10px;border-radius:12px;background:color-mix(in srgb,#5b9bd5 10%,var(--surface));border:1px solid color-mix(in srgb,#5b9bd5 30%,var(--line));display:grid;gap:8px}
 .ic-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}.ic-head b{font-size:13px}.ic-head small{font-size:11.5px;color:var(--muted)}
@@ -166,7 +166,7 @@
 :root[data-theme="dark"] .ic-tbl th{color:#9ec0ff}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ic-tbl th{color:#9ec0ff}}
 
-.cw-title.ins>svg{background:#9a4fd8}
+.cw-title.ins>svg{background:#b0479a}
 .iw-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .iw-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 .iw-tbl.week{min-width:1320px}
@@ -187,12 +187,12 @@
 :root[data-theme="dark"] .iw-tbl .ic-tbl th{color:#9ec0ff}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .iw-tbl .ic-tbl th{color:#9ec0ff}}
 .iw-tbl.week tr.iw-row{cursor:pointer}
-.iw-tbl.week tr.iw-row:hover>td{background:color-mix(in srgb,#9a4fd8 6%,var(--surface))}
+.iw-tbl.week tr.iw-row:hover>td{background:color-mix(in srgb,#b0479a 6%,var(--surface))}
 .iw-tbl.week tr.iw-row:hover>td.y{background:color-mix(in srgb,#ffff00 22%,var(--surface))}
 .iw-in{width:100%;min-width:92px;padding:4px 6px;font-size:12.5px;border-radius:7px}
 .iw-tbl td.rm .iw-in{min-width:120px}
 .iw-tbl td.num .iw-in{min-width:62px;text-align:center}
-.pcount.ins svg{stroke:#9a4fd8}.pcount.ins.ok{color:var(--good-ink)}
+.pcount.ins svg{stroke:#b0479a}.pcount.ins.ok{color:var(--good-ink)}
 @media (max-width:760px){
   .iw-scroll{border:0;background:none;overflow:visible}
   .iw-tbl,.iw-tbl.week{min-width:0}
@@ -204,12 +204,12 @@
   .iw-in,.iw-tbl td.rm .iw-in,.iw-tbl td.num .iw-in{min-width:0;text-align:left}
   .iw-tbl tr.iw-cert>td{min-width:0;overflow:hidden}
   .iw-tbl .ic-scroll{max-width:100%}
-  .iw-tbl tr.iw-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:0;border:1px solid var(--line);border-left:4px solid #9a4fd8;border-radius:12px 12px 0 0;overflow:hidden;background:var(--surface)}
+  .iw-tbl tr.iw-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:0;border:1px solid var(--line);border-left:4px solid #b0479a;border-radius:12px 12px 0 0;overflow:hidden;background:var(--surface)}
   .iw-tbl tr.iw-row+tr.iw-row,.iw-tbl tr.iw-row:last-child{border-radius:12px;margin-bottom:10px}
   .iw-tbl tr.iw-row>td{border:0;border-bottom:1px solid var(--line-2);display:grid;gap:1px;text-align:left!important}
   .iw-tbl tr.iw-row>td::before{content:attr(data-l);font-size:10.5px;font-weight:600;color:var(--muted);font-family:var(--f-body);font-style:normal}
   .iw-tbl tr.iw-row>td[data-l^="Range"],.iw-tbl tr.iw-row>td[data-l="Remark"]{grid-column:1/-1}
-  .iw-tbl tr.iw-cert>td{border:1px solid var(--line);border-top:0;border-left:4px solid #9a4fd8;border-radius:0 0 12px 12px;margin-bottom:10px;padding:8px}
+  .iw-tbl tr.iw-cert>td{border:1px solid var(--line);border-top:0;border-left:4px solid #b0479a;border-radius:0 0 12px 12px;margin-bottom:10px;padding:8px}
 }
 
 /* ---------- Dashboard: สายงาน and calibration ---------- */
@@ -226,7 +226,7 @@
 .dl-k>span{display:grid;font-size:11.5px;color:var(--muted)}
 .dl-k em{font:700 18px/1.2 var(--f-mono);font-style:normal;color:var(--ink)}
 .dl-cal h2 svg{width:20px;height:20px;vertical-align:-4px;margin-right:4px;fill:none;stroke:#0b8fd6;stroke-width:2;stroke-linecap:round}
-.dl-ins h2 svg{stroke:#9a4fd8}
+.dl-ins h2 svg{stroke:#b0479a}
 .cal-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .cal-tiles>div{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
 .cal-tiles b{font:700 22px/1.1 var(--f-mono)}
