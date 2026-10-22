@@ -48,18 +48,18 @@
         add("link", {
           rel: "icon",
           type: "image/svg+xml",
-          href: "assets/favicon.svg?v=4.29.0",
+          href: "assets/favicon.svg?v=4.31.0",
         });
         add("link", {
           rel: "icon",
           type: "image/png",
           sizes: "32x32",
-          href: "assets/favicon-32.png?v=4.29.0",
+          href: "assets/favicon-32.png?v=4.31.0",
         });
         add("link", {
           rel: "apple-touch-icon",
           sizes: "180x180",
-          href: "assets/apple-touch-icon.png?v=4.29.0",
+          href: "assets/apple-touch-icon.png?v=4.31.0",
         });
         add("meta", { name: "theme-color", content: "#0D46B5" });
       })();
@@ -86,7 +86,7 @@
       })();
     </script>
     <noscript
-      ><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.29.0"
+      ><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.31.0"
     /></noscript>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -119,6 +119,7 @@
     <link rel="stylesheet" href="css/help.css" />
     <link rel="stylesheet" href="css/compact.css" />
     <link rel="stylesheet" href="css/dash-charts.css" />
+    <link rel="stylesheet" href="css/onsite-docs.css" />
 
     <aside class="side" id="side" aria-label="เมนูหลัก">
       <button
@@ -130,7 +131,7 @@
         <span class="sb-mark">BU1</span
         ><span class="org-chip"
           ><img
-            src="assets/flowlab-logo.png?v=4.29.0"
+            src="assets/flowlab-logo.png?v=4.31.0"
             alt="FLOWLAB &amp; SERVICE"
             width="480"
             height="240" /></span
@@ -251,6 +252,19 @@
             <rect x="4" y="3.5" width="16" height="17" rx="2.2" />
             <path d="M8 8.5h8M8 12h8M8 15.5h5" /></svg
           ><span>Booking Plan</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-view="odoc"
+          title="ติดตามเอกสาร Onsite · Status Update เอกสารหลังงานหน้างาน"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5" />
+            <path d="M14 3v5h5v3M8.5 9h3M8.5 12.5h5M8.5 16h3" />
+            <circle cx="17" cy="17" r="3.6" />
+            <path d="M17 15.3v1.9l1.2.8" /></svg
+          ><span>ติดตามเอกสาร Onsite</span>
         </button>
         <button
           type="button"
@@ -431,7 +445,7 @@
           data-action="about"
           title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน"
         >
-          v4.29.0 · BU1 Lab
+          v4.31.0 · BU1 Lab
         </button>
       </div>
     </aside>
@@ -445,7 +459,7 @@
         <span class="sb-mark">BU1</span
         ><span class="org-chip"
           ><img
-            src="assets/flowlab-logo.png?v=4.29.0"
+            src="assets/flowlab-logo.png?v=4.31.0"
             alt="FLOWLAB &amp; SERVICE"
             width="480"
             height="240" /></span
@@ -553,6 +567,14 @@
           <rect x="4" y="3.5" width="16" height="17" rx="2.2" />
           <path d="M8 8.5h8M8 12h8M8 15.5h5" /></svg
         >Booking
+      </button>
+      <button type="button" data-view="odoc">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5" />
+          <path d="M14 3v5h5v3M8.5 9h3M8.5 12.5h5M8.5 16h3" />
+          <circle cx="17" cy="17" r="3.6" />
+          <path d="M17 15.3v1.9l1.2.8" /></svg
+        >เอกสาร Onsite
       </button>
       <button type="button" data-view="safety">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -2096,7 +2118,7 @@
         <div class="auth-brand">
           <span class="org-chip"
             ><img
-              src="assets/flowlab-logo.png?v=4.29.0"
+              src="assets/flowlab-logo.png?v=4.31.0"
               alt="FLOWLAB &amp; SERVICE"
               width="480"
               height="240" /></span
@@ -2143,7 +2165,7 @@
           <div class="auth-brand mobile">
             <span class="org-chip"
               ><img
-                src="assets/flowlab-logo.png?v=4.29.0"
+                src="assets/flowlab-logo.png?v=4.31.0"
                 alt="FLOWLAB &amp; SERVICE"
                 width="480"
                 height="240" /></span
@@ -2490,6 +2512,7 @@
     <script src="js/features/ncr.js"></script>
     <script src="js/features/jobs.js"></script>
     <script src="js/features/checksheets.js"></script>
+    <script src="js/features/onsite-docs.js"></script>
     <script src="js/features/pdf-export.js"></script>
     <script src="js/features/notify.js"></script>
     <script src="js/features/quick.js"></script>
