@@ -107,7 +107,7 @@ function supabaseBackend(client,{dept}){
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
       doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */jobId:x.jobId||'',/* ใบรับคำร้องขอรับบริการสอบเทียบ it was made from */
-      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
+      photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),docTrack:x.docTrack&&typeof x.docTrack==='object'&&!Array.isArray(x.docTrack)?x.docTrack:{},history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
       tag:d.tag||'',groupId:d.groupId||null,src:'bookings',_crane:asList(d.crane)/* the vehicle ids GA Fleet reads (read only; '_' keeps it out of ISO history) */};
   }
@@ -190,6 +190,7 @@ function supabaseBackend(client,{dept}){
       insItems:asList(t.insItems),/* Weekly plan instrument rows + certificates (js/features/instrument.js) */
       history:asList(t.history),
       docNA:asList(t.docNA),/* เอกสารหลังจบงาน marked ไม่มีสำหรับงานนี้: 'sr' | 'qc' | 'job' */
+      docTrack:t.docTrack&&typeof t.docTrack==='object'&&!Array.isArray(t.docTrack)?t.docTrack:{},/* ติดตามเอกสาร Onsite {step: date | 'na' | 'need', note} (js/features/onsite-docs.js) */
       reports:asList(t.reports),/* Service Report / QC / ใบรับงาน files (js/dialog/report.js), bytes in app_settings like the files above */
       createdAt:t.createdAt||(old&&old.createdAt)||'',createdBy:t.createdBy||(old&&old.createdBy)||null,updatedAt:t.updatedAt||'',updatedBy:t.updatedBy||null}));
   }

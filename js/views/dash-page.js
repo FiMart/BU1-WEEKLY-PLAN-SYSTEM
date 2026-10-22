@@ -177,7 +177,13 @@ function dzIssues(D){
   const F=D.follow;
   const box=(n,lbl,cls,tgt)=>`<button type="button" class="dz-iss${n?' '+cls:''}"${tgt?` data-action="jump-conf" data-target="${tgt}"`:''}><b>${n}</b><span>${lbl}</span></button>`;
   let h=`<div class="dz-isss span-12">${box(D.confN,'แผนที่จัดชน','bad','#dashConf')}${box(D.lateN,'เลยวันแล้วยังไม่ปิด','warn','#dashFollow')}${box(D.gaN,'รอ GA ระบุรถ','warn','#dashFollow')}${box(D.docN,'งานเสร็จ เอกสารไม่ครบ','warn','#dashFollow')}
-    <button type="button" class="dz-iss${D.ncrOpen?' bad':''}" data-view="ncr"><b>${D.ncrIn.length}</b><span>NCR ในช่วงนี้${D.ncrOpen?` · ยังไม่ปิด ${D.ncrOpen}`:''} ›</span></button></div>`;
+    <button type="button" class="dz-iss${D.ncrOpen?' bad':''}" data-view="ncr"><b>${D.ncrIn.length}</b><span>NCR ในช่วงนี้${D.ncrOpen?` · ยังไม่ปิด ${D.ncrOpen}`:''} ›</span></button>
+    ${D.od?`<button type="button" class="dz-iss${D.od.follow?' bad':''}" data-view="odoc"><b>${D.od.follow}</b><span>เอกสาร Onsite ตามต่อ (เลย Final) ›</span></button>`:''}</div>`;
+  /* ติดตามเอกสาร Onsite (user, 22 Oct 2026) */
+  if(D.od&&D.od.n){const O=D.od;
+    h+=dzCard('span-12','ติดตามเอกสาร Onsite',`งานหน้างานในช่วงนี้ ${O.n} งาน · Final Date = วันทำงาน + ${odCfg().days} วันทำงาน (จ.–ศ.) · ส่งทันเวลา = ในเวลา ÷ งานที่ถึงกำหนดแล้ว`,
+      `<div class="dz-calrow">${vzDonut([{name:'ในเวลา',n:O.ok,color:'var(--good)'},{name:'เกินเวลา',n:O.late,color:'var(--warn)'},{name:'รอเอกสาร',n:O.wait,color:'var(--vz-1)'},{name:'ตามต่อ',n:O.follow,color:'var(--crit)'}],{sub:'งาน',unit:'งาน',center:O.n,label:'สถานะเอกสาร Onsite'})}
+      <div class="dz-facts"><span><b>${O.rate==null?'–':O.rate+'%'}</b>ส่งทันเวลา</span><span><b>${O.ok}</b>ในเวลา</span><span><b>${O.late}</b>เกินเวลา</span><span><b>${O.follow}</b>ตามต่อ</span><span><button type="button" class="lnk" data-view="odoc">เปิดหน้าติดตามเอกสาร ›</button></span></div></div>`,' style="--d:1"')}
   if(D.pairs.length){
     const overlapName=(a,b)=>{const am=pA(a)===0&&pA(b)===0,pm=pB(a)===1&&pB(b)===1;return am&&pm?'เช้า,บ่าย':am?'เช้า':'บ่าย'};
     const planCell=t=>`<button type="button" class="cplan" data-edit="${esc(t.id)}" style="--c:${planColor(t)}"><span class="tdot"><i></i><b>${esc(typeLabel(t))}</b></span>${t.planNo?`<span class="mono">${esc(t.planNo)}</span>`:''}<small>${esc([pName(t),t.customer,t.location].filter(Boolean).join(' · ')||'—')}</small><small>ทีม: ${esc(teamNames(t).join(', ')||'—')}${t.transport||t.needGA?` · รถ: ${esc(transportText(t))}`:''}</small></button>`;

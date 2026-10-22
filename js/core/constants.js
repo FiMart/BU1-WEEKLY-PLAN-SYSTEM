@@ -77,7 +77,7 @@ const statusFlag=s=>s==='postponed'?'↻ เลื่อน':s==='notdone'?'⚠ 
 const statusText=t=>noStatus(t)?'':/* leave has no สถานะงาน */(STATUS[t.status]||STATUS.planned).th+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
 /* GA's car app (user, 8 Oct 2026): navbar button opens it in a new tab */
 const GA_FLEET_URL='https://ga-fleet.vercel.app/';/* opens GA Fleet (user, 14 Oct 2026; was its booking form ?form=1 since 11 Oct) */
-const VIEWS=['plan','my','jobs','checks','booking','wsheet','mplan','mplanins','safety','people','projects','search','dash','ncr','settings','help'];
+const VIEWS=['plan','my','jobs','checks','booking','odoc','wsheet','mplan','mplanins','safety','people','projects','search','dash','ncr','settings','help'];
 const TH_MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const TH_MON_FULL=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const EN_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

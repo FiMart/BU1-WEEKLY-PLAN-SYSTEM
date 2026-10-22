@@ -176,6 +176,7 @@ function drawDrawerView(t){
       <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}><label for="v-reason" id="vReasonLbl">${esc(reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}</button></div></div></div>`:''}
     ${typeof csPlanHtml==='function'?csPlanHtml(t):''/* Check Sheet of this plan (js/features/checksheets.js) */}
+    ${typeof odPlanHtml==='function'?odPlanHtml(t):''/* ติดตามเอกสาร Onsite (js/features/onsite-docs.js) */}
     ${canWork()?'':sumViewHtml(t,false)}
     ${canWork()?remarkEdit(t):remarkBox(t)}
     ${isoHistoryHtml(t)}`;
@@ -333,7 +334,7 @@ async function copyTo(dates,typeId){
   const bad=validate(Object.assign({},v,extra,{jobTypeOther:typeId==='other'?(v.jobTypeOther||'อื่นๆ'):v.jobTypeOther}),true);if(bad){formError(bad[0]);return false}
   const now=new Date().toISOString();
   try{await persistNewPhotos();await persistNewFiles();
-    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',doneSum:'',doneBy:null,doneAt:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],docNA:[],sample:false,createdAt:now,createdBy:S.me||null},meta()));
+    for(const d of dates)await Store.set('tasks',newId('t'),Object.assign({},v,extra,{date:d,status:'planned',statusNote:'',doneSum:'',doneBy:null,doneAt:'',prep:v.prep.map(p=>({text:p.text,done:false})),calItems:[],insItems:[],reports:[],docNA:[],docTrack:{},sample:false,createdAt:now,createdBy:S.me||null},meta()));
     dlg.close();const nm=v.planNo||typeLabel(Object.assign({},v,extra));
     toast(dates.length>1?`ก๊อป ${nm} แล้ว ${dates.length} แผน (${fmtDay(dates[0])} – ${fmtDay(dates[dates.length-1])})`:`ก๊อป ${nm} ไป${fmtDay(dates[0])}แล้ว`);return true}
   catch(err){formError(errText(err));noteWriteError(err);return false}

@@ -9,6 +9,7 @@ const PAGES={
   jobs:['ใบรับคำร้องขอรับบริการสอบเทียบ','FLS-F-018 · Flow Meter · Sale ส่งคำร้อง → Planner รับงาน (ออก PN No.) → ลงแผนรายวัน · ทุกขั้นตอนบันทึกวัน-เวลา และบอกสถานะ Delay / On Process / Timely'],
   checks:['Check Sheet','QC LAB · Data Flow Meter · Remove-Reinstall · Service Report — ทำทีละหัวข้อ (ลงชื่อและเวลาให้เอง) → ส่งตรวจ → ผู้อนุมัติอนุมัติ / ตีกลับ'],
   booking:['Booking Plan','ภาพรวมแผนงานทุกสัปดาห์ในตารางเดียว · กรองด้วย drop down · กดแถวเพื่อเปิดแผน (ส่งคำร้องที่หน้าใบรับคำร้องขอรับบริการสอบเทียบ แก้แผนที่ Weekly Plan)'],
+  odoc:['ติดตามเอกสาร Onsite','Status Update เอกสาร Onsite · งานหน้างานจาก Weekly Plan · กำหนดส่ง (Final Date) นับเป็นวันทำงาน จ.–ศ. · Service Report · ส่ง QC · Config Flow com · Draft + Report · Back up · ส่งใบรับงาน'],
   mplan:['Master Plan · Flow Meter','แผนรายเดือน Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน (D / C / W / I …) กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
   mplanins:['Master Plan · Instrument','แผนรายเดือน Instrument: Request No. · LAB · Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
   wsheet:['Weekly Cal / Ins','Weekly plan calibration (Flow Meter) และ Weekly plan instrument ของสัปดาห์ · แก้ Lab / Status / ผล ในตารางได้ทันที · เปลี่ยนสัปดาห์ที่แถบด้านบน (สัปดาห์เดียวกับ Weekly Plan)'],
@@ -20,7 +21,7 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,my:renderMy,jobs:renderJobs,checks:renderChecks,booking:renderBooking,mplan:renderMp,mplanins:renderMp,wsheet:renderWsheet,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,my:renderMy,jobs:renderJobs,checks:renderChecks,booking:renderBooking,odoc:renderOdoc,mplan:renderMp,mplanins:renderMp,wsheet:renderWsheet,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
   document.body.dataset.page=S.view;/* page-specific phone layout (css/compact.css, "Weekly Plan on phones") */
@@ -145,7 +146,7 @@ function renderBanners(){
 }
 let wkExportHtml=null;
 function renderWeekbar(){
-  const show=S.view==='people'||S.view==='wsheet'||(S.view==='dash'&&S.dash.mode==='week');
+  const show=S.view==='people'||S.view==='wsheet'||(S.view==='odoc'&&odTab()==='week')||(S.view==='dash'&&S.dash.mode==='week');
   $('#weekbar').hidden=!show;$('#btnAddTop').hidden=!S.canWrite||S.view==='safety'||S.view==='jobs';/* Safety has its own "+ ขออบรม", ใบรับคำร้องขอรับบริการสอบเทียบ its "+ ใบรับคำร้องใหม่" */
   if(!show)return;
   const last=addDays(S.week,6);

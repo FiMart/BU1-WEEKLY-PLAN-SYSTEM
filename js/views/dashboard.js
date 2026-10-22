@@ -207,11 +207,14 @@ function dashCompute(){
   if(ins.n)findings.push({t:insRate!=null&&insRate<80?'warn':'',s:`Instrument ${ins.n} รายการ · Plan ${ins.plan} · Actual ${ins.actual}${insRate!=null?` (${insRate}%)`:''} · Completed ${ins.done}${ins.certs?` · ออก Certificate ${ins.certs} ใบ`:''}${insTypes[0]?` · Type ที่มากที่สุดคือ ${insTypes[0][0]}`:''}`});
   findings.push(...MPK.findings);
   const issues=[confN&&`จัดชน ${confN} แผน`,lateN&&`เลยวันแล้วยังไม่ปิด ${lateN} แผน`,gaN&&`รอ GA ระบุรถ ${gaN} แผน`,docN&&`งานเสร็จแต่เอกสารหลังจบงานไม่ครบ ${docN} แผน`].filter(Boolean);
+  /* ติดตามเอกสาร Onsite of the period (js/features/onsite-docs.js): every onsite plan, whatever the สายงาน / ทีม tab */
+  const od=typeof odSummary==='function'?odSummary((raw||[]).filter(inR)):null;
+  if(od&&od.n)findings.push({t:od.follow?'bad':od.late?'warn':'good',s:`เอกสาร Onsite ${od.n} งาน · ในเวลา ${od.ok} · เกินเวลา ${od.late} · รอเอกสาร ${od.wait} · ตามต่อ ${od.follow}${od.rate!=null?` · ส่งทันเวลา ${od.rate}%`:''}`});
   findings.push(issues.length?{t:'bad',s:`ประเด็นที่ต้องดำเนินการ: ${issues.join(' · ')}`}:{t:'good',s:'ไม่มีประเด็นค้างที่ต้องดำเนินการ'});
 
   return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,docN,ncrIn,ncrOpen,ncrLate,
     people,manDays,weDays,otDays,teamUse,U,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
-    pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
+    pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp,od};
 }
 
 /* the page itself (tabs, charts) is in js/views/dash-page.js — v4.27.0 */

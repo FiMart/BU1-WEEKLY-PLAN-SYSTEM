@@ -13,6 +13,7 @@ const NTF_CATS=[
   ['plan','แผนงานถูกแก้ / เลื่อน / ยกเลิก','<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],
   ['clash','จัดชน คน / รถ','<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17v.1"/>'],
   ['follow','งานค้างต้องตาม','<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'],
+  ['odoc','เอกสาร Onsite ค้าง','<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5v3M8.5 9h3M8.5 12.5h5"/><circle cx="17" cy="17" r="3.6"/><path d="M17 15.3v1.9l1.2.8"/>'],
   ['safety','บัตร Safety','<path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>'],
 ];
 const NTF_CAT=Object.fromEntries(NTF_CATS.map(([k,l,i])=>[k,{l,i}]));
@@ -78,6 +79,11 @@ function ntfLiveOf(tasks,clashes){
     if(holdsTeam(t)&&t.areaId&&d>=td&&d<=ymd(addDays(new Date(),7))&&typeof cardOf==='function'){
       const bad=(t.staffIds||[]).map(id=>[id,cardOf(id,t.areaId)]).filter(([,c])=>c);
       if(bad.length)add('safety','card:'+t.id,'บัตร Safety ของทีมต้องตรวจ',`${ntfPlan(t)} · ${bad.map(([id,c])=>`${staffName(id)} ${c.txt}`).join(', ')}`,ref)}});
+  /* ติดตามเอกสาร Onsite (user, 22 Oct 2026; js/features/onsite-docs.js): the Planner and the work's Lead, near or past its Final Date */
+  if(typeof odOn==='function')tasks.forEach(t=>{if(!odOn(t)||!(isPlanner()||(!!ntfMeStaff()&&odLeadId(t)===ntfMeStaff())))return;const r=odRow(t);if(r.none)return;
+    const miss=r.miss.map(s=>OD_NAME[s.id]).join(', ');const ref={t:'task',id:t.id,date:t.date};
+    if(r.status==='follow')add('odoc','over:'+t.id,'เอกสาร Onsite เลย Final แล้ว',`${ntfPlan(t)} · เลยมา ${r.over} วัน · ขาด ${miss}`,ref);
+    else if(r.status==='wait'&&r.left<=1)add('odoc','soon:'+t.id+':'+r.final,r.left?'เอกสาร Onsite ถึง Final พรุ่งนี้':'เอกสาร Onsite ถึง Final วันนี้',`${ntfPlan(t)} · Final ${fmtDay(r.final)} · ขาด ${miss}`,ref)});
   for(const [k,c] of clashes)if(ntfMine(c.a)||ntfMine(c.b))add('clash',k,`จัดชน ${fmtDay(c.a.date)}`,`${[c.a.planNo,typeLabel(c.a)].filter(Boolean).join(' ')} ↔ ${[c.b.planNo,typeLabel(c.b)].filter(Boolean).join(' ')} · ${c.what}`,{t:'task',id:c.a.id,date:c.a.date});
   return L;
 }
