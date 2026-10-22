@@ -1013,3 +1013,9 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
   table.srch-t td:first-child,table.srch-t td[colspan]{grid-column:1/-1}
   table.srch-t td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
 }
+
+/* รถแผนก → GA Fleet box in ข้อมูลหลัก › รถ (js/features/ga-cars.js) — v4.28.0 */
+.ga-cars{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 12px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);border-left:4px solid var(--good);background:var(--surface-2)}
+.ga-cars.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
+.ga-cars>b{font-size:14px}
+.ga-cars>span{flex:1 1 320px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
