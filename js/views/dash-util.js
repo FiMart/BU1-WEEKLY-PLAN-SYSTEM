@@ -1,14 +1,14 @@
 'use strict';
 /* BU1 Weekly Plan · Utilization Manpower Onsite (user, 19 Oct 2026; the team's Excel sheet "Utilization Manpower Onsite BU1")
    Utilization = onsite works ÷ Std. Work · Std. Work = working days × works a day (ข้อมูลหลัก › Utilization หน้างาน, default
-   7 = Model 34 onsite people ÷ 5 a team = 6.8). Working days = Monday–Friday minus public holidays: Saturday, Sunday and
-   holidays are OT, as HR counts them, so a plan on those days is listed as OT and left out of the %.
+   7 = Model 34 onsite people ÷ 5 a team = 6.8). Working days = every day minus public holidays (user, 22 Oct 2026: "นับเสาร์อาทิตย์ด้วย",
+   chose every day; Mon–Fri from 19 Oct 2026); a plan on a public holiday is listed as OT and left out of the %.
    1 work = 1 plan on 1 day (a half day is 1 too). A plan counts when it still holds its team (not เลื่อน / ยกเลิก), is not leave,
    ตรวจสุขภาพ, Stand by or Support, and has someone of ทีม Lab On-Site (All Team too); อบรม = the Training row, the rest = Customer
    work. Plans of every สายงาน and ทีม tab: this figure is the onsite team's, whatever the Dashboard filters show. */
 const UTO_SKIP=new Set(['health','standby','support']);
 const utoCfg=()=>Object.assign({model:34,team:5,perDay:7},(S.cfg&&S.cfg.util)||{});
-const isUtoDay=d=>{const w=d.getDay();return w!==0&&w!==6&&!holidayOf(ymd(d))};
+const isUtoDay=d=>!holidayOf(ymd(d));/* Saturday and Sunday count too */
 const utoTraining=t=>typeIdOf(t)==='training'||/อบรม|training/i.test(typeLabel(t));
 const utoOnsite=t=>!isLeave(t)&&holdsTeam(t)&&!UTO_SKIP.has(typeIdOf(t))&&(t.staffIds||[]).some(id=>inTeamId(S.staff.find(s=>s.id===id),'onsite'));
 const utoPct=(a,b)=>b?Math.round(a/b*100):0;
@@ -20,7 +20,7 @@ function utoCount(list,from,to){
   let days=0;for(let d=parseD(from);ymd(d)<=to;d=addDays(d,1))if(isUtoDay(d))days++;
   const total=cust+train,std=days*per;return {cust,train,total,ot,days,std,util:utoPct(total,std)};
 }
-const utoNote=u=>`${u.total} งาน จาก Std. ${u.std} งาน (${u.days} วันทำงาน จ.–ศ. × ${utoCfg().perDay} งาน/วัน) · ลูกค้า ${u.cust} · อบรม ${u.train}${u.ot?` · OT เสาร์–อาทิตย์ / วันหยุด ${u.ot} งาน (ไม่นับ)`:''}`;
+const utoNote=u=>`${u.total} งาน จาก Std. ${u.std} งาน (${u.days} วันทำงาน รวมเสาร์–อาทิตย์ × ${utoCfg().perDay} งาน/วัน) · ลูกค้า ${u.cust} · อบรม ${u.train}${u.ot?` · OT วันหยุดนักขัตฤกษ์ ${u.ot} งาน (ไม่นับ)`:''}`;
 const utoLevel=u=>u.util>100?'bad':u.util>=85?'warn':'';
 const utoSay=u=>u.util>100?`เกินกำลังทีมหน้างาน (มากกว่า ${utoCfg().perDay} งาน/วัน) ควรเกลี่ยงานหรือเพิ่มคน`:u.util>=85?'ใกล้เต็มกำลังทีมหน้างาน':u.util<50?'ยังรับงานหน้างานเพิ่มได้':'อยู่ในระดับปกติ';
 
@@ -42,13 +42,13 @@ function utoRows(Y){
   return {sheet:'Utilization Onsite',title:`Utilization Manpower Onsite BU1 · ปี ${Y.y+543} (${Y.y})`,head:['Work (Team)',...M.map(m=>(m.est?'EST-':'')+EN_MON[m.i]),'Average / Month'],num:Array.from({length:13},(_,i)=>i+1),
     rows:[['Customer work',...M.map(m=>m.cust),r1(Y.avg.cust)],['Training (อบรม)',...M.map(m=>m.train),r1(Y.avg.train)],['Total',...M.map(m=>m.total),r1(Y.avg.total)],
       ['Accumulate',...M.map(m=>m.acc),''],['%Utilization Lab-Onsite',...M.map(m=>m.util+'%'),Y.util+'%'],
-      ['Working Day (จ.–ศ.)',...M.map(m=>m.days),Y.days],[`Std. Work (× ${utoCfg().perDay} งาน/วัน)`,...M.map(m=>m.std),Y.std],['Accumulate Std.',...M.map(m=>m.accStd),''],
-      ['OT เสาร์–อาทิตย์ / วันหยุด (ไม่นับ)',...M.map(m=>m.ot),r1(Y.avg.ot)]]};
+      ['Working Day (จ.–อา.)',...M.map(m=>m.days),Y.days],[`Std. Work (× ${utoCfg().perDay} งาน/วัน)`,...M.map(m=>m.std),Y.std],['Accumulate Std.',...M.map(m=>m.accStd),''],
+      ['OT วันหยุดนักขัตฤกษ์ (ไม่นับ)',...M.map(m=>m.ot),r1(Y.avg.ot)]]};
 }
 function utoPanelHtml(){
   const Y=utoYearData();const c=utoCfg();
   const nav=`<span class="uto-nav"><button type="button" class="arrow" data-uto-y="-1" aria-label="ปีก่อน">‹</button><b>${utoYear()+543}</b><button type="button" class="arrow" data-uto-y="1" aria-label="ปีถัดไป">›</button></span>`;
-  const head=`<header><h2>Utilization Manpower Onsite · ทีม Lab On-Site</h2>${nav}<p>งานหน้างาน ÷ Std. Work · Std. Work = วันทำงาน จ.–ศ. (ไม่รวมวันหยุดนักขัตฤกษ์) × ${esc(String(c.perDay))} งาน/วัน (Model ${esc(String(c.model))} คน ÷ ทีมละ ${esc(String(c.team))} คน) = 100% · 1 แผน 1 วัน = 1 งาน · นับแผนที่มีคนทีม Lab On-Site / All Team ทุกสายงาน ไม่นับ ลา ตรวจสุขภาพ Stand by Support และแผนเลื่อน / ยกเลิก · งานวันเสาร์–อาทิตย์ / วันหยุด = OT แสดงแยก ไม่นับใน % · EST = เดือนที่ยังมีแผนรอถึงวัน (ประมาณการ)</p></header>`;
+  const head=`<header><h2>Utilization Manpower Onsite · ทีม Lab On-Site</h2>${nav}<p>งานหน้างาน ÷ Std. Work · Std. Work = วันทำงานทุกวันรวมเสาร์–อาทิตย์ (ไม่รวมวันหยุดนักขัตฤกษ์) × ${esc(String(c.perDay))} งาน/วัน (Model ${esc(String(c.model))} คน ÷ ทีมละ ${esc(String(c.team))} คน) = 100% · 1 แผน 1 วัน = 1 งาน · นับแผนที่มีคนทีม Lab On-Site / All Team ทุกสายงาน ไม่นับ ลา ตรวจสุขภาพ Stand by Support และแผนเลื่อน / ยกเลิก · งานวันหยุดนักขัตฤกษ์ = OT แสดงแยก ไม่นับใน % · EST = เดือนที่ยังมีแผนรอถึงวัน (ประมาณการ)</p></header>`;
   if(!Y)return `<section class="panel span-12 uto" style="--d:5">${head}${loading()}</section>`;
   const T=utoRows(Y);const M=Y.months;
   const cell=(m,v,cls)=>`<td class="n${m.est?' est':''}${m.cur?' cur':''}${cls?' '+cls:''}">${v}</td>`;
@@ -57,8 +57,8 @@ function utoPanelHtml(){
   return `<section class="panel span-12 uto" style="--d:5">${head}<div class="scroll-x plain"><table class="mini uto-t"><thead><tr><th>Work (Team)</th>${M.map(m=>`<th class="n${m.est?' est':''}${m.cur?' cur':''}">${m.est?'<small>EST</small>':''}${TH_MON[m.i]}</th>`).join('')}<th class="n avg">เฉลี่ย / เดือน</th></tr></thead><tbody>
     ${row('Customer work',m=>m.cust||'',r1(Y.avg.cust))}${row('Training (อบรม)',m=>m.train||'',r1(Y.avg.train))}${row('Total',m=>m.total||'',r1(Y.avg.total),'tot')}
     ${row('Accumulate',m=>m.acc.toLocaleString('th-TH'),'','acc')}${row('%Utilization',m=>m.days?m.util+'%':'',Y.util+'%','pct')}
-    ${row('Working Day (จ.–ศ.)',m=>m.days,Y.days,'sub')}${row(`Std. Work (× ${esc(String(c.perDay))})`,m=>m.std,Y.std.toLocaleString('th-TH'),'sub')}${row('Accumulate Std.',m=>m.accStd.toLocaleString('th-TH'),'','sub')}
-    ${row('OT เสาร์–อาทิตย์ / วันหยุด',m=>m.ot||'',r1(Y.avg.ot),'ot')}</tbody></table></div>
+    ${row('Working Day (จ.–อา.)',m=>m.days,Y.days,'sub')}${row(`Std. Work (× ${esc(String(c.perDay))})`,m=>m.std,Y.std.toLocaleString('th-TH'),'sub')}${row('Accumulate Std.',m=>m.accStd.toLocaleString('th-TH'),'','sub')}
+    ${row('OT วันหยุดนักขัตฤกษ์',m=>m.ot||'',r1(Y.avg.ot),'ot')}</tbody></table></div>
     <p class="hint uto-foot">เฉลี่ย / เดือน = เฉลี่ยเฉพาะเดือนที่มีงาน (${Y.used} เดือน) · %Utilization เฉลี่ย = งานรวม ÷ Std. Work ของเดือนเหล่านั้น · ตั้งค่า Model / คนต่อทีม / งานต่อวัน ที่ ข้อมูลหลัก › Utilization หน้างาน</p></section>`;
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-uto-y]');if(!b)return;S.utYear=utoYear()+Number(b.dataset.utoY);render()});
@@ -67,7 +67,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-uto-y]');i
 function utoSection(){
   const c=utoCfg();const dis=can('master')?'':' disabled';
   return {id:'util',title:'Utilization หน้างาน',sub:`${c.perDay} งาน/วัน = 100%`,count:'KPI',
-    desc:'ใช้คำนวณ Utilization Manpower Onsite ใน Dashboard: งานหน้างาน ÷ (วันทำงาน จ.–ศ. × งานต่อวัน) · วันเสาร์–อาทิตย์และวันหยุดนับเป็น OT ตามที่ HR สรุป',
+    desc:'ใช้คำนวณ Utilization Manpower Onsite ใน Dashboard: งานหน้างาน ÷ (วันทำงาน × งานต่อวัน) · วันทำงาน = ทุกวันรวมเสาร์–อาทิตย์ · วันหยุดนักขัตฤกษ์นับเป็น OT',
     body:`<div class="jb-kset uto-set"><label>Model คนหน้างาน <input type="number" min="1" max="500" class="w-num" data-utocfg="model" value="${esc(String(c.model))}"${dis}> คน</label>
       <label>เฉลี่ยทีมละ <input type="number" min="1" max="20" class="w-num" data-utocfg="team" value="${esc(String(c.team))}"${dis}> คน</label>
       <label>งานหน้างานต่อวัน (= 100%) <input type="number" min="1" max="100" class="w-num" data-utocfg="perDay" value="${esc(String(c.perDay))}"${dis}> งาน/วัน</label>

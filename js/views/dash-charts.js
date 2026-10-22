@@ -90,19 +90,19 @@ function vzRank(items,o){
       <span class="vz-rk-t"><i class="vz-rk-b" style="width:${x.n/max*100}%${x.color?';--c:'+x.color:''}"></i>${x.prev?`<i class="vz-rk-p" style="left:${x.prev/max*100}%"></i>`:''}</span>
       <b class="vz-rk-v">${x.n}${x.extra?`<small>${esc(x.extra)}</small>`:''}</b>${hasPrev?`<em class="vz-rk-d">${d==null?'':d>0?'▲ '+d:d<0?'▼ '+(-d):'–'}</em>`:''}</div>`}).join('')}</div>`;
 }
-/* two-part stacked bars per row (man-days Mon–Fri + OT) */
+/* stacked bars per row (man-days: weekdays · Sat–Sun · public-holiday OT) */
 function vzStackRows(rows,keys,o){
   o=o||{};const max=Math.max(1,...rows.map(r=>keys.reduce((a,k)=>a+(r.v[k.id]||0),0)));
   return `${vzLegend(keys.map(k=>({name:k.name,color:k.color})))}<div class="vz-rank vz-srows">${rows.map(r=>{const t=keys.reduce((a,k)=>a+(r.v[k.id]||0),0);
     return `<div class="vz-rk" tabindex="0" data-tip="${vzA(`${r.label}: ${keys.map(k=>`${k.name} ${vzN(r.v[k.id]||0)}`).join(' · ')}${o.unit?' '+o.unit:''}${r.extra?' · '+r.extra:''}`)}"><span class="vz-rk-l" title="${vzA(r.label)}">${esc(r.label)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span>
       <span class="vz-rk-t">${keys.map(k=>(r.v[k.id]||0)>0?`<i class="vz-rk-b seg" style="width:${(r.v[k.id]||0)/max*100}%;--c:${k.color}"></i>`:'').join('')}</span><b class="vz-rk-v">${vzN(t)}${r.extra?`<small>${esc(r.extra)}</small>`:''}</b></div>`}).join('')}</div>`;
 }
-/* the period as a calendar heatmap (one-hue blue, 5 steps; Sundays / holidays outlined) */
+/* the period as a calendar heatmap (one-hue blue, 5 steps; public holidays outlined = OT days) */
 function vzCal(days,o){
   o=o||{};const mx=Math.max(1,...days.map(d=>d.n));const lv=n=>n?Math.max(1,Math.min(5,Math.ceil(n/mx*5))):0;
   const tip=d=>`${fmtDay(d.k)}${d.hol?' · '+d.hol:''}: ${d.n} แผน · งานหน้างาน ${d.ons} · ว่าง ${d.free} คน${d.lv?` · ลา ${d.lv} คน`:''}`;
   const cell=(d,big)=>`<button type="button" class="vz-cc h${lv(d.n)}${d.off?' off':''}${d.today?' td':''}" data-vz-go="${d.k}" data-tip="${vzA(tip(d))}" aria-label="${vzA(tip(d))}">${big?`<span class="dn">${d.d.getDate()}</span>${d.n?`<b>${d.n}</b>`:''}`:''}</button>`;
-  const legend=`<div class="vz-calk"><span>น้อย</span>${[1,2,3,4,5].map(i=>`<i class="vz-cc h${i}"></i>`).join('')}<span>มาก (${mx} แผน/วัน)</span><i class="vz-cc off"></i><span>เสาร์–อาทิตย์ / วันหยุด (OT)</span></div>`;
+  const legend=`<div class="vz-calk"><span>น้อย</span>${[1,2,3,4,5].map(i=>`<i class="vz-cc h${i}"></i>`).join('')}<span>มาก (${mx} แผน/วัน)</span><i class="vz-cc off"></i><span>วันหยุดนักขัตฤกษ์ (OT)</span></div>`;
   if(!o.compact){/* week / month: Monday-first calendar rows */
     const first=days[0].d;const lead=(first.getDay()+6)%7;const cells=[];for(let i=0;i<lead;i++)cells.push('<span class="vz-cc blank"></span>');days.forEach(d=>cells.push(cell(d,true)));
     return `<div class="vz-cal"><div class="vz-calh">${['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.'].map(x=>`<span>${x}</span>`).join('')}</div><div class="vz-calg">${cells.join('')}</div></div>${legend}`}

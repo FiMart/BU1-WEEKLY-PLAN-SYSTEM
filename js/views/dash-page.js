@@ -40,7 +40,7 @@ function dzPrintCharts(D){
   const dn=(t,items)=>`<div class="ch"><h3>${t}</h3>${vzDonut(items,{sub:'แผน',size:96,th:13})}</div>`;
   h+=`<div class="ch3">${dn('สถานะงาน',dzStatusItems(D))}${!S.line?dn('แยกตามสายงาน',dzLineItems(D)):''}${teamsUsed()?dn('แยกตามทีม',dzTeamItems(D)):''}</div>`;
   const Y=utoYearData();
-  if(Y){const s=dzUtilSpecs(Y,D);h+=`<div class="ch"><h3>Utilization หน้างาน · ปี ${Y.y+543} (Std. Work = วันทำงาน จ.–ศ. × ${esc(String(utoCfg().perDay))} งาน/วัน)</h3>${vzXY(Object.assign({},s.works,{h:200}),W)}
+  if(Y){const s=dzUtilSpecs(Y,D);h+=`<div class="ch"><h3>Utilization หน้างาน · ปี ${Y.y+543} (Std. Work = วันทำงานทุกวันรวมเสาร์–อาทิตย์ × ${esc(String(utoCfg().perDay))} งาน/วัน)</h3>${vzXY(Object.assign({},s.works,{h:200}),W)}
     ${vzLegend([{name:'Customer work',color:'var(--vz-1)'},{name:'Training (อบรม)',color:'var(--vz-3)'},{name:'Std. Work (100%)',color:'var(--ink-2)',line:1}])}${vzXY(Object.assign({},s.pct,{h:120}),W)}</div>`}
   return h;
 }
@@ -85,7 +85,7 @@ function dzOverview(D){
     vzBox(dzTrendSpec(D))+dzTrendLegend(D),' style="--d:1"');
   h+=dzCard('span-4','สถานะงาน',`ทุกแผนในช่วงนี้ ${D.allJ} แผน (รวมที่ยกเลิก)`,vzDonut(dzStatusItems(D),{sub:'แผน',unit:'แผน',label:'สถานะงาน'}),' style="--d:2"');
   const Y=utoYearData();
-  h+=dzCard('span-8',`Utilization หน้างาน · ปี ${utoYear()+543}`,`งานหน้างาน (มีคนทีม Lab On-Site) เทียบ Std. Work = วันทำงาน จ.–ศ. × ${esc(String(utoCfg().perDay))} งาน/วัน · ${P.mode!=='year'?'แถบเข้ม = ช่วงที่เลือก · ':''}EST = เดือนที่ยังมีแผนรอถึงวัน`,
+  h+=dzCard('span-8',`Utilization หน้างาน · ปี ${utoYear()+543}`,`งานหน้างาน (มีคนทีม Lab On-Site) เทียบ Std. Work = วันทำงาน (ทุกวันรวมเสาร์–อาทิตย์ ไม่รวมวันหยุดนักขัตฤกษ์) × ${esc(String(utoCfg().perDay))} งาน/วัน · ${P.mode!=='year'?'แถบเข้ม = ช่วงที่เลือก · ':''}EST = เดือนที่ยังมีแผนรอถึงวัน`,
     Y?(()=>{const S2=dzUtilSpecs(Y,D);return vzBox(S2.works)+vzLegend([{name:'Customer work',color:'var(--vz-1)'},{name:'Training (อบรม)',color:'var(--vz-3)'},{name:'Std. Work (100%)',color:'var(--ink-2)',line:1}])
       +`<h3 class="dz-sub">%Utilization</h3>`+vzBox(S2.pct)+`<p class="dz-more"><button type="button" class="lnk" data-dash-tab="man">ดูตาราง ม.ค.–ธ.ค. และภาระงานรายวัน ›</button></p>`})():loading(),' style="--d:3"');
   h+=`<div class="span-4 dz-stack">${!S.line?dzCard('','แยกตามสายงาน','แผนงานของแต่ละสาย · กดเพื่อเปิดแท็บสายงาน',vzDonut(dzLineItems(D),{sub:'แผน',unit:'แผน',size:112,th:16,label:'แยกตามสายงาน'})+`<div class="dz-chips">${LINES.map(l=>`<button type="button" class="lnk" data-line-tab="${l.id}">${esc(l.name)} ›</button>`).join('')}</div>`,' style="--d:4"'):''}
@@ -103,11 +103,18 @@ function dzManpower(D){
     +vzCal(cd,{compact:P.mode==='quarter'||P.mode==='year'}),' style="--d:1"');
   h+=utoPanelHtml();
   const ppl=D.people.filter(p=>p.wd||p.ot||p.jobs);
-  h+=dzCard('span-8','ภาระงานรายคน',`คน-วัน จ.–ศ. (ครึ่งวัน = 0.5) และ OT วันเสาร์–อาทิตย์ / วันหยุด · % = คน-วัน ÷ วันทำงานของคนนั้น (หักวันลา)`,
-    ppl.length?`<div class="dz-scroll">${vzStackRows(ppl.slice().sort((a,b)=>(b.wd+b.ot)-(a.wd+a.ot)).map(p=>({label:p.s.name,sub:p.s.role||'',v:{wd:p.wd,ot:p.ot},extra:`${pct(p.wd,p.cap)}%`})),
-      [{id:'wd',name:'คน-วัน จ.–ศ.',color:'var(--vz-1)'},{id:'ot',name:'OT',color:'var(--vz-2)'}],{unit:'คน-วัน'})}</div>`:'<p class="hint">ยังไม่มีงานในช่วงนี้</p>',' style="--d:3"');
-  h+=dzCard('span-4','ใช้กำลังคนตามตำแหน่ง',`คน-วัน จ.–ศ. ÷ (คน × วันทำงาน − วันลา)`,vzRank(D.roleRows.map(r=>({label:r.k,n:r.util,extra:`${r.n} คน`})),{unit:'%'})
-    +(teamsUsed()?`<h3 class="dz-sub">แยกตามทีม</h3><table class="mini"><thead><tr><th>ทีม</th><th class="n">แผน</th><th class="n">ปิดงาน</th><th class="n">คน-วัน</th><th class="n">คน</th></tr></thead><tbody>${D.teamRows.map(r=>`<tr><td><span class="tdot" style="--c:${r.tm.color}"><i></i>${esc(r.tm.name)}</span></td><td class="n">${r.n}</td><td class="n">${r.doneRate==null?'–':r.doneRate+'%'}</td><td class="n">${f1(r.md)}</td><td class="n">${r.people}</td></tr>`).join('')}</tbody></table>`:''),' style="--d:4"');
+  /* man-days split by kind of day (user, 22 Oct 2026: Saturday and Sunday are working days too; public holidays = OT) */
+  const DAYKEYS=[{id:'wk',name:'วันธรรมดา จ.–ศ.',color:'var(--vz-1)'},{id:'we',name:'เสาร์–อาทิตย์',color:'var(--vz-3)'},{id:'ot',name:'OT วันหยุดนักขัตฤกษ์',color:'var(--vz-2)'}];
+  const dayV=x=>{const wd=x.wd!=null?x.wd:x.md;/* person = wd, team (teamUse) = md */return {wk:Math.max(0,wd-x.we),we:x.we,ot:x.ot}};
+  h+=dzCard('span-8','ภาระงานรายคน',`คน-วันของแต่ละคน (งานครึ่งวัน = 0.5) แยกเป็นวันธรรมดา · เสาร์–อาทิตย์ · OT วันหยุดนักขัตฤกษ์ · % ท้ายแถว = คน-วัน ÷ วันทำงานของคนนั้น (ทุกวันรวมเสาร์–อาทิตย์ หักวันลา) · ชี้ที่แถวเพื่อดูตัวเลข`,
+    ppl.length?`<div class="dz-scroll">${vzStackRows(ppl.slice().sort((a,b)=>(b.wd+b.ot)-(a.wd+a.ot)).map(p=>({label:p.s.name,sub:p.s.role||'',v:dayV(p),extra:`${pct(p.wd,p.cap)}%`})),DAYKEYS,{unit:'คน-วัน'})}</div>`:'<p class="hint">ยังไม่มีงานในช่วงนี้</p>',' style="--d:3"');
+  /* positions, then the teams as charts too (user, 22 Oct 2026: "หัวข้อใช้กำลังคนตามตำแหน่ง ตรงแยกตามทีมให้โชว์ กราฟ หรือ Chart ด้วย") */
+  const TU=D.teamUse||[];
+  h+=dzCard('span-4','ใช้กำลังคนตามตำแหน่ง',`% = คน-วันของคนในตำแหน่ง ÷ (จำนวนคน × วันทำงาน ทุกวันรวมเสาร์–อาทิตย์ − วันลา) · 100% = ทุกคนมีงานทุกวัน`,vzRank(D.roleRows.map(r=>({label:r.k,n:r.util,extra:`${r.n} คน · ${f1(r.md)} คน-วัน`})),{unit:'%'})
+    +(teamsUsed()?`<h3 class="dz-sub">แยกตามทีม · ใช้กำลังคน (%)</h3>${vzRank(TU.map(x=>({label:x.tm.name,n:x.util,color:x.tm.color,extra:`${x.n} คน`})),{unit:'%'})}
+      <h3 class="dz-sub">แยกตามทีม · คน-วันตามชนิดวัน</h3>${vzStackRows(TU.map(x=>({label:x.tm.name,v:dayV(x),extra:`${x.util}%`})),DAYKEYS,{unit:'คน-วัน'})}
+      <h3 class="dz-sub">แยกตามทีม · ตัวเลข</h3><table class="mini"><thead><tr><th>ทีม</th><th class="n">คน</th><th class="n">แผน</th><th class="n">ปิดงาน</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th></tr></thead><tbody>${D.teamRows.map(r=>{const u=TU.find(x=>x.tm.id===r.tm.id)||{};return `<tr><td><span class="tdot" style="--c:${r.tm.color}"><i></i>${esc(r.tm.name)}</span></td><td class="n">${r.people}</td><td class="n">${r.n}</td><td class="n">${r.doneRate==null?'–':r.doneRate+'%'}</td><td class="n">${f1(u.md||0)}</td><td class="n">${u.util==null?'–':u.util+'%'}</td></tr>`}).join('')}</tbody></table>
+      <p class="hint dz-note">คน All Team นับอยู่ในทั้งสองทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด</p>`:''),' style="--d:4"');
   const maxJ=Math.max(1,...D.people.map(p=>p.jobs));const wdN=D.workDays.length;
   h+=`<details class="panel dz-card dz-det span-12" style="--d:5"><summary><h2>ตารางรายละเอียดรายคน</h2><span class="hint">${D.people.length} คน · กดเพื่อเปิด</span></summary>
     <div class="scroll-x plain" style="max-height:520px;overflow:auto"><table class="mini ptab"><thead><tr><th>#</th><th>ชื่อ</th><th>งาน (แผน)</th><th class="n">คน-วัน</th><th class="n">OT</th><th class="n">ใช้กำลังคน</th><th class="n">เช้า</th><th class="n">บ่าย</th><th class="n">ทั้งวัน</th><th class="n">ลา (วัน)</th><th class="n">ว่าง (วัน)</th><th class="n">จัดชน</th><th>งานที่ทำมากสุด</th></tr></thead><tbody>

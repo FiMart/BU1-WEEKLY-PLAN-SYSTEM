@@ -109,7 +109,7 @@ function supabaseBackend(client,{dept}){
       doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */jobId:x.jobId||'',/* ใบรับคำร้องขอรับบริการสอบเทียบ it was made from */
       photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
-      tag:d.tag||'',groupId:d.groupId||null,src:'bookings'};
+      tag:d.tag||'',groupId:d.groupId||null,src:'bookings',_crane:asList(d.crane)/* the vehicle ids GA Fleet reads (read only; '_' keeps it out of ISO history) */};
   }
   /* ลา · ลาพักร้อน · ลาป่วย · ลากิจ (14 Oct 2026): this app's type in bu1wp.jobType, else the row's kind when it names one (old app rows) */
   const leaveTypeOf=(x,d)=>isLeaveId(x.jobType)?x.jobType:(DEFAULT_TYPES.find(ty=>isLeaveId(ty.id)&&ty.id!=='leave'&&norm(ty.name)===norm(d.kind))||{id:'leave'}).id;
@@ -132,7 +132,8 @@ function supabaseBackend(client,{dept}){
     return out;
   }
   const staffOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:d.name||r.id,role:d.position||'',team:x.team||'',order:x.order??i,active:!d.archived}};/* ทีม: this app's own field */
-  const resourceOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:craneName(d)||r.id,code:d.plate?d.name||'':'',group:d.type||'',vendor:d.vendor||'',
+  /* ประเภทรถ of this app lives in bu1wp.group once the row carries GA Fleet's type (v4.28.0); gaType = the stored data.type */
+  const resourceOf=(r,i)=>{const d=r.data||{};const x=d.bu1wp||{};return {id:r.id,name:craneName(d)||r.id,code:d.plate?d.name||'':'',group:x.group!=null?x.group:d.type||'',gaType:d.type||'',vendor:d.vendor||'',
     kind:'vehicle',order:x.order??i,active:!d.archived}};
 
   async function listTasks(f){
@@ -273,8 +274,11 @@ function supabaseBackend(client,{dept}){
   async function writeCranes(rows){
     const old=await byIds('cranes',rows.map(r=>String(r.id)));
     await put('cranes',rows.map(v=>{const id=String(v.id);const d=Object.assign({},(old.get(id)||{}).data||{});
-      Object.assign(d,{id,name:v.code||v.name||'',plate:v.code?v.name||'':(d.plate&&!v.code&&d.name===v.name?d.plate:''),type:v.group||d.type||'',
-        vendor:v.vendor??d.vendor??'',archived:v.active===false,bu1wp:stripped(Object.assign({},d.bu1wp||{},{order:v.order,sample:v.sample||undefined}))});
+      /* รถแผนก → GA Fleet (user, 22 Oct 2026: "รถแผนกทุกคัน … ส่งข้อมูลไปให้ทางแอป GA Fleet ด้วย"): GA lists a department car only when data.type is
+         one of GA_CAR_TYPES, so every vehicle gets that type and this app's own ประเภทรถ is kept in bu1wp.group */
+      const grp=v.group!=null?String(v.group):((d.bu1wp||{}).group!=null?d.bu1wp.group:d.type||'');
+      Object.assign(d,{id,name:v.code||v.name||'',plate:v.code?v.name||'':(d.plate&&!v.code&&d.name===v.name?d.plate:''),type:GA_CAR_TYPES.includes(grp)?grp:GA_CAR_TYPES[0],
+        vendor:v.vendor??d.vendor??'',archived:v.active===false,bu1wp:stripped(Object.assign({},d.bu1wp||{},{order:v.order,group:grp,sample:v.sample||undefined}))});
       return {id,dept_id:dept,data:d}}));
     lookups=null;
   }

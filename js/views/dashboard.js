@@ -42,7 +42,8 @@ function dashCompute(){
   const today=ymd(new Date());const inR=t=>t.date>=from&&t.date<=to;
   const all=tasks.filter(inR);const work=all.filter(isWorking);const jobs=work.filter(t=>!isLeave(t));const leaves=work.filter(isLeave);
   const days=[];for(let d=parseD(from);ymd(d)<=to;d=addDays(d,1))days.push(new Date(d));
-  /* Monday–Friday minus public holidays (user, 19 Oct 2026: Saturday, Sunday and holidays are OT, as HR counts them) */
+  /* every day minus public holidays (user, 22 Oct 2026: "นับเสาร์อาทิตย์ด้วยเรื่องของแผนงาน และกำลังคน", chose "นับทุกวันทั้งหมด";
+     was Mon–Fri since 19 Oct 2026) — work on a public holiday is OT */
   const workDays=days.filter(isUtoDay);
   const active=S.staff.filter(s=>s.active!==false);const conf=conflictsIn(work);
   const stc=Object.fromEntries(STATUSES.map(s=>[s.id,0]));all.filter(t=>!isLeave(t)).forEach(t=>{const k=t.status||'planned';stc[k]=(stc[k]||0)+1});
@@ -68,21 +69,25 @@ function dashCompute(){
     if(!wkSet.has(t.date))return;const k=id+'|'+t.date;const sl=lvSlot.get(k)||{am:false,pm:false};sl.am=sl.am||PR.a===0;sl.pm=sl.pm||PR.b===1;lvSlot.set(k,sl)})});
   const slotN=x=>x.am&&x.pm?1:.5;
   const people=S.staff.filter(s=>s.active!==false||pst.has(s.id)).map(s=>{const p=ps(s.id);const dd=[...p.days];
-    const wd=dd.filter(([k])=>wkSet.has(k)).reduce((a,[,x])=>a+slotN(x),0);const ot=dd.filter(([k])=>!wkSet.has(k)).reduce((a,[,x])=>a+slotN(x),0);/* OT = Sat / Sun / holidays */
+    const wd=dd.filter(([k])=>wkSet.has(k)).reduce((a,[,x])=>a+slotN(x),0);const ot=dd.filter(([k])=>!wkSet.has(k)).reduce((a,[,x])=>a+slotN(x),0);/* OT = public holidays */
+    const we=dd.filter(([k])=>wkSet.has(k)&&[0,6].includes(parseD(k).getDay())).reduce((a,[,x])=>a+slotN(x),0);/* the Sat / Sun part of wd */
     const lv=workDays.reduce((a,d)=>{const sl=lvSlot.get(s.id+'|'+ymd(d));return a+(!sl?0:sl.am&&sl.pm?1:.5)},0);
-    const top=[...p.types].sort((a,b)=>b[1]-a[1])[0];return Object.assign({s,wd,ot,lv,cap:Math.max(0,workDays.length-lv),free:workDays.filter(d=>!p.dates.has(ymd(d))).length,top:top?`${top[0]} (${top[1]})`:''},p)})
+    const top=[...p.types].sort((a,b)=>b[1]-a[1])[0];return Object.assign({s,wd,we,ot,lv,cap:Math.max(0,workDays.length-lv),free:workDays.filter(d=>!p.dates.has(ymd(d))).length,top:top?`${top[0]} (${top[1]})`:''},p)})
     .sort((a,b)=>b.jobs-a.jobs||b.wd-a.wd||sortPeople(a.s,b.s));
   /* man-days of the open ทีม's active people (all active people when no team is picked) */
   const uPeople=people.filter(p=>p.s.active!==false&&inTeam(p.s));
-  const manDays=uPeople.reduce((a,p)=>a+p.wd,0);const otDays=uPeople.reduce((a,p)=>a+p.ot,0);
-  /* Utilization = Utilization Manpower Onsite (js/views/dash-util.js): onsite works ÷ (Mon–Fri × works a day), every สายงาน */
+  const manDays=uPeople.reduce((a,p)=>a+p.wd,0);const weDays=uPeople.reduce((a,p)=>a+p.we,0);const otDays=uPeople.reduce((a,p)=>a+p.ot,0);
+  /* each work team's own load for the team chart (user, 22 Oct 2026: "ใช้กำลังคนตามตำแหน่ง ตรงแยกตามทีมให้โชว์กราฟ"); All Team people count in both */
+  const teamUse=WORK_TEAMS.map(tm=>{const g=people.filter(p=>p.s.active!==false&&inTeamId(p.s,tm.id));const md=g.reduce((a,p)=>a+p.wd,0),cap=g.reduce((a,p)=>a+p.cap,0);
+    return {tm,n:g.length,md,we:g.reduce((a,p)=>a+p.we,0),ot:g.reduce((a,p)=>a+p.ot,0),cap,util:pct(md,cap)}});
+  /* Utilization = Utilization Manpower Onsite (js/views/dash-util.js): onsite works ÷ (working days × works a day), every สายงาน */
   const U=utoCount(raw,from,to);const util=U.util;
   const busyN=people.filter(p=>p.jobs>0).length;const leaveDays=people.reduce((a,p)=>a+p.leave.size,0);
   const avgTeam=totalJ?jobs.reduce((a,t)=>a+(t.staffIds||[]).length+(t.guests||[]).length,0)/totalJ:0;
   const prevJobs=prev?prev.filter(t=>t.date>=P.pFrom&&t.date<=P.pTo&&isWorking(t)&&!isLeave(t)):null;
   const prevDoneRate=prevJobs&&prevJobs.length?pct(prevJobs.filter(t=>t.status==='done').length,prevJobs.length):null;
 
-  /* roles: capacity = people × working days (Mon–Fri) − their leave */
+  /* roles: capacity = people × working days (every day but public holidays) − their leave */
   const groupRows=keyOf=>{const m=new Map();active.forEach(s=>{const k=keyOf(s);if(!m.has(k))m.set(k,{k,n:0,ids:new Set()});const x=m.get(k);x.n++;x.ids.add(s.id)});
     return [...m.values()].map(x=>{const g=people.filter(p=>x.ids.has(p.s.id));const md=g.reduce((a,p)=>a+p.wd,0);const cap=g.reduce((a,p)=>a+p.cap,0);
       return Object.assign(x,{jobs:jobs.filter(t=>(t.staffIds||[]).some(id=>x.ids.has(id))).length,md,util:pct(md,cap)})})};
@@ -178,7 +183,7 @@ function dashCompute(){
     {name:'งานทั้งหมด (Total Jobs)',value:`${totalJ} แผน`,note:prevJobs?chg(totalJ,prevJobs.length):''},
     {name:'อัตราปิดงาน (Completion Rate)',value:doneRate==null?'–':`${doneRate}%`,note:due.length?`ปิดแล้ว ${doneDue} จาก ${due.length} แผนที่ถึงกำหนด${prevDoneRate!=null?` · ${P.pLabel} ${prevDoneRate}%`:''}`:'ยังไม่มีแผนที่ถึงกำหนด'},
     {name:'อัตราใช้กำลังคนหน้างาน (Utilization Onsite)',value:`${util}%`,note:utoNote(U)},
-    {name:'คน-วันทำงาน (Man-days)',value:`${f1(manDays)} คน-วัน`,note:`จ.–ศ. · ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน${otDays?` · OT เสาร์–อาทิตย์ / วันหยุด ${f1(otDays)} คน-วัน`:''}`},
+    {name:'คน-วันทำงาน (Man-days)',value:`${f1(manDays)} คน-วัน`,note:`ทุกวันรวมเสาร์–อาทิตย์${weDays?` (เสาร์–อาทิตย์ ${f1(weDays)} คน-วัน)`:''} · ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน${otDays?` · OT วันหยุดนักขัตฤกษ์ ${f1(otDays)} คน-วัน`:''}`},
     {name:'กำลังคนที่มีงาน (Active Manpower)',value:`${busyN} / ${active.length} คน`,note:`ว่างทั้งช่วง ${Math.max(0,active.length-busyN)} คน · ลา ${leaveDays} คน-วัน`},
     {name:'อัตราเลื่อน / ยกเลิก (Postpone & Cancel)',value:`${pcRate}%`,note:`เลื่อน ${stc.postponed} · ยกเลิก ${stc.cancelled} จาก ${allJ} แผน`},
     {name:'ประเด็นต้องติดตาม (Open Issues)',value:`${confN+lateN+gaN+docN} รายการ`,note:`จัดชน ${confN} · เลยวันยังไม่ปิด ${lateN} · รอ GA ระบุรถ ${gaN} · เอกสารไม่ครบ ${docN}`},
@@ -191,7 +196,7 @@ function dashCompute(){
   const findings=[];
   findings.push({t:'',s:`มีแผนงานทั้งหมด ${totalJ} แผน${prevJobs?` ${chg(totalJ,prevJobs.length)}`:''} ใช้ทีมเฉลี่ย ${f1(avgTeam)} คนต่องาน`});
   if(due.length)findings.push({t:doneRate>=90?'good':doneRate<70?'warn':'',s:`ปิดงานแล้ว ${doneDue} จาก ${due.length} แผนที่ถึงกำหนด (${doneRate}%)${lateN?` ยังไม่ปิด ${lateN} แผน`:''}`});
-  if(U.std)findings.push({t:utoLevel(U),s:`ใช้กำลังคนหน้างาน ${util}% (${U.total} งาน จาก Std. ${U.std} งาน) ${utoSay(U)}${U.ot?` · มีงานวันเสาร์–อาทิตย์ / วันหยุด (OT) อีก ${U.ot} งาน`:''}`});
+  if(U.std)findings.push({t:utoLevel(U),s:`ใช้กำลังคนหน้างาน ${util}% (${U.total} งาน จาก Std. ${U.std} งาน) ${utoSay(U)}${U.ot?` · มีงานวันหยุดนักขัตฤกษ์ (OT) อีก ${U.ot} งาน`:''}`});
   if(types[0])findings.push({t:'',s:`งานหลักคือ ${types[0].label} ${types[0].n} แผน (${pct(types[0].n,totalJ)}%)${types[1]?` รองลงมาคือ ${types[1].label} ${types[1].n} แผน`:''}`});
   if(custList[0])findings.push({t:'',s:`ลูกค้าที่มีงานมากที่สุดคือ ${custList[0][0]} ${custList[0][1]} แผน (${pct(custList[0][1],totalJ)}%) จากลูกค้าทั้งหมด ${cust.size} ราย`});
   const topP=people.find(p=>p.jobs);if(topP)findings.push({t:'',s:`พนักงานที่มีงานมากที่สุดคือ ${topP.s.name} ${topP.jobs} แผน (${f1(topP.wd)} คน-วัน)`});
@@ -205,7 +210,7 @@ function dashCompute(){
   findings.push(issues.length?{t:'bad',s:`ประเด็นที่ต้องดำเนินการ: ${issues.join(' · ')}`}:{t:'good',s:'ไม่มีประเด็นค้างที่ต้องดำเนินการ'});
 
   return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,docN,ncrIn,ncrOpen,ncrLate,
-    people,manDays,otDays,U,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
+    people,manDays,weDays,otDays,teamUse,U,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
     pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp};
 }
 
@@ -224,8 +229,8 @@ function dashRows(D){
     trend:{sheet:'แนวโน้ม',title:`แนวโน้มงานราย${unitName}`,head:[unitName,'รวม (แผน)','เสร็จแล้ว','ไม่เสร็จ','วางแผน','เลื่อน'],num:[1,2,3,4,5],rows:D.buckets.map(b=>[b.name,b.n,b.c.done,b.c.notdone,b.c.planned,b.c.postponed])},
     status:{sheet:'สถานะ',title:'สถานะงาน',head:['สถานะ','แผน','%'],num:[1,2],rows:STATUSES.map(s=>[s.th,D.stc[s.id],pct(D.stc[s.id],D.allJ)])},
     role:{sheet:'ตำแหน่ง',title:'ภาระงานตามตำแหน่ง',head:['ตำแหน่ง','คน','แผน','คน-วัน','ใช้กำลังคน (%)'],num:[1,2,3,4],rows:D.roleRows.map(grp)},
-    person:{sheet:'รายคน',title:'รายละเอียดรายคน',head:['#','ชื่อ','ตำแหน่ง','งาน (แผน)','คน-วัน (จ.–ศ.)','OT (คน-วัน)','ใช้กำลังคน (%)','เช้า','บ่าย','ทั้งวัน','ลา (วัน)','ว่าง (วัน)','จัดชน','งานที่ทำมากสุด'],num:[0,3,4,5,6,7,8,9,10,11,12],
-      rows:D.people.map((p,i)=>[i+1,p.s.name,p.s.role||'',p.jobs,Math.round(p.wd*10)/10,Math.round(p.ot*10)/10,pct(p.wd,p.cap),p.am,p.pm,p.full,p.leave.size,p.free,p.conf,p.top||''])},
+    person:{sheet:'รายคน',title:'รายละเอียดรายคน',head:['#','ชื่อ','ตำแหน่ง','งาน (แผน)','คน-วัน','ในนั้น เสาร์–อาทิตย์','OT วันหยุดนักขัตฤกษ์','ใช้กำลังคน (%)','เช้า','บ่าย','ทั้งวัน','ลา (วัน)','ว่าง (วัน)','จัดชน','งานที่ทำมากสุด'],num:[0,3,4,5,6,7,8,9,10,11,12,13],
+      rows:D.people.map((p,i)=>[i+1,p.s.name,p.s.role||'',p.jobs,Math.round(p.wd*10)/10,Math.round(p.we*10)/10,Math.round(p.ot*10)/10,pct(p.wd,p.cap),p.am,p.pm,p.full,p.leave.size,p.free,p.conf,p.top||''])},
     types:{sheet:'หัวข้องาน',title:'งานตามหัวข้องาน',head:['หัวข้องาน','แผน','%'],num:[1,2],rows:D.types.map(x=>[x.label,x.n,pct(x.n,D.totalJ)])},
     cust:{sheet:'ลูกค้า',title:'งานตามลูกค้า',head:['ลูกค้า','แผน','%'],num:[1,2],rows:D.custList.map(([k,n])=>[k,n,pct(n,D.totalJ)])},
     veh:{sheet:'รถ',title:'การใช้รถ',head:['รถ','แผน','วันที่ใช้'],num:[1,2],rows:D.vehList.map(x=>[x.label,x.n,x.days])},
@@ -277,7 +282,7 @@ ${sec(1,'สรุปภาพรวม','Summary')}
 ${!S.line?tbl(T.lines):''}${!S.team&&teamsUsed()?tbl(T.teams):''}${D.calR.length?tbl(Object.assign({},T.cal,{head:T.cal.head.filter((x,i)=>i!==CAL_HEAD.length-1),rows:T.cal.rows.map(r=>r.filter((x,i)=>i!==CAL_HEAD.length-1))})):''}${D.insR.length?tbl(Object.assign({},T.ins,{head:T.ins.head.filter((x,i)=>![7,13].includes(i)),num:[12,13],rows:T.ins.rows.map(r=>r.filter((x,i)=>![7,13].includes(i)))})):''}
 ${D.mp?`${sec(2,'แผนเทียบผล · Master Plan','Plan vs Actual')}${tbl(Object.assign({},T.mpTrend,S.line==='fm'?{head:T.mpTrend.head.slice(0,4),num:[1,2,3],rows:T.mpTrend.rows.map(r=>r.slice(0,4))}:S.line==='ins'?{head:[T.mpTrend.head[0],T.mpTrend.head[4]],num:[1],rows:T.mpTrend.rows.map(r=>[r[0],r[4]])}:{}))}<div class="two">${S.line!=='ins'?`<div>${tbl(T.mpCodes)}</div>`:''}${S.line!=='fm'?`<div>${tbl(Object.assign({},T.mpInsLab,{rows:T.mpInsLab.rows.slice(0,25)}))}</div>`:''}</div>`:''}
 ${sec(3,'ผลการดำเนินงาน','Performance')}<div class="two"><div>${tbl(T.trend)}</div><div>${tbl(T.status)}</div></div>
-${sec(4,'กำลังคน','Manpower')}${T.uto?tbl(T.uto):''}${tbl(T.role)}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,13),rows:T.person.rows.map(r=>r.slice(0,13))}))}
+${sec(4,'กำลังคน','Manpower')}${T.uto?tbl(T.uto):''}${tbl(T.role)}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,14),rows:T.person.rows.map(r=>r.slice(0,14))}))}
 ${sec(5,'ลูกค้าและประเภทงาน','Customers & Job Types')}<div class="two"><div>${tbl(T.types)}</div><div>${tbl(Object.assign({},T.cust,{title:T.cust.rows.length>15?'งานตามลูกค้า (15 อันดับแรก)':T.cust.title,rows:T.cust.rows.slice(0,15)}))}</div></div>
 ${sec(6,'ทรัพยากรและผู้ประสานงาน','Resources & Sales')}<div class="two"><div>${tbl(T.veh)}</div><div>${tbl(T.sale)}</div></div>
 ${sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up')}${tbl(Object.assign({},T.ncr,{head:T.ncr.head.filter((x,i)=>![2,7,8].includes(i)),rows:T.ncr.rows.map(r=>r.filter((x,i)=>![2,7,8].includes(i)))}))}${tbl(T.conf)}${tbl(T.follow)}
