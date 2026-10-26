@@ -84,26 +84,28 @@ function renderActions(){
 const CLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.4 8.4a1.8 1.8 0 0 1-2.6-2.6l7.7-7.7"/></svg>';
 const CAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 16.5V11l2-4.2A2 2 0 0 1 7.3 5.5h7.9a2 2 0 0 1 1.7 1L19.5 11h.5a1 1 0 0 1 1 1v4.5"/><path d="M3.5 11h16"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>';
 const WALK_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="1.8"/><path d="m10 21 2-5.5 2.5 2.2V21M8 12.5l1.8-4 3.4-1.2 2.3 3.4 2.8 1"/><path d="m12 15.5 1.2-5.3"/></svg>';
-/* the plate GA gave (else the first thing GA wrote): the week table's card shows only this (user, 26 Oct 2026: "หน้าแผนก่อนกดเข้าไป
-   ให้โชว์แค่ทะเบียนรถ GA … ใน web layout"; chose the Weekly Plan week table only) — the rest is in the tooltip and the plan view */
+/* the plate GA gave (else the first thing GA wrote): Weekly Plan cards show only this, e.g. "กข 1234" (user, 26 Oct 2026:
+   "หน้าแผนก่อนกดเข้าไป ให้โชว์แค่ทะเบียนรถ GA … ใน web layout", then "ใน mobile layout ด้วย โชว์แค่ "กข 1234"") —
+   the rest is in the tooltip and the plan view */
 const gaPlateShort=t=>{const l=gaInfo(t);if(!l)return '';const p=l.find(([k])=>k==='ทะเบียน');return p?p[1]:l[0][1]};
 /* the plan's cars as chips: each department vehicle (up to 2), then the GA car (user, 11 Oct 2026: both on one plan);
-   short = the week table: GA's answer as the plate only */
+   short = Weekly Plan cards (week table + daily view / phones): GA's answer = the plate alone, no "รถ GA ·" / "ขอรถไปเอง ·" */
 function transportChip(v,t,short){
-  t=t||{transport:v};const note=gaNoteText(t);const gaTxt=()=>esc(short?gaPlateShort(t):gaSummary(t));const more=short?' · กดที่แผนเพื่อดูข้อมูลรถทั้งหมด':'';
+  t=t||{transport:v};const note=gaNoteText(t);const more=short?' · กดที่แผนเพื่อดูข้อมูลรถทั้งหมด':'';
+  const gaTxt=lead=>short?esc(gaPlateShort(t)):`${lead} · ${esc(gaSummary(t))}`;
   if(t.transport===NO_CAR&&!t.needGA)return `<span class="tchip nocar" title="${esc(noCarWhy(t)||NO_CAR)}">${WALK_ICON}${NO_CAR}${noCarWhy(t)?' · '+esc(noCarWhy(t)):''}</span>`;
   const one=n=>{const cls=n==='รถลูกค้า'?'cust':OWN_CAR.includes(n)?'own':'car';
     return `<span class="tchip ${cls}"${cls==='own'&&ownCarText(t)?` title="${esc(ownCarText(t))}"`:''}>${CAR_ICON}${n==='รถลูกค้า'?n:cls==='own'?'รถส่วนตัว':esc(n)/* the car icon says it is a vehicle: no "รถ" before every plate (user, 10 Oct 2026) */}</span>`};
   let h=OWN_CAR.includes(t.transport)&&!t.needGA?one(t.transport):deptCars(t).concat(carNames(t).filter(n=>n==='รถลูกค้า')).map(one).join('');
   if(t.selfDrive){const tip=[ownCarText(t),gaTimes(t),gaInfo(t)?gaInfo(t).map(([k,x])=>k+": "+x).join(" · "):"รอ GA ระบุรถ",note].filter(Boolean).join(" · ");
-    h+=`<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc(tip+(gaInfo(t)?more:''))}">${CAR_ICON}ขอรถไปเอง · ${gaInfo(t)?gaTxt():"รอ GA"}</span>`}
-  else if(gaInfo(t))h+=`<span class="tchip gaok" title="${esc([gaInfo(t).map(([k,x])=>k+": "+x).join(" · "),gaTimes(t),note].filter(Boolean).join(" · ")+more)}">${CAR_ICON}รถ GA · ${gaTxt()}</span>`;
+    h+=`<span class="tchip ${gaInfo(t)?"gaok":"gawait"}" title="${esc((short&&gaInfo(t)?'ขอรถไปเอง · ':'')+tip+(gaInfo(t)?more:''))}">${CAR_ICON}${gaInfo(t)?gaTxt('ขอรถไปเอง'):"ขอรถไปเอง · รอ GA"}</span>`}
+  else if(gaInfo(t))h+=`<span class="tchip gaok" title="${esc((short?'รถ GA · ':'')+[gaInfo(t).map(([k,x])=>k+": "+x).join(" · "),gaTimes(t),note].filter(Boolean).join(" · ")+more)}">${CAR_ICON}${gaTxt('รถ GA')}</span>`;
   /* waiting: no time on the card (user, 11 Oct 2026) — once GA Fleet saves the trip, the chip above shows what GA sent */
   else if(gaWaiting(t))h+=`<span class="tchip gawait${t.gaUrgent?' urgent':''}" title="${esc(['ขอรถ GA แล้ว · แอปจองรถ GA จะส่งข้อมูลรถ (ทะเบียน คนขับ เวลา) มาที่แผนนี้เมื่อจัดรถ',gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA · ${t.gaUrgent?'ด่วน · ':''}รอ GA จัดรถ</span>`;
   else if(t.needGA||t.transport==='GA')h+=`<span class="tchip ga" title="${esc([gaTimes(t),note].filter(Boolean).join(' · '))}">${CAR_ICON}รถ GA${gaPlateOf(t)?' · '+esc(gaPlateOf(t)):''}</span>`;
   return h;
 }
-function wcard(t,conf,i,short){/* short = the week table (GA car = plate only) */
+function wcard(t,conf,i,short){/* short = Weekly Plan cards (GA car = plate only) */
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
   const confStaff=new Set((c||[]).flatMap(x=>x.staff));
   const sub=[t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · ');
@@ -367,7 +369,7 @@ function planDayHtml({days,today,conf,shown,avail,showAv}){
   let ci=0;
   for(const {g,list} of groups){
     const add=S.canWrite?`<button type="button" class="btn sm pd-add" data-action="add" data-date="${k}"${g.preset.type?` data-type="${esc(g.preset.type)}"`:''}${g.preset.customer!=null?` data-cust="${esc(g.preset.customer)}"`:''} aria-label="เพิ่มแผน ${esc(g.label)}">+ เพิ่ม</button>`:'';
-    h+=`<section class="pd-grp" style="--c:${safeColor(g.color)}"><h3><i></i>${esc(g.label)}<span class="pd-cnt">${list.length} แผน</span>${add}</h3><div class="pd-cards">${list.map(t=>wcard(t,conf,ci++)).join('')}</div></section>`;
+    h+=`<section class="pd-grp" style="--c:${safeColor(g.color)}"><h3><i></i>${esc(g.label)}<span class="pd-cnt">${list.length} แผน</span>${add}</h3><div class="pd-cards">${list.map(t=>wcard(t,conf,ci++,true)).join('')}</div></section>`;
   }
   if(S.canWrite)h+=`<button type="button" class="btn pd-addday" data-action="add" data-date="${k}">+ เพิ่มแผนงานวัน${TH_DAY_FULL[d.getDay()]}</button>`;
   return h+'</div>';
