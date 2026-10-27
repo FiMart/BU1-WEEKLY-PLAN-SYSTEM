@@ -3,7 +3,7 @@
 /* ---------- store (shared db, or in-memory when db is unavailable) ----------
    The app's single read / write path: views call Store (or the live queries in boot.js), never a storage API directly.
    db is the claude.ai db, or the Supabase adapter (js/data/supabase.js on js/data/backend.js); without db it is memory. */
-const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map(),jobs:new Map(),checks:new Map(),mpfm:new Map(),mpins:new Map(),audit:new Map()};
+const L={staff:new Map(),resources:new Map(),tasks:new Map(),config:new Map(),photos:new Map(),projects:new Map(),filechunks:new Map(),ncr:new Map(),jobs:new Map(),checks:new Map(),mpfm:new Map(),mpins:new Map(),audit:new Map(),mrep:new Map()};
 /* plans saved with the removed status "progress" (กำลังดำเนินการ) are read as "planned" */
 const normTask=t=>{if(t&&t.status==='progress')t.status='planned';return t};
 const rows=m=>[...m].map(([id,d])=>normTask(Object.assign({id},d)));

@@ -254,7 +254,7 @@ window.addEventListener('resize',()=>{if(S.view==='plan'){planStick();syncDateDo
 /* below the board (calibration / instrument sheets, ผู้ปฏิบัติงานที่ว่าง) the panel — and its sticky head — has scrolled away:
    #dateDock (fixed, same place) then shows the week ‹ › + calendar, and the day strip in the daily view */
 function renderDateDock(){
-  if(S.view!=='plan')calClose(false);else setTimeout(calPlace,0);/* the calendar popup follows its button after a redraw */
+  if(S.view!=='plan'&&!(S.view==='mrep'&&CAL.from==='mrep'))calClose(false);else setTimeout(calPlace,0);/* the calendar popup follows its button after a redraw */
   const el=$('#dateDock');if(!el)return;
   if(S.view!=='plan'||notReady()){el.hidden=true;el.innerHTML='';return}
   const days=Array.from({length:7},(_,i)=>addDays(S.week,i));const last=days[6];const LT=S.tasks.filter(lineMatch);
@@ -285,7 +285,7 @@ const calBtn=from=>`<button type="button" class="wp-jump" data-cal="${from}" ari
 const CAL={el:null,month:null,from:''};
 function calHtml(){
   const m=CAL.month,y=m.getFullYear(),mo=m.getMonth(),last=new Date(y,mo+1,0);
-  const today=ymd(new Date()),sel=planDay(),wk=ymd(S.week);const fk=sel.slice(0,7)===ymd(m).slice(0,7)?sel:ymd(m);/* the day Tab lands on */
+  const today=ymd(new Date()),sel=calSel(),wk=CAL.from==='mrep'?'':ymd(S.week);const fk=sel.slice(0,7)===ymd(m).slice(0,7)?sel:ymd(m);/* the day Tab lands on */
   let rows='';
   for(let ws=mondayOf(new Date(y,mo,1));ws<=last;ws=addDays(ws,7)){
     rows+=`<div class="cal-wk${ymd(ws)===wk?' on':''}">`+Array.from({length:7},(_,i)=>{const d=addDays(ws,i);const k=ymd(d);const hol=holidayOf(k);
@@ -293,9 +293,11 @@ function calHtml(){
   }
   return `<div class="cal-hd"><button type="button" class="icon-btn" data-cal-mon="-1" aria-label="เดือนก่อน">‹</button><b>${TH_MON_FULL[mo]} ${be(m)}</b><button type="button" class="icon-btn" data-cal-mon="1" aria-label="เดือนถัดไป">›</button></div>
     <div class="cal-dn" aria-hidden="true">${['จ','อ','พ','พฤ','ศ','ส','อา'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-grid">${rows}</div>
-    <div class="cal-ft"><button type="button" class="btn sm" data-cal-day="${today}">วันนี้</button><span>สัปดาห์ที่เปิดอยู่มีแถบสี</span><button type="button" class="lnk" data-cal-close>ปิด</button></div>`;
+    <div class="cal-ft"><button type="button" class="btn sm" data-cal-day="${today}">วันนี้</button><span>${CAL.from==='mrep'?'เปิดรายงานของวันนั้น':'สัปดาห์ที่เปิดอยู่มีแถบสี'}</span><button type="button" class="lnk" data-cal-close>ปิด</button></div>`;
 }
-const calBtnEl=()=>document.querySelector(CAL.from==='dock'?'#dateDock [data-cal]':'#view .wp-head [data-cal]');
+const calBtnEl=()=>document.querySelector(CAL.from==='dock'?'#dateDock [data-cal]':CAL.from==='mrep'?'#view [data-cal="mrep"]':'#view .wp-head [data-cal]');
+/* the day shown as picked: Weekly Plan's day, or รายงานแผนตอนเช้า's day (from = 'mrep', js/features/morning-report.js) */
+const calSel=()=>CAL.from==='mrep'&&typeof mrDay==='function'?mrDay():planDay();
 /* under the button (above it when there is no room); the body is zoomed on desktop, so screen px are turned into page px */
 function calPlace(){
   const p=CAL.el;if(!p||p.hidden)return;const b=calBtnEl();
@@ -311,7 +313,7 @@ function calDraw(focusKey){
 }
 function calOpen(from){
   if(!CAL.el){CAL.el=document.createElement('div');CAL.el.id='calPop';CAL.el.className='cal-pop';CAL.el.setAttribute('role','dialog');CAL.el.setAttribute('aria-label','เลือกวันที่');CAL.el.hidden=true;document.body.appendChild(CAL.el)}
-  CAL.from=from;const d=parseD(planDay());CAL.month=new Date(d.getFullYear(),d.getMonth(),1);CAL.el.hidden=false;calDraw(planDay());
+  CAL.from=from;const d=parseD(calSel());CAL.month=new Date(d.getFullYear(),d.getMonth(),1);CAL.el.hidden=false;calDraw(calSel());
   document.querySelectorAll('[data-cal]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.cal===from)));
 }
 function calClose(focusBtn){
@@ -323,7 +325,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-cal]');if(b){if(CAL.el&&!CAL.el.hidden&&CAL.from===b.dataset.cal)calClose(false);else calOpen(b.dataset.cal);return}
   if(!CAL.el||CAL.el.hidden||!CAL.el.contains(e.target))return;
   const mo=e.target.closest('[data-cal-mon]');if(mo){calMonth(Number(mo.dataset.calMon));return}
-  const d=e.target.closest('[data-cal-day]');if(d){calClose(false);jumpWeek(d.dataset.calDay);return}
+  const d=e.target.closest('[data-cal-day]');if(d){const from=CAL.from;calClose(false);if(from==='mrep'){S.mr.day=d.dataset.calDay;S.mr.edit='';render()}else jumpWeek(d.dataset.calDay);return}
   if(e.target.closest('[data-cal-close]'))calClose(true);
 });
 document.addEventListener('pointerdown',e=>{if(CAL.el&&!CAL.el.hidden&&!CAL.el.contains(e.target)&&!e.target.closest('[data-cal]'))calClose(false)});

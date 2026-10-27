@@ -1,7 +1,7 @@
 'use strict';
 /* BU1 Weekly Plan · global event handlers */
 /* ---------- events ---------- */
-function goView(v){if(v==='safety'&&!safetyOk())v='plan';if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
+function goView(v){if(v==='safety'&&!safetyOk())v='plan';if(v==='mrep'&&!isPlanner())v='my';if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
 function setMonth(d){S.month=firstOfMonth(d);S.anim='view';render()}
 /* phone bottom bar: "เพิ่มเติม" opens the other pages */
 function bnMore(open){const s=$('#bnSheet'),b=document.querySelector('.bn-more');if(!s||!b)return;s.hidden=!open;b.setAttribute('aria-expanded',String(open))}

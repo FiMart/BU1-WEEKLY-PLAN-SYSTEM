@@ -25,6 +25,7 @@ const MD_ICONS={
   jobkpi:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5v2h6v-2M8.5 11h7M8.5 14.5h4"/><circle cx="16" cy="16.5" r="2.6"/><path d="M16 15.3v1.3l.8.6"/>',
   prefs:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
   util:'<path d="M4 19.5h16"/><path d="M6.5 16V11M10.5 16V7M14.5 16v-6M18.5 16V5"/>',
+  mrep:'<path d="M12 3v2M5.6 5.6 7 7M3 12h2M17 7l1.4-1.4M19 12h2"/><path d="M7.5 16a4.5 4.5 0 0 1 9 0"/><path d="M3 19.5h18"/><path d="m10 11.5 1.5 1.5 3-3"/>',
   odoc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5v3M8.5 9h3M8.5 12.5h5M8.5 16h3"/><circle cx="17" cy="17" r="3.6"/><path d="M17 15.3v1.9l1.2.8"/>',
   mdsync:'<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/><path d="m9.5 12 1.8 1.8 3.2-3.4"/>',
 };
@@ -102,7 +103,7 @@ function renderSettings(){
   const us=usersSection();if(us)secs.unshift(us);
   secs.splice(secs.findIndex(s=>s.id==='periods')+1,0,holidaySection());
   if(can('master'))secs.push(mdSyncSection());/* ตรวจแผนให้ตรงข้อมูลหลัก (js/features/md-sync.js) */
-  secs.push(jobKpiSection(),utoSection(),odSection(),csApproverSection(),isoSection(),backupSection(),prefsSection(),aboutSection());
+  secs.push(jobKpiSection(),utoSection(),odSection(),mrSection(),csApproverSection(),isoSection(),backupSection(),prefsSection(),aboutSection());
   const cur=secs.find(s=>s.id===S.md)||secs[0];
   return `
   <div class="md">

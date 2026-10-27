@@ -37,12 +37,12 @@ const CENTRAL_TYPES=[
   {id:'site_survey',name:'Site Survey',color:'#64748b'},
 ];
 /* entity -> public tables it is read from (for realtime) */
-const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],jobs:['app_settings'],checks:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
+const CENTRAL_TABLES={tasks:['bookings','leaves'],staff:['people'],resources:['cranes'],config:['app_settings'],ncr:['app_settings'],jobs:['app_settings'],checks:['app_settings'],mpfm:['app_settings'],mpins:['app_settings'],mrep:['app_settings'],audit:['app_settings'],projects:[],photos:[],filechunks:[]};
 const CFG_ID='bu1wp_config',NCR_PREFIX='bu1wp_ncr:',LEAVE_PREFIX='leave:';
 /* entities kept as rows of app_settings, one row per record, id = prefix + record id */
 /* data.ga… fields this app writes itself (GA Fleet's request fields, see gaFields): not GA's answer (gaMore) */
 const GA_OWN=['gaDepart','gaPattern','gaUrgent','gaCargo','gaNote','gaRequestedAt','gaCancel','gaWholeRange'];
-const KV_PREFIX={ncr:NCR_PREFIX,jobs:'bu1wp_job:',checks:'bu1wp_chk:',/* Check Sheet (js/features/checksheets.js) *//* ใบรับคำร้องขอรับบริการสอบเทียบ (js/features/jobs.js) */mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
+const KV_PREFIX={ncr:NCR_PREFIX,jobs:'bu1wp_job:',checks:'bu1wp_chk:',/* Check Sheet (js/features/checksheets.js) *//* ใบรับคำร้องขอรับบริการสอบเทียบ (js/features/jobs.js) */mpfm:'bu1wp_mpfm:',mpins:'bu1wp_mpins:',mrep:'bu1wp_mrep:',/* รายงานแผนตอนเช้า (js/features/morning-report.js), one row per person per day, data.month */audit:'bu1wp_audit:',photos:'bu1wp_photo:',filechunks:'bu1wp_file:'};
 const readOnlyErr=()=>({code:'read_only',message:'read-only: writing to the central database is switched off (BU1_CONFIG.readOnly)'});
 const unsupportedErr=e=>({code:'unsupported',message:`${e}: no storage on the central database yet`});
 
@@ -170,7 +170,7 @@ function supabaseBackend(client,{dept}){
   async function listKv(entity,f){
     const p=KV_PREFIX[entity];const fileId=entity==='filechunks'&&(f.eq||[]).find(([k])=>k==='fileId');
     /* Master Plan: only the asked month (data.month) is read, not the whole year */
-    const month=(entity==='mpfm'||entity==='mpins')&&(f.eq||[]).find(([k])=>k==='month');
+    const month=(entity==='mpfm'||entity==='mpins'||entity==='mrep')&&(f.eq||[]).find(([k])=>k==='month');
     const narrow=f.id!=null?q=>q.eq('id',p+f.id):fileId?q=>q.like('id',p+fileId[1]+'_%'):month?q=>q.like('id',p+'%').eq('data->>month',String(month[1])):q=>q.like('id',p+'%');
     return (await selectAll('app_settings',narrow)).map(r=>Object.assign({},r.data||{},{id:r.id.slice(p.length)}));
   }

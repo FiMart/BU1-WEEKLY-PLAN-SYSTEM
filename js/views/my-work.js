@@ -37,6 +37,7 @@ function renderMy(){
   const whose=all?'ทั้งหมด':meStaff?`ของ ${staffName(meStaff)}`:'ของฉัน';
   return `<section class="panel my-hero"><div><b>${name?`สวัสดี ${esc(name)}`:'งานของฉัน'}</b><span>${esc(roleInfo().label)}${isPlanner()?' · เห็นทุกแผนและใบรับคำร้องที่รอ':''}</span></div>${myStaffPick()}
       <div class="my-quick">${canBook()?'<button type="button" class="btn" data-job-new>+ ใบรับคำร้องใหม่</button>':''}<button type="button" class="btn" data-action="quick">ค้นหา</button></div></section>
+    ${typeof mrMyHtml==='function'?mrMyHtml():''/* รายงานแผนตอนเช้า (js/features/morning-report.js) */}
     <section class="panel"><h2 class="my-h">ต้องทำตอนนี้ <span class="md-count">${live.length}</span></h2>
       ${live.length?`<div class="my-live">${live.map(ntfRow).join('')}</div>`:`<p class="my-ok">✓ ไม่มีงานค้างที่ต้องตาม${NTF.ready?'':' (กำลังตรวจข้อมูล…)'}</p>`}</section>
     <section class="panel"><div class="my-bar"><h2 class="my-h">แผนงาน${esc(whose)} <span class="md-count">${plans.length}</span></h2><span class="grow"></span>

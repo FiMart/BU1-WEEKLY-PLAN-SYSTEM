@@ -6,7 +6,7 @@
    30 s after start when the last copy is older than 30 min; a copy equal to the last one is not stored again. Kept: every copy of
    the last 48 h, then the last one of each day for 14 days. Same format as the backup file (js/features/backup.js), so a copy can be
    downloaded, or restored through the import step there. Photos and file chunks are left out (size); nothing is written to the DB. */
-const ABK_COLLS=['staff','resources','projects','tasks','ncr','jobs','checks','mpfm','mpins','audit'];
+const ABK_COLLS=['staff','resources','projects','tasks','ncr','jobs','checks','mpfm','mpins','mrep','audit'];
 const ABK_KEEP_H=48,ABK_KEEP_D=14;
 const ABK={db:null,dirty:false,last:0,lastHash:'',busy:false,timer:null,list:null,err:'',off:false};
 const abkReq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
