@@ -48,7 +48,14 @@ document.addEventListener('click',e=>{
     case 'save-vsum':saveViewSum();break;
     case 'edit-vsum':openSumEdit(false);break;
     case 'cancel-vsum':if(editing){renderDrawerView(editing);renderPhotos();renderFiles()}break;
-    case 'save-vreason':{const r=dlg.querySelector('input[name="v-status"]:checked');if(r&&editing)saveViewStatus(r.value,$('#v-reason').value.trim());break}
+    case 'save-vreason':{const r=dlg.querySelector('input[name="v-status"]:checked');if(!r||!editing)break;const note=$('#v-reason').value.trim();
+      /* ไม่เสร็จ: เปิด NCR (the typed reason goes into the NCR) or งานต่อเนื่อง (reason required, no NCR) */
+      if(r.value==='notdone'){
+        if(!vNcrCont()){const n=ncrOfTask(editing);openNcr(n?n.id:null,Object.assign({},editing,{status:'notdone',statusNote:note||editing.statusNote||''}));break}
+        if(!note){toast('ใส่ว่าทำได้ถึงไหน / ทำไมต้องทำต่อ');$('#v-reason').focus();break}
+        const next=$('#v-contNext').value||'';if(next&&next<=editing.date){toast('วันที่ทำต่อต้องหลังวันของแผนนี้');$('#v-contNext').focus();break}
+        saveViewStatus('notdone',note,{cont:true,contNext:next},`บันทึก “ไม่เสร็จ · งานต่อเนื่อง” แล้ว (ไม่เปิด NCR)${next?` · ทำต่อ ${fmtDay(next)}`:''}`);break}
+      saveViewStatus(r.value,note);break}
     case 'copy-day':$('#copyMenu').open=false;copyText(dayText(a.dataset.date),`คัดลอกแผน${fmtDay(a.dataset.date)}แล้ว วางใน LINE ได้เลย`);break;
     case 'shot':takeShot(a);break;
     case 'dprev':dashStep(-1);break;
@@ -106,11 +113,12 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.name==='pm-mode'){S.pmode=t.value;remember('bu1wp.pmode',t.value);S.anim='view';render();return}
   if(t.name==='pf-mode'){S.pmode=t.value;remember('bu1wp.pmode',t.value);S.anim='view';render();return}
   if(t.name==='pf-by'){S.pf.by=t.value;S.pf.groups=[];remember('bu1wp.by',t.value);S.anim='view';render();return}
+  if(t.name==='v-nc'){syncVNcr();return}if(t.name==='f-nc'){syncReason();return}/* ไม่เสร็จ: NCR or งานต่อเนื่อง */
   if(t.name==='v-status'&&editing){const val=t.value;
-    if(val==='notdone'){openNcr(ncrOfTask(editing)?ncrOfTask(editing).id:null,editing);return}/* ไม่เสร็จ is saved together with its NCR */
     if(val==='done'&&!isLeave(editing)){$('#vReason').hidden=true;openSumEdit(true);return}/* เสร็จแล้ว is saved together with its สรุปงาน */
     sumSlot(sumViewHtml(editing,true));
-    if(NEEDS_REASON.has(val)){const w=$('#vReason');w.hidden=false;$('#vReasonLbl').textContent=reasonLabel(val);$('#vReasonSave').textContent=`บันทึกสถานะ “${stTh(val)}”`;
+    /* ไม่เสร็จ (user, 28 Oct 2026): first choose เปิด NCR or งานต่อเนื่อง (no NCR) — syncVNcr shows the choice */
+    if(NEEDS_REASON.has(val)){const w=$('#vReason');w.hidden=false;$('#vReasonLbl').textContent=reasonLabel(val);$('#vReasonSave').textContent=`บันทึกสถานะ “${stTh(val)}”`;syncVNcr();
       const ta=$('#v-reason');if(editing.status!==val)ta.value='';setTimeout(()=>ta.focus(),30);return}
     saveViewStatus(val,'');return}
   if(t.id==='srch-from'||t.id==='srch-to'){S.srch[t.id.slice(5)]=t.value;fillSearch();return}

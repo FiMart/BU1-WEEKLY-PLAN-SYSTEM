@@ -64,7 +64,7 @@ function acceptFlow(j){
 function planFlow(t){
   if(!t||noStatus(t)||t.status==='cancelled')return null;const today=ymd(new Date());
   if(t.status==='done'){const d=t.doneAt?ymd(new Date(t.doneAt)):'';return d&&d>t.date?['delay',`ยืนยันเสร็จช้า (${fmtDay(d)})`]:['timely','เสร็จตามแผน']}
-  if(t.status==='notdone')return ['delay','ไม่เสร็จ'];
+  if(t.status==='notdone')return t.cont?['process',`ไม่เสร็จ · งานต่อเนื่อง${t.contNext?` ทำต่อ ${fmtDay(t.contNext)}`:''}`]:['delay','ไม่เสร็จ'];/* งานต่อเนื่อง (no NCR) is still going on */
   if(t.status==='postponed')return ['delay','เลื่อน'];
   return t.date<today?['delay','เลยวันแล้ว ยังไม่ปิดงาน']:['process',t.date===today?'ทำวันนี้':'รอวันทำงาน'];
 }

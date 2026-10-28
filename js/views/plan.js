@@ -122,7 +122,7 @@ function wcard(t,conf,i,short){/* short = Weekly Plan cards (GA car = plate only
       const ic=`${(t.photoIds||[]).length?`<span class="pcount" title="มีรูป ${t.photoIds.length} รูป">${CAM_ICON}${t.photoIds.length}</span>`:''}${(t.files||[]).length?`<span class="pcount" title="มีไฟล์แนบ ${t.files.length} ไฟล์">${CLIP_ICON}${t.files.length}</span>`:''}${sumChip(t)}${docChip(t)}${calChip(t)}${insChip(t)}${prepChip(t)}`;
       return ch||ic?`<span class="wc-chips">${ch}${ic}</span>`:''})()}
     <span class="wc-pp">${teamNeedChip(t)}${(t.staffIds||[]).map(id=>`<span class="pp${confStaff.has(id)?' conf':''}" title="${esc(staffName(id))}">${esc(staffName(id))}</span>`).join('')}${(t.guests||[]).map(g=>`<span class="pp guest" title="${esc(g)} (แผนกอื่น)">${esc(g)}</span>`).join('')}${!(t.staffIds||[]).length&&!(t.guests||[]).length&&!isLeave(t)?'<span class="pp noteam">ยังไม่จัดคน</span>':''}</span>
-    ${NEEDS_REASON.has(t.status)&&!noStatus(t)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
+    ${NEEDS_REASON.has(t.status)&&!noStatus(t)?`<span class="chip-flag${t.status==='postponed'?' late':''}">${statusFlag(t.status)}${t.status==='notdone'&&ncrOfTask(t)?' · '+esc(ncrOfTask(t).ncrNo):isCont(t)?' · '+esc(contText(t)):''}${t.statusNote?': '+esc(t.statusNote):''}</span>`:''}
     ${c?`<span class="chip-flag">⚠ ${esc(confLabel(c))}</span>`:''}
     ${late&&!c?`<span class="chip-flag late">⏱ เลยวันแล้ว ยังไม่ปิดงาน</span>`:''}
   </button>`;

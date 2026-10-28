@@ -15,9 +15,19 @@ function nextNcrNo(date){
   const max=S.ncr.map(n=>String(n.ncrNo||'')).filter(x=>x.startsWith(pre)).map(x=>Number(x.slice(pre.length))||0).reduce((a,b)=>Math.max(a,b),0);
   return pre+String(max+1).padStart(3,'0');
 }
+/* ไม่เสร็จ · งานต่อเนื่อง (user, 28 Oct 2026: "สถานะงานไม่เสร็จ ให้เลือกได้ว่า จะเปิด ncr หรือ ไม่ต้องเปิดเพราะเป็นงานต่อเนื่อง";
+   chose reason + the day it goes on, anyone who may set the status, counted apart): task.cont (no NCR) + task.contNext 'YYYY-MM-DD'
+   (optional) ↔ data.bu1wp.cont / contNext; the status stays notdone (the old app's "issue"). Any other status — or opening an NCR — clears it. */
+const isCont=t=>!!t&&t.status==='notdone'&&!!t.cont;
+const contText=t=>isCont(t)?`งานต่อเนื่อง${t.contNext?` → ทำต่อ ${fmtDay(t.contNext)}`:''}`:'';
+/* the choice shown under ไม่เสร็จ (plan view: pre 'v', edit form: pre 'f') */
+const ncrPickHtml=(pre,cont,next,date,show)=>`<div class="nc-pick" id="${pre}-ncPick"${show?'':' hidden'}><span class="lbl">งานไม่เสร็จ · ต้องเปิด NCR ไหม</span>
+  <div class="seg" role="radiogroup" aria-label="เปิด NCR หรือไม่"><label><input type="radio" name="${pre}-nc" value="ncr"${cont?'':' checked'}><span>⚠ เปิด NCR (มีปัญหา)</span></label><label><input type="radio" name="${pre}-nc" value="cont"${cont?' checked':''}><span>↻ งานต่อเนื่อง · ไม่เปิด NCR</span></label></div>
+  <label class="nc-next" id="${pre}-contWrap"${cont?'':' hidden'}>ทำต่อวันที่ <small>(ไม่บังคับ)</small> <input type="date" id="${pre}-contNext" value="${esc(next||'')}"${date?` min="${esc(ymd(addDays(parseD(date),1)))}"`:''}></label></div>`;
 /* link shown in a plan's drawer */
 function ncrLinkHtml(t){
   const n=ncrOfTask(t);
+  if(!n&&isCont(t))return `<div class="ncr-link cont"><b>↻ ไม่เสร็จ · งานต่อเนื่อง (ไม่เปิด NCR)</b><span>${t.contNext?`ทำต่อ ${esc(fmtDayY(t.contNext))}`:'ยังไม่ได้ระบุวันที่ทำต่อ'}${t.statusNote?` · ${esc(t.statusNote)}`:''}</span>${canWork()?`<button type="button" class="btn sm" data-ncr-new="${esc(t.id)}" title="ถ้าเป็นปัญหาที่ต้องแก้ไข">เปิด NCR แทน</button>`:''}</div>`;
   if(!n)return canWork()?`<div class="ncr-link warn"><b>⚠ งานไม่เสร็จ · ยังไม่มี NCR</b><span>บันทึก NCR เพื่อติดตามการแก้ไข</span><button type="button" class="btn sm" data-ncr-new="${esc(t.id)}">เปิด NCR</button></div>`:'';
   const st=ncrStateOf(n);
   return `<div class="ncr-link" style="--c:${st.color}"><b>${esc(n.ncrNo)} · ${esc(st.th)}${ncrOverdue(n)?' · เกินกำหนด':''}</b><span>${esc(n.category||'')}${n.owner?` · ผู้รับผิดชอบ ${esc(n.owner)}`:''}${n.due?` · กำหนด ${esc(thDate(n.due))}`:''}</span><button type="button" class="btn sm" data-ncr-open="${esc(n.id)}">เปิด NCR</button></div>`;
@@ -81,8 +91,8 @@ async function saveNcr(){
   try{
     await Store.set('ncr',id,data);
     if(t&&(t.status!=='notdone'||t.ncrId!==id||t.statusNote!==data.issue)){
-      await Store.update('tasks',t.id,Object.assign({status:'notdone',statusNote:data.issue,ncrId:id},meta()));
-      if(editing&&editing.id===t.id){editing=Object.assign({},editing,{status:'notdone',statusNote:data.issue,ncrId:id});const r=$('#f-st-notdone');if(r)r.checked=true;$('#f-reason').value=data.issue;syncReason()}
+      await Store.update('tasks',t.id,Object.assign({status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''},meta()));/* an NCR = not a งานต่อเนื่อง any more */
+      if(editing&&editing.id===t.id){editing=Object.assign({},editing,{status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''});const r=$('#f-st-notdone');if(r)r.checked=true;$('#f-reason').value=data.issue;syncReason()}
     }
     ncrEdit.saved=true;$('#ncrDlg').close();
     toast(`${old.ncrNo?'บันทึก':'เปิด'} ${data.ncrNo} แล้ว${state==='closed'&&old.state!=='closed'?' · ปิด NCR':''}`);

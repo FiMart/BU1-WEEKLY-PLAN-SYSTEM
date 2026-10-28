@@ -47,6 +47,9 @@ function dashCompute(){
   const workDays=days.filter(isUtoDay);
   const active=S.staff.filter(s=>s.active!==false);const conf=conflictsIn(work);
   const stc=Object.fromEntries(STATUSES.map(s=>[s.id,0]));all.filter(t=>!isLeave(t)).forEach(t=>{const k=t.status||'planned';stc[k]=(stc[k]||0)+1});
+  /* ไม่เสร็จ split (user, 28 Oct 2026): งานต่อเนื่อง (no NCR) apart from the ones that need an NCR */
+  const contN=all.filter(t=>!isLeave(t)&&t.status==='notdone'&&t.cont).length;const ndNcrN=(stc.notdone||0)-contN;
+  const ndSplit=stc.notdone?` (งานต่อเนื่อง ${contN} · ต้องเปิด NCR ${ndNcrN})`:'';
   const allJ=Object.values(stc).reduce((a,n)=>a+n,0);const totalJ=jobs.length;
   const due=jobs.filter(t=>t.date<=today);const doneDue=due.filter(t=>t.status==='done').length;const doneRate=due.length?pct(doneDue,due.length):null;
   const pcN=stc.postponed+stc.cancelled;const pcRate=pct(pcN,allJ);
@@ -187,7 +190,7 @@ function dashCompute(){
     {name:'กำลังคนที่มีงาน (Active Manpower)',value:`${busyN} / ${active.length} คน`,note:`ว่างทั้งช่วง ${Math.max(0,active.length-busyN)} คน · ลา ${leaveDays} คน-วัน`},
     {name:'อัตราเลื่อน / ยกเลิก (Postpone & Cancel)',value:`${pcRate}%`,note:`เลื่อน ${stc.postponed} · ยกเลิก ${stc.cancelled} จาก ${allJ} แผน`},
     {name:'ประเด็นต้องติดตาม (Open Issues)',value:`${confN+lateN+gaN+docN} รายการ`,note:`จัดชน ${confN} · เลยวันยังไม่ปิด ${lateN} · รอ GA ระบุรถ ${gaN} · เอกสารไม่ครบ ${docN}`},
-    {name:'งานไม่เสร็จ (NCR)',value:`${stc.notdone||0} แผน`,note:`NCR ในช่วงนี้ ${ncrIn.length} รายการ · ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}`},
+    {name:'งานไม่เสร็จ (NCR)',value:`${stc.notdone||0} แผน`,note:`${contN?`งานต่อเนื่อง ${contN} แผน (ไม่เปิด NCR) · `:''}NCR ในช่วงนี้ ${ncrIn.length} รายการ · ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}`},
     ...lineRows.map(r=>({name:`สายงาน ${r.l.name}`,value:`${r.n} แผน`,note:`เสร็จ ${r.done}${r.doneRate!=null?` · ปิดงาน ${r.doneRate}% ของที่ถึงกำหนด`:''} · ${f1(r.md)} คน-วัน · ลูกค้า ${r.cust} ราย`})),
     ...(ins.n?[{name:'Instrument (Plan / Actual)',value:`${ins.actual} / ${ins.plan}`,note:`${ins.n} รายการ · Completed ${ins.done}${insRate!=null?` · Actual ${insRate}% ของ Plan`:''}${ins.certs?` · Certificate ${ins.certs}`:''}`}]:[]),
     ...MPK.kpis,
@@ -200,7 +203,7 @@ function dashCompute(){
   if(types[0])findings.push({t:'',s:`งานหลักคือ ${types[0].label} ${types[0].n} แผน (${pct(types[0].n,totalJ)}%)${types[1]?` รองลงมาคือ ${types[1].label} ${types[1].n} แผน`:''}`});
   if(custList[0])findings.push({t:'',s:`ลูกค้าที่มีงานมากที่สุดคือ ${custList[0][0]} ${custList[0][1]} แผน (${pct(custList[0][1],totalJ)}%) จากลูกค้าทั้งหมด ${cust.size} ราย`});
   const topP=people.find(p=>p.jobs);if(topP)findings.push({t:'',s:`พนักงานที่มีงานมากที่สุดคือ ${topP.s.name} ${topP.jobs} แผน (${f1(topP.wd)} คน-วัน)`});
-  if(stc.notdone||ncrIn.length)findings.push({t:ncrOpen?'bad':'warn',s:`งานไม่เสร็จ ${stc.notdone||0} แผน · NCR ${ncrIn.length} รายการ (ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}) ดูรายละเอียดที่หน้า NCR`});
+  if(stc.notdone||ncrIn.length)findings.push({t:ncrOpen?'bad':'warn',s:`งานไม่เสร็จ ${stc.notdone||0} แผน${ndSplit} · NCR ${ncrIn.length} รายการ (ยังไม่ปิด ${ncrOpen}${ncrLate?` · เกินกำหนด ${ncrLate}`:''}) ดูรายละเอียดที่หน้า NCR`});
   if(pcN)findings.push({t:'warn',s:`เลื่อน ${stc.postponed} แผน และยกเลิก ${stc.cancelled} แผน (${pcRate}% ของแผนทั้งหมด) ดูเหตุผลในหัวข้อ 7`});
   if(!S.line&&lineRows.some(r=>r.n))findings.push({t:noLineN?'warn':'',s:`แยกตามสายงาน: ${lineRows.map(r=>`${r.l.name} ${r.n} แผน (${r.share}%)`).join(' · ')}${noLineN?` · ยังไม่ระบุสาย ${noLineN} แผน`:''}`});
   if(cal.n)findings.push({t:cal.fail||cal.problem?'warn':'',s:`สอบเทียบ Flow Meter ${cal.n} เครื่อง มีผลแล้ว ${cal.done} เครื่อง${judged?` · PASS ${cal.pass} · FAIL ${cal.fail} (ผ่าน ${passRate}%)`:''}${cal.problem?` · Problem ${cal.problem}`:''}${cal.postponed?` · เลื่อน ${cal.postponed}`:''}${calTypes[0]?` · ชนิดที่มากที่สุดคือ ${calTypes[0][0]} ${calTypes[0][1]} เครื่อง`:''}`});

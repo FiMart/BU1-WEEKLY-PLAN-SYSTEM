@@ -105,7 +105,7 @@ function supabaseBackend(client,{dept}){
       selfDrive:!!x.selfDrive||d.transport==='self',carReason:d.selfReason||x.carReason||'',carNote:d.selfNote||x.carNote||'',
       gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
-      staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',
+      staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',cont:!!x.cont,contNext:x.contNext||'',/* ไม่เสร็จ · งานต่อเนื่อง (no NCR) */
       doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */jobId:x.jobId||'',/* ใบรับคำร้องขอรับบริการสอบเทียบ it was made from */
       photoIds:asList(x.photoIds),fileIds:asList(x.fileIds),files:asList(x.files),reports:asList(x.reports),docNA:asList(x.docNA),docTrack:x.docTrack&&typeof x.docTrack==='object'&&!Array.isArray(x.docTrack)?x.docTrack:{},history:asList(x.history),calItems:asList(x.calItems),insItems:asList(x.insItems),sharedTeam:!!d.allowSharedTeam,
       createdBy:d.createdBy||x.createdBy||null,createdAt:x.createdAt||'',updatedAt:x.updatedAt||'',updatedBy:x.updatedBy||null,
@@ -183,7 +183,7 @@ function supabaseBackend(client,{dept}){
       detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',/* รถแผนก, up to 2 "A, B" */gaPlate:t.gaPlate,needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */
       contact:t.contact||'',contactTel:t.contactTel||'',sale:t.sale||'',guests:asList(t.guests),prep:asList(t.prep),
       teamNeed:Math.max(0,Math.floor(Number(t.teamNeed)||0)),/* จำนวน Team Service ที่ต้องการ (user, 9 Oct 2026) */
-      status:t.status||'planned',ncrId:t.ncrId||'',period:t.period||'full',sample:t.sample||undefined,
+      status:t.status||'planned',ncrId:t.ncrId||'',cont:t.status==='notdone'&&!!t.cont,contNext:t.status==='notdone'&&t.cont?t.contNext||'':'',/* ไม่เสร็จ · งานต่อเนื่อง: no NCR, goes on contNext (user, 28 Oct 2026) */period:t.period||'full',sample:t.sample||undefined,
       doneSum:t.doneSum||'',doneBy:t.doneBy||null,doneAt:t.doneAt||'',/* สรุปงาน: confirms เสร็จแล้ว (user, 14 Oct 2026) */jobId:t.jobId||'',/* ใบรับคำร้องขอรับบริการสอบเทียบ (user, 15 Oct 2026) */
       photoIds:asList(t.photoIds),fileIds:asList(t.fileIds),files:asList(t.files),/* the pictures and files themselves: app_settings rows */
       calItems:asList(t.calItems),/* Weekly plan calibration rows (js/features/calibration.js) */

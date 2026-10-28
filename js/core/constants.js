@@ -74,7 +74,7 @@ const STATUS=Object.fromEntries(STATUSES.map(s=>[s.id,s]));
 const NEEDS_REASON=new Set(['notdone','postponed','cancelled']);
 const reasonLabel=s=>s==='cancelled'?'เหตุผลที่ยกเลิก / ปัญหาที่หน้างาน':s==='notdone'?'สาเหตุที่งานไม่เสร็จ / ปัญหาที่หน้างาน':'เหตุผลที่เลื่อน / ปัญหาที่หน้างาน';
 const statusFlag=s=>s==='postponed'?'↻ เลื่อน':s==='notdone'?'⚠ ไม่เสร็จ':'✕ ยกเลิก';
-const statusText=t=>noStatus(t)?'':/* leave has no สถานะงาน */(STATUS[t.status]||STATUS.planned).th+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
+const statusText=t=>noStatus(t)?'':/* leave has no สถานะงาน */(STATUS[t.status]||STATUS.planned).th+(t.status==='notdone'&&t.cont?` · งานต่อเนื่อง${t.contNext?` (ทำต่อ ${fmtDay(t.contNext)})`:''}`:'')+(NEEDS_REASON.has(t.status)&&t.statusNote?` — ${t.statusNote}`:'');
 /* GA's car app (user, 8 Oct 2026): navbar button opens it in a new tab */
 const GA_FLEET_URL='https://ga-fleet.vercel.app/';/* opens GA Fleet (user, 14 Oct 2026; was its booking form ?form=1 since 11 Oct) */
 const VIEWS=['plan','my','jobs','checks','booking','odoc','mrep','wsheet','mplan','mplanins','safety','people','projects','search','dash','ncr','settings','help'];
