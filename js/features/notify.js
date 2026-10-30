@@ -13,6 +13,7 @@ const NTF_CATS=[
   ['plan','แผนงานถูกแก้ / เลื่อน / ยกเลิก','<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],
   ['clash','จัดชน คน / รถ','<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17v.1"/>'],
   ['follow','งานค้างต้องตาม','<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'],
+  ['gareq','คำขอรถ GA (สำหรับ GA)','<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16v2.5H4z"/><path d="M12 2.5v2.5M9.5 3.5l1 1.5M14.5 3.5l-1 1.5"/>'],
   ['mrep','รายงานแผนตอนเช้า','<path d="M12 3v2M5.6 5.6 7 7M3 12h2M17 7l1.4-1.4M19 12h2"/><path d="M7.5 16a4.5 4.5 0 0 1 9 0"/><path d="M3 19.5h18"/><path d="m10 11.5 1.5 1.5 3-3"/>'],
   ['odoc','เอกสาร Onsite ค้าง','<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5v3M8.5 9h3M8.5 12.5h5"/><circle cx="17" cy="17" r="3.6"/><path d="M17 15.3v1.9l1.2.8"/>'],
   ['safety','บัตร Safety','<path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>'],
@@ -46,7 +47,7 @@ function ntfTasks(){const m=new Map();(NTF.range||[]).forEach(t=>m.set(t.id,t));
 const NTF_SIG=[['date','วันที่'],['period','ช่วงเวลา'],['timeNote','เวลา'],['customer','ลูกค้า'],['location','สถานที่'],['staffIds','ทีม'],['transport','รถ'],['jobType','หัวข้องาน'],['planNo','Plan No.']];
 const ntfSig=t=>NTF_SIG.map(([k])=>{const v=t[k];return Array.isArray(v)?v.slice().sort().join(','):String(v==null?'':v)});
 const ntfGa=t=>t.gaCar?JSON.stringify(t.gaCar):'';
-const tSnap=t=>({s:t.status||'planned',g:ntfGa(t),u:t.updatedAt||'',f:ntfSig(t)});
+const tSnap=t=>({s:t.status||'planned',g:ntfGa(t),u:t.updatedAt||'',f:ntfSig(t),q:typeof gqSig==='function'?gqSig(t):''/* GA: the car request */});
 
 /* clashes of the next two weeks (pairs of plan ids) */
 function ntfClashes(tasks){
@@ -85,7 +86,10 @@ function ntfLiveOf(tasks,clashes){
     const miss=r.miss.map(s=>OD_NAME[s.id]).join(', ');const ref={t:'task',id:t.id,date:t.date};
     if(r.status==='follow')add('odoc','over:'+t.id,'เอกสาร Onsite เลย Final แล้ว',`${ntfPlan(t)} · เลยมา ${r.over} วัน · ขาด ${miss}`,ref);
     else if(r.status==='wait'&&r.left<=1)add('odoc','soon:'+t.id+':'+r.final,r.left?'เอกสาร Onsite ถึง Final พรุ่งนี้':'เอกสาร Onsite ถึง Final วันนี้',`${ntfPlan(t)} · Final ${fmtDay(r.final)} · ขาด ${miss}`,ref)});
-  if(typeof mrNotices==='function')mrNotices(tasks,add);/* รายงานแผนตอนเช้า (js/features/morning-report.js) */
+  if(typeof mrNotices==='function')mrNotices(tasks,add);
+  /* GA: today / tomorrow requests still without a car, every plan (js/features/ga-requests.js) */
+  if(typeof isGA==='function'&&isGA())tasks.forEach(t=>{if(isLeave(t)||!holdsTeam(t)||!gaWaiting(t)||(t.date!==td&&t.date!==tm))return;
+    add('gareq','wait:'+t.id+':'+t.date,t.date===td?`วันนี้ยังไม่ได้จัดรถ${t.gaUrgent?' · ด่วน':''}`:'พรุ่งนี้ยังไม่ได้จัดรถ',`${ntfPlan(t)}${gaTimes(t)?' · '+gaTimes(t):''}`,{t:'task',id:t.id,date:t.date})});/* รายงานแผนตอนเช้า (js/features/morning-report.js) */
   for(const [k,c] of clashes)if(ntfMine(c.a)||ntfMine(c.b))add('clash',k,`จัดชน ${fmtDay(c.a.date)}`,`${[c.a.planNo,typeLabel(c.a)].filter(Boolean).join(' ')} ↔ ${[c.b.planNo,typeLabel(c.b)].filter(Boolean).join(' ')} · ${c.what}`,{t:'task',id:c.a.id,date:c.a.date});
   return L;
 }
@@ -98,6 +102,12 @@ async function ntfTick(force){
       try{NTF.range=await quietly(()=>Store.range('tasks',from,to));NTF.rangeAt=Date.now()}catch(e){if(!NTF.range)return}}
     const tasks=ntfTasks();const snap=NTF.snap||{};const ev=[];const now=new Date().toISOString();
     const add=(cat,id,title,body,ref)=>{if(!NTF.prefs.off.includes(cat))ev.push({id:`${cat}:${id}:${Date.now().toString(36)}`,cat,title,body,ref,at:now})};
+    /* GA level (user, 30 Oct 2026): every plan's car request — new, changed, withdrawn (snapshots from before have no q: skipped once) */
+    if(snap.t&&typeof isGA==='function'&&isGA())for(const t of tasks){if(isLeave(t))continue;const p=snap.t[t.id];if(p&&p.q===undefined)continue;const was=p?p.q:'',now=gqSig(t);const ref={t:'task',id:t.id,date:t.date};
+      const fresh=!p&&(!t.gaRequestedAt||Date.now()-new Date(t.gaRequestedAt)<2*864e5);/* a plan new to the window, asked for lately */
+      if(!was&&now&&(p||fresh))add('gareq','new:'+t.id,t.gaUrgent?'ขอรถ GA ใหม่ · ด่วน':'ขอรถ GA ใหม่',`${ntfPlan(t)}${gaTimes(t)?' · '+gaTimes(t):''}`,ref);
+      else if(was&&!now)add('gareq','can:'+t.id,'แผนกยกเลิกขอรถ GA',`${ntfPlan(t)}${t.gaCancel&&t.gaCancel.reason?' · '+t.gaCancel.reason:t.status==='cancelled'?' · ยกเลิกแผนงาน':''}`,ref);
+      else if(was&&now&&was!==now)add('gareq','ed:'+t.id,'แก้ข้อมูลขอรถ GA',`${ntfPlan(t)}${gaTimes(t)?' · '+gaTimes(t):''}${t.updatedBy?' · โดย '+ntfWho(t.updatedBy):''}`,ref)}
     /* plans: GA's answer, status, edits by someone else */
     if(snap.t)for(const t of tasks){const p=snap.t[t.id];if(!p||isLeave(t))continue;const n=tSnap(t);const ref={t:'task',id:t.id,date:t.date};
       if(p.g!==n.g&&ntfMine(t)){const s=typeof gaSummary==='function'?gaSummary(t):'';

@@ -103,7 +103,7 @@ function supabaseBackend(client,{dept}){
       gaGo:d.gaDepart||x.gaGo||'',gaBack:x.gaBack||'',gaPattern:d.gaPattern||'',gaUrgent:!!d.gaUrgent,gaCargo:d.gaCargo&&typeof d.gaCargo==='object'?d.gaCargo:null,gaNote:d.gaNote||'',gaRequestedAt:d.gaRequestedAt||'',
       gaPlate:x.gaPlate,/* the plate GA gave (since 11 Oct 2026; older plans kept it in transport — gaPlateOf reads both) */
       selfDrive:!!x.selfDrive||d.transport==='self',carReason:d.selfReason||x.carReason||'',carNote:d.selfNote||x.carNote||'',
-      gaCar:d.gaCar||null,gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
+      gaCar:d.gaCar||null,gaCancel:d.gaCancel&&typeof d.gaCancel==='object'?d.gaCancel:null,/* read only: the request was withdrawn (gaFields writes it) */gaMore:Object.fromEntries(Object.entries(d).filter(([k])=>/^ga[A-Z_]/.test(k)&&k!=='gaCar'&&!GA_OWN.includes(k))),/* GA's other fields, read only */
       contact:x.contact||'',contactTel:x.contactTel||'',sale:x.sale||'',guests:asList(x.guests),prep:asList(x.prep),
       staffIds:asList(d.workers),teamNeed:Number(x.teamNeed)||0,/* จำนวน Team Service ที่ต้องการ (0 = ไม่ระบุ) */status:x.status||st,statusNote:d.problem||'',ncrId:x.ncrId||'',cont:!!x.cont,contNext:x.contNext||'',/* ไม่เสร็จ · งานต่อเนื่อง (no NCR) */
       doneSum:x.doneSum||'',doneBy:x.doneBy||null,doneAt:x.doneAt||'',/* สรุปงาน (user, 14 Oct 2026) */jobId:x.jobId||'',/* ใบรับคำร้องขอรับบริการสอบเทียบ it was made from */
@@ -177,7 +177,7 @@ function supabaseBackend(client,{dept}){
 
   /* ---------- write: app entities -> rows (merged with what is stored) ---------- */
   const isLeaveTask=t=>isLeaveId(t.jobType);/* ลา · ลาพักร้อน · ลาป่วย · ลากิจ */
-  const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
+  const plain=t=>{const c=Object.assign({},t);['id','dept_id','src','gaCar','gaMore','gaCancel','tag','groupId','start','end','type'].forEach(k=>delete c[k]);return c};
   function bu1wpOf(t,old){
     return stripped(Object.assign({},old||{},{jobType:t.jobType,jobTypeOther:t.jobTypeOther||'',jobTypeName:t.jobTypeName||'',line:t.line||'',/* สายงาน fm | ins */color:t.color||'',/* สีของแผน, '' = ตาม Plan No. (user, 9 Oct 2026) */
       detail:t.detail??'',request:t.request||'',remark:t.remark||'',/* หมายเหตุ (user, 9 Oct 2026) */timeNote:t.timeNote||'',transport:t.transport||'',/* รถแผนก, up to 2 "A, B" */gaPlate:t.gaPlate,needGA:!!t.needGA,gaGo:t.gaGo||'',gaBack:t.gaBack||'',/* เวลาไป / กลับ asked of GA (ขอรถใช้เอง: เวลารับ / คืนรถ) */selfDrive:!!t.selfDrive,carReason:t.carReason||'',carNote:t.carNote||'',/* รถส่วนตัว: เหตุผล / หมายเหตุ */

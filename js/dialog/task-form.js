@@ -81,7 +81,8 @@ function setMode(m){
   /* a plan with Weekly plan calibration / instrument rows opens wide enough for its sheet (user, 7 Oct 2026) */
   const sheets=!!t&&(calOf(t).length>0||insOf(t).length>0);
   $('#dView').hidden=!view;$('#formFields').hidden=view;dlg.classList.toggle('wide',!view||sheets);dlg.classList.toggle('sheets',sheets);
-  $('#btnEdit').hidden=!view||!(w||ga);$('#btnEditTxt').textContent=ga?'ระบุรถ / ทะเบียน':'แก้ไข';$('#btnSave').hidden=view||!(w||ga);
+  /* GA no longer edits from the plan view: the car is set in GA Fleet (user, 30 Oct 2026) */
+  $('#btnEdit').hidden=!view||!w;$('#btnEditTxt').textContent='แก้ไข';$('#btnSave').hidden=view||!(w||ga);
   $('#btnDel').hidden=view||!t||!can('del');$('#btnDup').hidden=!t||!w;$('#copyBox').hidden=!t||!w;
   $('#f-err').hidden=true;
   if(view&&t){$('#dlgTitle').textContent=t.planNo?`${t.planNo} · ${typeLabel(t)}`:typeLabel(t);$('#dlgSub').textContent=[t.customer,t.location].filter(Boolean).join(' · ')}
@@ -153,6 +154,7 @@ function refreshDrawerView(){
 document.addEventListener('focusout',e=>{if(!drawerLater||!e.target.closest||!e.target.closest('#dView'))return;
   afterPointer(()=>{const v=$('#dView');const ae=document.activeElement;if(drawerLater&&!(v&&ae&&v.contains(ae)&&isTyping(ae)))refreshDrawerView()})});
 function drawDrawerView(t){
+  if(typeof isGA==='function'&&isGA()){$('#dView').innerHTML=gqViewHtml(t);return}/* GA: the car request first (js/features/ga-requests.js) */
   const ty=typeOf(t);const st=STATUS[t.status]||STATUS.planned;const d=parseD(t.date);
   const pool=S.tasks.some(x=>x.id===t.id)?S.tasks:[t];const conf=conflictsFor(t,pool);
   const confStaff=new Set(conf.flatMap(x=>x.staff));const tel=saleTel(t.sale);

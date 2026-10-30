@@ -39,7 +39,7 @@ const isoXlsxRow=k=>[`${isoLine(k)} · ส่งออกโดย ${isoWho()} �
 
 /* ---------- 1) audit trail ---------- */
 const ISO_COLLS=new Set(['tasks','ncr','jobs','checks']);
-const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','gaRequestedAt','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy','doneBy','doneAt','bookedBy','acceptedBy','cancelledBy','reviewedBy','review','dirty','submittedBy','approvedBy','rejectedBy']);
+const ISO_SKIP=new Set(['id','dept_id','updatedAt','updatedBy','createdAt','createdBy','history','sample','src','gaCar','gaMore','gaCancel','gaRequestedAt','start','end','type','fileIds','tag','groupId','jobTypeName','closedAt','closedBy','doneBy','doneAt','bookedBy','acceptedBy','cancelledBy','reviewedBy','review','dirty','submittedBy','approvedBy','rejectedBy']);
 const ISO_FIELD={date:'วันที่',period:'ช่วงเวลา',jobType:'หัวข้องาน',jobTypeOther:'หัวข้องาน (อื่นๆ)',line:'สายงาน',planNo:'Plan No.',color:'สีของแผน',sale:'Sale',customer:'Customer',location:'Location',areaId:'พื้นที่ (Safety)',
   timeNote:'Time',detail:'Detail',request:'Request',remark:'หมายเหตุ',transport:'รถแผนก',gaPlate:'ทะเบียนรถ GA',needGA:'ขอรถ GA',selfDrive:'ขอรถไปเอง',gaGo:'เวลารถออก / รับรถ',gaBack:'เวลากลับ / คืนรถ',gaPattern:'รูปแบบรถ GA',gaUrgent:'งานด่วน (รถ GA)',gaCargo:'ของต้องขน',gaNote:'หมายเหตุถึง GA',carReason:'เหตุผลขอรถไปเอง',carNote:'รายละเอียด (รถ)',
   contact:'Contact',contactTel:'เบอร์ติดต่อ',guests:'คนแผนกอื่น',prep:'ใบเตรียมงาน',staffIds:'Team Service',teamNeed:'จำนวน Team Service ที่ต้องการ',sharedTeam:'ใช้ทีมร่วม',status:'สถานะ',statusNote:'เหตุผล / ปัญหา',doneSum:'สรุปงาน',

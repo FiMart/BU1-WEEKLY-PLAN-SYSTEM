@@ -1,7 +1,7 @@
 'use strict';
 /* BU1 Weekly Plan · global event handlers */
 /* ---------- events ---------- */
-function goView(v){if(v==='safety'&&!safetyOk())v='plan';if(v==='mrep'&&!isPlanner())v='my';if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
+function goView(v){if(v==='safety'&&!safetyOk())v='plan';if(v==='mrep'&&!isPlanner())v='my';if(isGA()&&!GA_VIEWS.has(v))v='gareq';if(S.view!==v){S.view=v;S.anim='view';rememberView(v)}render()}
 function setMonth(d){S.month=firstOfMonth(d);S.anim='view';render()}
 /* phone bottom bar: "เพิ่มเติม" opens the other pages */
 function bnMore(open){const s=$('#bnSheet'),b=document.querySelector('.bn-more');if(!s||!b)return;s.hidden=!open;b.setAttribute('aria-expanded',String(open))}
@@ -40,7 +40,7 @@ document.addEventListener('click',e=>{
     case 'mnext':setMonth(new Date(S.month.getFullYear(),S.month.getMonth()+1,1));break;
     case 'mthis':setMonth(new Date());break;
     case 'add':if(S.canWrite)openTask(null,{line:a.dataset.line||S.line,date:a.dataset.date,type:a.dataset.type,customer:a.dataset.cust,period:a.dataset.period,staff:[...new Set([...(a.dataset.staff?[a.dataset.staff]:[]),...(S.view==='people'?S.sel:[])])]});break;
-    case 'edit-task':setMode('edit');setTimeout(()=>{const f=$('#f-type');if(f)f.focus()},30);break;
+    case 'edit-task':if(gaOnlyEdit())break;setMode('edit');setTimeout(()=>{const f=$('#f-type');if(f)f.focus()},30);break;
     case 'add-vehicle':if(can('master'))addVehicle(a);break;
     case 'copy-card':if(editing)copyText(cardText(editing),'คัดลอกแผนแล้ว วางใน LINE ได้เลย');break;
     case 'save-vremark':saveViewRemark(($('#v-remark')||{}).value);break;

@@ -10,6 +10,7 @@ const PAGES={
   checks:['Check Sheet','QC LAB · Data Flow Meter · Remove-Reinstall · Service Report — ทำทีละหัวข้อ (ลงชื่อและเวลาให้เอง) → ส่งตรวจ → ผู้อนุมัติอนุมัติ / ตีกลับ'],
   booking:['Booking Plan','ภาพรวมแผนงานทุกสัปดาห์ในตารางเดียว · กรองด้วย drop down · กดแถวเพื่อเปิดแผน (ส่งคำร้องที่หน้าใบรับคำร้องขอรับบริการสอบเทียบ แก้แผนที่ Weekly Plan)'],
   odoc:['ติดตามเอกสาร Onsite','Status Update เอกสาร Onsite · งานหน้างานจาก Weekly Plan · กำหนดส่ง (Final Date) นับเป็นวันทำงาน จ.–ศ. · Service Report · ส่ง QC · Config Flow com · Draft + Report · Back up · ส่งใบรับงาน'],
+  gareq:['งานขอรถ GA','แผนงานที่ขอรถส่วนกลาง GA แยกตามวัน · เวลารถออก รูปแบบ ของต้องขน หมายเหตุ และรถที่ GA จัดแล้ว · จัดรถในแอป GA Fleet'],
   mrep:['รายงานแผนตอนเช้า','ใครรายงานแผนของวันแล้ว ใครช้า ใครไม่รายงาน · สรุปรายเดือนรายคนสำหรับประเมินวินัย (เห็นเฉพาะผู้ดูแลระบบและผู้วางแผน)'],
   mplan:['Master Plan · Flow Meter','แผนรายเดือน Flow Meter: ตารางมิเตอร์และรหัสงานรายวัน (D / C / W / I …) กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
   mplanins:['Master Plan · Instrument','แผนรายเดือน Instrument: Request No. · LAB · Customer … รับ/ส่ง และจำนวนสอบเทียบรายวัน กรอกและแก้ที่นี่ · นำเข้า / ส่งออก Excel และ PDF'],
@@ -22,9 +23,11 @@ const PAGES={
   settings:['ข้อมูลหลัก (Master Data)','แก้ที่นี่ที่เดียว ตัวเลือกในแผนงานทุกสัปดาห์จะเปลี่ยนตามทันที'],
   help:['วิธีใช้งาน','คู่มือสั้นสำหรับทีม BU1 Lab'],
 };
-const VIEW_FN=()=>({plan:renderPlan,my:renderMy,jobs:renderJobs,checks:renderChecks,booking:renderBooking,odoc:renderOdoc,mrep:renderMrep,mplan:renderMp,mplanins:renderMp,wsheet:renderWsheet,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
+const VIEW_FN=()=>({plan:renderPlan,my:renderMy,jobs:renderJobs,checks:renderChecks,booking:renderBooking,odoc:renderOdoc,mrep:renderMrep,gareq:renderGareq,mplan:renderMp,mplanins:renderMp,wsheet:renderWsheet,safety:renderSafety,people:renderPeople,projects:renderProjects,search:renderSearch,dash:renderDash,ncr:renderNcr,settings:renderSettings,help:renderHelp});
 function render(){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
+  /* GA level (user, 30 Oct 2026): only GA_VIEWS, first page งานขอรถ GA (js/features/ga-requests.js) */
+  {const ga=typeof isGA==='function'&&isGA();document.body.classList.toggle('role-ga',ga);if(ga&&!GA_VIEWS.has(S.view))S.view='gareq'}
   document.body.dataset.page=S.view;document.body.classList.toggle('is-planner',typeof isPlanner==='function'&&isPlanner());/* รายงานแผนตอนเช้า: menu for admin / Planner only *//* page-specific phone layout (css/compact.css, "Weekly Plan on phones") */
   {const mb=document.querySelector('.bn-more');if(mb)mb.classList.toggle('on',!!document.querySelector(`#bnSheet [data-view="${S.view}"]`))}
   const pg=PAGES[S.view];$('#pageTitle').textContent=pg[0];$('#pageSub').textContent=pg[1];renderPageTip();
@@ -51,6 +54,7 @@ function render(){
   if(S.view==='checks')fillChecks();
   csBadge();/* Check Sheet waiting for this approver */
   jbBadge();/* ใบรับคำร้องขอรับบริการสอบเทียบ waiting for the Planner */
+  if(typeof gqBadge==='function')gqBadge();/* GA: requests still waiting for a car today / tomorrow */
   if(S.view==='mplan'||S.view==='mplanins')fillMp();else if(S.mpKey)mpStop();/* the Master Plan month is read live only while it is open */
   {const b=$('#ncrBadge');if(b){const n=S.ncr.filter(x=>x.state!=='closed').length;b.hidden=!n;b.textContent=n}}
   ntfBadges();ntfSoon();/* การแจ้งเตือน: look again shortly after the data changed (js/features/notify.js) */
@@ -136,7 +140,7 @@ function renderBanners(){
   if(S.mode==='error')b.push(`<div class="banner err"><b>การเชื่อมต่อฐานข้อมูลขาด</b> ${S.backend==='supabase'?'ระบบกำลังลองเชื่อมต่อใหม่อัตโนมัติ':'โหลดหน้าใหม่เพื่อเชื่อมต่ออีกครั้ง'} ข้อมูลที่แสดงอยู่อาจไม่เป็นปัจจุบัน</div>`);
   if(S.writeFail)b.push(`<div class="banner err"><b>บันทึกล่าสุดไม่สำเร็จ</b> ข้อมูลที่เพิ่งแก้ยังไม่ถึงฐานข้อมูลกลาง (${esc(String(S.writeFail.msg||'').slice(0,160))}) · ตรวจการเชื่อมต่อแล้วบันทึกอีกครั้ง แถบนี้จะหายเมื่อบันทึกสำเร็จ</div>`);
   if(S.backend==='supabase'&&S.mode==='live'&&isReadOnly())b.push(`<div class="banner warn"><b>โหมดอ่านอย่างเดียว · ทดสอบเทียบข้อมูล</b> แสดงข้อมูล BU1 จริงจากฐานข้อมูลกลาง (ชุดเดียวกับแอป BU1 ตัวเก่า) แต่ยังไม่บันทึกอะไรลงไป เปิดสัปดาห์เดียวกันในแอปเก่าแล้วเทียบจำนวนงาน คน และรถ</div>`);
-  else if(!S.canWrite){
+  else if(!S.canWrite&&!(typeof isGA==='function'&&isGA())){/* GA's pages are its own: no "ดูได้อย่างเดียว" banner (user, 30 Oct 2026) */
     if(S.backend==='supabase'){const L=levelOf(S.level)||levelOf('viewer');
       b.push(`<div class="banner"><b>${esc(L.th)} (${L.en})</b> ${esc(L.desc)}${L.perm.edit?' · ตอนนี้ฐานข้อมูลปฏิเสธการบันทึก ติดต่อผู้ดูแลระบบ':' · ต้องการสิทธิ์เพิ่ม ติดต่อผู้ดูแลระบบของแผนก'}</div>`)}
     else b.push(`<div class="banner"><b>ดูได้อย่างเดียว</b> บัญชีนี้ยังไม่มีสิทธิ์แก้ไข ขอสิทธิ์ Contributor หรือ Editor จากเจ้าของหน้านี้</div>`);
