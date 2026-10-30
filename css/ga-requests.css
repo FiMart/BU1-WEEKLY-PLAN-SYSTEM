@@ -1,0 +1,85 @@
+/* BU1 Weekly Plan · the GA level's layout (js/features/ga-requests.js, user 30 Oct 2026) */
+/* ---------- menus: GA sees งานขอรถ GA · Weekly Plan · Booking Plan · ค้นหา · วิธีใช้ · จองรถส่วนกลาง GA ---------- */
+.sb-nav [data-view="gareq"]{display:none}
+body.role-ga .sb-nav [data-view="gareq"]{display:flex}
+body.role-ga :is(.sb-nav,#bnSheet,.bottom-nav) [data-view]:not([data-view="gareq"],[data-view="plan"],[data-view="booking"],[data-view="search"],[data-view="help"]){display:none!important}
+body.role-ga .sb-grp-q{display:none}
+nav.bottom-nav button.bn-ga{display:none}
+body.role-ga nav.bottom-nav button.bn-ga{display:grid}
+
+/* ---------- page ---------- */
+/* the state colours, on the page and in GA's plan view (the drawer is outside .gq-page) */
+.gq-page,.gq-view{--gq-wait:var(--warn);--gq-done:var(--good);--gq-cancel:var(--muted)}
+.gq-page{display:grid;gap:12px;min-width:0;max-width:100%}
+.gq-page>*{min-width:0;max-width:100%}
+.gq-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.gq-tabs{flex:0 1 auto}
+.gq-fleet{margin-left:auto;text-decoration:none}
+.gq-ks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.gq-k{--c:var(--accent);display:grid;gap:2px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.gq-k b{font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.gq-k span{font-size:12.5px;font-weight:600;color:var(--ink-2,var(--ink))}
+.gq-k small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gq-k-wait{--c:var(--gq-wait)}.gq-k-urgent{--c:var(--crit)}.gq-k-done{--c:var(--gq-done)}.gq-k-cancel{--c:var(--gq-cancel)}
+.gq-k-wait b,.gq-k-urgent b{color:var(--c)}
+.gq-k:hover{border-color:var(--c)}
+.gq-k.on{outline:2px solid var(--c);outline-offset:1px}
+.gq-day{display:grid;gap:8px}
+.gq-day>header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.gq-day>header h2{margin:0 6px 0 0;font-size:16px}
+.gq-dn{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:var(--surface-2);font-size:12px;font-weight:600}
+.gq-dn.warn{background:color-mix(in srgb,var(--gq-wait) 20%,transparent)}
+.gq-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr));gap:10px}
+/* one request */
+.gq-card{--c:var(--line);position:relative;display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;min-width:0;padding:12px 14px 12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.gq-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c)}
+.gq-card:hover{border-color:var(--c)}
+.gq-c-wait{--c:var(--gq-wait)}.gq-c-done{--c:var(--gq-done)}.gq-c-cancel{--c:var(--gq-cancel)}
+.gq-card.urgent{--c:var(--crit);border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+.gq-c-cancel{opacity:.78}
+.gq-time{display:grid;align-content:start;justify-items:center;gap:2px;padding:8px 4px;border-radius:10px;background:color-mix(in srgb,var(--c) 12%,var(--surface-2))}
+.gq-time b{font-size:20px;line-height:1.1;font-variant-numeric:tabular-nums}
+.gq-time small{font-size:11px;color:var(--muted);font-weight:600}
+.gq-main{display:grid;gap:4px;min-width:0}
+.gq-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.gq-st{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;color:#fff;background:var(--gq-cancel)}
+.gq-st.gq-wait{background:var(--gq-wait);color:#1d1600}.gq-st.gq-done{background:var(--gq-done)}
+.gq-urg{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--crit);color:#fff;font-size:11.5px;font-weight:700}
+.gq-kind{font-size:12.5px;font-weight:600;color:var(--ink-2,var(--ink))}
+.gq-where{font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gq-meta{font-size:12.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gq-line{font-size:12.5px;color:var(--ink-2,var(--ink));min-width:0;overflow-wrap:anywhere}
+.gq-cn{color:var(--muted)}
+.gq-car{margin-top:2px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--gq-done) 12%,var(--surface));font-size:12.5px;overflow-wrap:anywhere}
+.gq-empty{display:grid;gap:4px;padding:28px 16px;border:1px dashed var(--line);border-radius:14px;text-align:center;color:var(--muted)}
+.gq-empty b{color:var(--ink)}
+
+/* ---------- GA's plan view ---------- */
+.gq-view{display:grid;gap:12px}
+.gq-vh{--c:var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));border-left:5px solid var(--c);border-radius:12px;background:color-mix(in srgb,var(--c) 8%,var(--surface))}
+.gq-vh.none{color:var(--muted)}
+.gq-vt{display:grid;gap:2px;flex-basis:100%;margin-top:4px}
+.gq-vt b{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.gq-vt span{font-size:13px;color:var(--muted)}
+.gq-todo{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding:10px 14px;border:1px dashed color-mix(in srgb,var(--gq-wait,var(--warn)) 60%,var(--line));border-radius:12px}
+.gq-todo b{font-size:13.5px}
+.gq-todo span{grid-column:1;font-size:12.5px;color:var(--muted)}
+.gq-todo .btn{grid-column:2;grid-row:1/span 2;text-decoration:none}
+.gq-todo.cn{border-color:var(--line)}
+.gq-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;margin:0}
+.gq-dl>div{min-width:0}
+.gq-dl dt{font-size:12px;color:var(--muted);font-weight:600}
+.gq-dl dd{margin:2px 0 0;font-size:13.5px;overflow-wrap:anywhere}
+
+@media (max-width:1100px){.gq-ks{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){
+  .gq-ks{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gq-ks .gq-k:first-child{grid-column:1/-1}
+  .gq-fleet{margin-left:0;flex:1 1 100%;justify-content:center}
+  .gq-tabs{flex:1 1 100%}
+  .gq-tabs label{flex:1}.gq-tabs span{justify-content:center;width:100%}
+  .gq-card{grid-template-columns:64px minmax(0,1fr);gap:10px;padding:10px 12px 10px 14px}
+  .gq-time b{font-size:17px}
+  .gq-dl{grid-template-columns:1fr}
+  .gq-todo{grid-template-columns:1fr}.gq-todo .btn{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}
+}
