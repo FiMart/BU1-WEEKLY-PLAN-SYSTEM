@@ -11,7 +11,21 @@
    Who am I (mrMe): on the central database the e-mail bound to a staff member in ข้อมูลหลัก › รายงานแผนตอนเช้า
    (S.cfg.staffAcct {staffId: e-mail}), else the one active staff member named like the account; offline = "ฉันคือพนักงาน".
    The page (view mrep), the month summary and the binding are for admin / Planner (isPlanner); everyone sees their own state
-   in งานของฉัน. Notices: js/features/notify.js category mrep. */
+   in งานของฉัน. Notices: js/features/notify.js category mrep.
+   ไม่เข้าประชุมเช้า (user, 2 Nov 2026: "ใครไม่รายงานแผนให้ติ๊กหน่อยว่าใครไม่เข้าประชุมรายงานเช้า ทีมไหน"; chose a tick apart from the
+   report state · the same people as mrNeed · grouped and summed by team · admin / Planner ticks, reason optional): the same row
+   gains absent (bool), absentWhy, absentBy, absentAt (+ a history line). Teams = the person's ทีม (staff.team, MR_TEAMS). */
+/* v4.37.0 (user, 2 Nov 2026: "Safety Role ไม่ต้องติ๊กว่าไม่เข้าประชุมเช้า … ย้ายไปติ๊กที่หน้าแผนงานได้ไหม"; chose: a position whose
+   name holds Safety / จป. = out of the morning report altogether · the tick lives in the plan view's Team Service (mrPlanBox, today
+   and earlier) · this page only shows it) */
+const mrSafety=s=>!!s&&/safety|จป/i.test(String(s.role||''));
+/* who may tick and see ไม่เข้าประชุมเช้า: Admin / Planner only (user, 2 Nov 2026: "ให้แค่ Admin กับ Planner ติ๊กเท่านั้น และ Role อื่น
+   จะไม่เห็นข้อมูลนี้ทั้งหมด") — can('master') = admin / planer levels */
+const mrAbsSee=()=>can('master');
+const MR_TEAMS=()=>[...TEAMS.map(t=>t.id),''];
+const mrTeam=s=>teamOf(s)||'';
+const mrAbs=rec=>!!(rec&&rec.absent);
+const mrDone=rec=>!!(rec&&(rec.time||rec.ex));/* reported (or excused); a row may hold only the absent tick */
 const MR_ST={ok:{th:'ตรงเวลา',c:'var(--good)'},late:{th:'ช้า',c:'var(--warn)'},miss:{th:'ไม่รายงาน',c:'var(--crit)'},wait:{th:'ยังไม่ถึงเวลา',c:'var(--muted)'},ex:{th:'ยกเว้น',c:'var(--accent)'}};
 S.mr={tab:'day',day:'',month:'',edit:'',q:''};
 const mrCfg=()=>{const c=(S.cfg&&S.cfg.mrep)||{};return {time:/^\d\d:\d\d$/.test(c.time||'')?c.time:'08:30'}};
@@ -34,7 +48,7 @@ function mrNeed(list,k){
   (list||[]).forEach(t=>{if(t.date!==k)return;
     if(isLeave(t)){if((t.period||'full')==='full')(t.staffIds||[]).forEach(id=>off.add(id));return}
     if(!holdsTeam(t))return;
-    (t.staffIds||[]).forEach(id=>{const s=staffById(id);if(!s||s.active===false)return;if(!m.has(id))m.set(id,[]);m.get(id).push(t)})});
+    (t.staffIds||[]).forEach(id=>{const s=staffById(id);if(!s||s.active===false||mrSafety(s))return;if(!m.has(id))m.set(id,[]);m.get(id).push(t)})});
   off.forEach(id=>m.delete(id));return m;
 }
 /* the records of a month (cached like rangeTasks; read again after a write, every 30 s on the page and on tab focus) */
@@ -43,7 +57,7 @@ function mrRows(month){
   if(e.stale&&!e.loading){e.loading=true;const g=e.gen||0;const had=e.data;let changed=!had;
     const fn=()=>Store.where('mrep','month','==',month);
     (had?quietly(fn):fn()).then(d=>{changed=changed||JSON.stringify(d)!==JSON.stringify(had);e.data=d}).catch(()=>{if(!e.data)e.data=[]})
-      .finally(()=>{e.stale=(e.gen||0)!==g;e.loading=false;if(changed||e.stale)render()})}
+      .finally(()=>{e.stale=(e.gen||0)!==g;e.loading=false;if(changed||e.stale){render();/* the plan view's ประชุมเช้า box */if(typeof dlg!=='undefined'&&dlg.open&&typeof refreshDrawerView==='function')refreshDrawerView()}})}
   return e.data;
 }
 function mrInvalidate(){RC.forEach((e,k)=>{if(k.startsWith('mr|')){e.stale=true;e.gen=(e.gen||0)+1}})}
@@ -78,11 +92,12 @@ function mrMyHtml(){
   const id=mrMe();const k=mrToday();const due=mrCfg().time;
   if(!id)return S.backend==='supabase'&&S.staff.length?`<section class="panel mr-my none"><b>รายงานแผนตอนเช้า</b><span class="hint">บัญชีนี้ยังไม่ได้ผูกกับชื่อพนักงาน · ถ้าคุณเป็นพนักงานที่ออกงาน ให้ Planner ผูกบัญชีที่ ข้อมูลหลัก › รายงานแผนตอนเช้า</span></section>`:'';
   const tasks=typeof ntfTasks==='function'?ntfTasks():S.tasks;const need=mrNeed(tasks,k).get(id);
-  if(!need)return `<section class="panel mr-my none"><b>รายงานแผนตอนเช้า</b><span class="hint">วันนี้ ${esc(staffName(id))} ไม่มีแผนงาน · ไม่ต้องรายงาน</span></section>`;
+  if(!need)return `<section class="panel mr-my none"><b>รายงานแผนตอนเช้า</b><span class="hint">${mrSafety(staffById(id))?`${esc(staffName(id))} ตำแหน่ง Safety · ไม่ต้องรายงาน`:`วันนี้ ${esc(staffName(id))} ไม่มีแผนงาน · ไม่ต้องรายงาน`}</span></section>`;
   const rows=mrRows(k.slice(0,7));const rec=mrRec(rows,k,id);const st=rows?mrSt(rec,k):'';
   const plans=`<ul class="mr-plans">${need.map(t=>`<li><button type="button" class="lnk" data-edit="${esc(t.id)}">${esc(mrPlanTxt(t))}</button> <small>${esc(typeLabel(t))}${t.timeNote?' · '+esc(t.timeNote):''}</small></li>`).join('')}</ul>`;
-  const done=rec&&(rec.time||rec.ex);
+  const done=mrDone(rec);
   return `<section class="panel mr-my${done?' done':st==='miss'?' miss':''}"><div class="mr-myh"><b>รายงานแผนตอนเช้า</b><span class="hint">${esc(staffName(id))} · วันนี้ ${need.length} แผน · รายงานภายใน ${esc(due)} น.</span>${st?mrChip(st,rec):''}</div>${plans}
+    ${mrAbs(rec)&&mrAbsSee()?`<p class="mr-abnote">ไม่เข้าประชุมเช้า${rec.absentWhy?' · '+esc(rec.absentWhy):''}</p>`:''}
     ${!rows?loading():done?`<p class="mr-done">✓ ${rec.ex?`ยกเว้นโดยหัวหน้า${rec.reason?' · '+esc(rec.reason):''}`:`รายงานแล้ว ${esc(rec.time)} น.${rec.src==='lead'?' (หัวหน้าบันทึกให้)':''}`}</p>`
       :`<button type="button" class="btn primary mr-go" data-mr-self>✓ รายงานแผนวันนี้</button>${st==='miss'?`<small class="mr-lnote">เลย ${esc(due)} น. แล้ว · รายงานตอนนี้จะนับเป็น "ช้า"</small>`:''}`}</section>`;
 }
@@ -93,21 +108,27 @@ function mrDayData(k){
   const need=mrNeed(tasks,k);
   const list=[...need].map(([id,plans])=>{const rec=mrRec(rows,k,id);return {id,s:staffById(id),plans,rec,st:mrSt(rec,k)}});
   const ord={miss:0,wait:1,late:2,ok:3,ex:4};list.sort((a,b)=>(ord[a.st]??9)-(ord[b.st]??9)||sortPeople(a.s,b.s));
-  const c={n:list.length};Object.keys(MR_ST).forEach(x=>c[x]=list.filter(r=>r.st===x).length);return {k,list,c};
+  const c={n:list.length};Object.keys(MR_ST).forEach(x=>c[x]=list.filter(r=>r.st===x).length);c.abs=list.filter(r=>mrAbs(r.rec)).length;
+  /* by team: who must report, reported, not yet, not in the meeting */
+  const teams=MR_TEAMS().map(id=>{const l=list.filter(r=>mrTeam(r.s)===id);return {id,list:l,n:l.length,done:l.filter(r=>r.st==='ok'||r.st==='late').length,
+    todo:l.filter(r=>r.st==='miss'||r.st==='wait').length,miss:l.filter(r=>r.st==='miss').length,late:l.filter(r=>r.st==='late').length,ex:l.filter(r=>r.st==='ex').length,abs:l.filter(r=>mrAbs(r.rec)).length}}).filter(t=>t.n);
+  return {k,list,c,teams};
 }
+const mrTeamDot=id=>`<i class="mr-tdot" style="--c:${id&&TEAM[id]?TEAM[id].color:'var(--muted)'}"></i>`;
 function mrMonthData(m){
   const [y,mo]=m.split('-').map(Number);const from=`${m}-01`,last=ymd(new Date(y,mo,0));const to=last<mrToday()?last:mrToday();
   if(from>to)return {m,people:[],days:[],empty:true};
   const tasks=rangeTasks(from,last);const rows=mrRows(m);if(!tasks||!rows)return null;
   const days=[];for(let d=parseD(from);ymd(d)<=last;d=addDays(d,1))days.push(ymd(d));
   const P=new Map();
-  days.filter(k=>k<=to).forEach(k=>{mrNeed(tasks,k).forEach((plans,id)=>{if(!P.has(id))P.set(id,{id,s:staffById(id),need:0,ok:0,late:0,miss:0,wait:0,ex:0,day:{}});
-    const p=P.get(id);const rec=mrRec(rows,k,id);const st=mrSt(rec,k);p.day[k]={st,rec,plans};if(st==='wait')return;p.need++;p[st]++})});
+  days.filter(k=>k<=to).forEach(k=>{mrNeed(tasks,k).forEach((plans,id)=>{if(!P.has(id))P.set(id,{id,s:staffById(id),need:0,ok:0,late:0,miss:0,wait:0,ex:0,abs:0,day:{}});
+    const p=P.get(id);const rec=mrRec(rows,k,id);const st=mrSt(rec,k);p.day[k]={st,rec,plans};if(mrAbs(rec))p.abs++;if(st==='wait')return;p.need++;p[st]++})});
   const people=[...P.values()].filter(p=>p.need).map(p=>/* someone whose only day is today before the deadline has nothing to count yet */Object.assign(p,{rate:p.need-p.ex>0?Math.round(p.ok/(p.need-p.ex)*100):null}))
     .sort((a,b)=>b.miss-a.miss||b.late-a.late||sortPeople(a.s,b.s));
-  const tot=people.reduce((a,p)=>{['need','ok','late','miss','ex'].forEach(x=>a[x]+=p[x]);return a},{need:0,ok:0,late:0,miss:0,ex:0});
-  tot.rate=tot.need-tot.ex>0?Math.round(tot.ok/(tot.need-tot.ex)*100):null;
-  return {m,days,to,people,tot};
+  const sum=l=>{const a=l.reduce((a,p)=>{['need','ok','late','miss','ex','abs'].forEach(x=>a[x]+=p[x]);return a},{need:0,ok:0,late:0,miss:0,ex:0,abs:0,n:l.length});a.rate=a.need-a.ex>0?Math.round(a.ok/(a.need-a.ex)*100):null;return a};
+  const tot=sum(people);
+  const teams=MR_TEAMS().map(id=>Object.assign({id},sum(people.filter(p=>mrTeam(p.s)===id)))).filter(t=>t.n);
+  return {m,days,to,people,tot,teams};
 }
 /* layout (user, 27 Oct 2026: "ปรับ design และ layout … ให้พอดีสัดส่วนทั้ง web และ mobile"): a date / month bar, one summary
    (progress + one stacked bar + chips that filter, S.mr.st), then people as cards in groups — the same on every screen,
@@ -125,19 +146,35 @@ function mrEditHtml(r){
 function mrCard(r,k){
   const rec=r.rec||{};const ed=S.mr.edit===`${k}_${r.id}`;const nm=r.s?r.s.name:r.id;
   const sub=[r.s&&r.s.role,r.s&&teamOf(r.s)?teamName(teamOf(r.s)):''].filter(Boolean).join(' · ');
-  return `<article class="mr-card mr-${r.st}${ed?' open':''}"><div class="mr-ch"><span class="mr-av" aria-hidden="true">${esc(initialOf(nm))}</span>
+  /* ไม่เข้าประชุมเช้า: shown here, ticked in the plan view's Team Service (mrPlanBox) */
+  const ab=mrAbs(rec);
+  const absH=ab?`<div class="mr-ab on"><span class="mr-abtag">ไม่เข้าประชุมเช้า</span>${rec.absentWhy?`<small>${esc(rec.absentWhy)}</small>`:''}${rec.absentBy?`<small>· ติ๊กโดย ${esc(String(rec.absentBy).split('@')[0])}</small>`:''}</div>`:'';
+  return `<article class="mr-card mr-${r.st}${ab?' absent':''}${ed?' open':''}"><div class="mr-ch"><span class="mr-av" aria-hidden="true">${esc(initialOf(nm))}</span>
       <span class="mr-nm"><b>${esc(nm)}</b>${sub?`<small>${esc(sub)}</small>`:''}</span>${mrChip(r.st,rec)}</div>
+    ${absH}
     <div class="mr-pls">${r.plans.map(t=>`<button type="button" class="mr-pl" data-edit="${esc(t.id)}" style="--c:${planColor(t)}" title="${esc(mrPlanTxt(t))} · กดเพื่อเปิดแผน"><i></i><span>${esc(mrPlanTxt(t))}</span></button>`).join('')}</div>
     ${rec.src||rec.reason||can('master')?`<div class="mr-cf"><span>${esc(mrWho(rec))}${rec.reason?`${rec.src?' · ':''}${esc(rec.reason)}`:''}</span>${can('master')?`<button type="button" class="lnk" data-mr-edit="${esc(r.id)}" aria-expanded="${ed}">${ed?'ปิด':'แก้ไข'}</button>`:''}</div>`:''}
     ${ed?mrEditHtml(r):''}</article>`;
 }
 /* progress + one bar + chips (counts; a chip filters the cards) */
-function mrSumHtml(c,pct,lead,lbl,keys){
+function mrSumHtml(c,pct,lead,lbl,keys,extra){
   const tot=Math.max(1,keys.reduce((a,x)=>a+(c[x]||0),0));
   const chip=(x,n,t)=>`<button type="button" class="mr-fc${x?' mr-'+x:''}${(S.mr.st||'')===x?' on':''}" data-mr-st="${x}" aria-pressed="${(S.mr.st||'')===x}">${x?'<i></i>':''}${t}<b>${n}</b></button>`;
   return `<div class="mr-sum"><div class="mr-big"><span>${esc(lbl)}</span><b>${pct==null?'–':pct+'%'}</b><small>${lead}</small></div>
     <div class="mr-mid"><div class="mr-bar" role="img" aria-label="${esc(keys.map(x=>`${MR_ST[x].th} ${c[x]||0}`).join(' · '))}">${keys.map(x=>c[x]?`<i class="mr-${x}" style="flex:${c[x]/tot}" title="${MR_ST[x].th} ${c[x]}"></i>`:'').join('')||'<i class="mr-none" style="flex:1"></i>'}</div>
-      <div class="mr-fcs">${chip('',c.n,'ทั้งหมด')}${keys.filter(x=>c[x]).map(x=>chip(x,c[x],x==='wait'?'รอถึงเวลา':MR_ST[x].th)).join('')}</div></div></div>`;
+      <div class="mr-fcs">${chip('',c.n,'ทั้งหมด')}${keys.filter(x=>c[x]).map(x=>chip(x,c[x],x==='wait'?'รอถึงเวลา':MR_ST[x].th)).join('')}${extra||''}</div></div></div>`;
+}
+/* the "ไม่เข้าประชุม" filter chip (S.mr.st 'abs') */
+const mrAbsChip=n=>n?`<button type="button" class="mr-fc mr-abs${S.mr.st==='abs'?' on':''}" data-mr-st="abs" aria-pressed="${S.mr.st==='abs'}"><i></i>ไม่เข้าประชุม<b>${n}</b></button>`:'';
+/* by team: one small table (day: people · month: person-days) */
+function mrTeamTable(rows,month){
+  const n=(v,cls)=>`<td class="n${v&&cls?' '+cls:''}">${v||'–'}</td>`;
+  const head=month?'<th class="n">คน</th><th class="n">ต้องรายงาน (คน-วัน)</th><th class="n">ตรงเวลา</th><th class="n">ช้า</th><th class="n">ไม่รายงาน</th><th class="n">ไม่เข้าประชุม</th><th class="n">% ตรงเวลา</th>'
+    :'<th class="n">ต้องรายงาน</th><th class="n">รายงานแล้ว</th><th class="n">ยังไม่รายงาน</th><th class="n">ไม่เข้าประชุม</th>';
+  const row=(t,lbl)=>month?`<td class="n">${t.n}</td><td class="n">${t.need}</td>${n(t.ok)}${n(t.late,'warn')}${n(t.miss,'bad')}${n(t.abs,'abs')}<td class="n"><span class="mr-rate${t.rate!=null&&t.rate<80?' low':''}">${t.rate==null?'–':t.rate+'%'}</span></td>`
+    :`<td class="n">${t.n}</td>${n(t.done)}${n(t.todo,'bad')}${n(t.abs,'abs')}`;
+  return `<section class="mr-tsum"><h3>สรุปตามทีม</h3><div class="scroll-x plain"><table class="mini mr-tt"><thead><tr><th>ทีม</th>${head}</tr></thead><tbody>
+    ${rows.map(t=>`<tr><td>${mrTeamDot(t.id)}<b>${esc(teamName(t.id))}</b></td>${row(t)}</tr>`).join('')}</tbody></table></div></section>`;
 }
 function mrDayHtml(){
   const k=mrDay();const D=mrDayData(k);const d=parseD(k);const due=mrCfg().time;const td=mrToday();
@@ -149,13 +186,16 @@ function mrDayHtml(){
   if(!D)return bar+loading();
   if(!D.list.length)return bar+'<div class="mr-empty"><b>ไม่มีใครต้องรายงานในวันนี้</b><span>ไม่มีแผนงานที่มีคนในทีม (ไม่นับคนลาทั้งวัน และแผนเลื่อน / ยกเลิก)</span></div>';
   const c=D.c;const done=c.ok+c.late;const base=c.n-c.ex;
-  let h=bar+mrSumHtml(c,base>0?Math.round(done/base*100):null,`รายงานแล้ว ${done} จาก ${base} คน${c.late?` · ช้า ${c.late}`:''}${c.ex?` · ยกเว้น ${c.ex}`:''}`,'รายงานแล้ว',MR_ORDER);
-  const show=D.list.filter(r=>!S.mr.st||r.st===S.mr.st);
-  const groups=[['todo','ยังไม่รายงาน',r=>r.st==='miss'||r.st==='wait'],['done','รายงานแล้ว',r=>r.st==='ok'||r.st==='late'],['ex','ยกเว้น',r=>r.st==='ex']];
-  h+=groups.map(([g,t,f])=>{const l=show.filter(f);if(!l.length)return '';
-    return `<section class="mr-grp mr-g-${g}"><header><h3>${t} <span class="md-count">${l.length}</span></h3>${g==='todo'?`<button type="button" class="btn sm" data-mr-copy title="คัดลอกรายชื่อไปทวงในกลุ่ม LINE">คัดลอกรายชื่อ</button>`:''}</header>
+  let h=bar+mrSumHtml(c,base>0?Math.round(done/base*100):null,`รายงานแล้ว ${done} จาก ${base} คน${c.late?` · ช้า ${c.late}`:''}${c.ex?` · ยกเว้น ${c.ex}`:''}${c.abs?` · ไม่เข้าประชุม ${c.abs}`:''}`,'รายงานแล้ว',MR_ORDER,mrAbsChip(c.abs));
+  h+=mrTeamTable(D.teams,false);
+  /* cards grouped by team (user, 2 Nov 2026), not yet reported first inside each team */
+  const pass=r=>!S.mr.st||(S.mr.st==='abs'?mrAbs(r.rec):r.st===S.mr.st);
+  const todoN=c.miss+c.wait;
+  h+=`<div class="mr-acts"><span class="hint">${todoN?`ยังไม่รายงาน ${todoN} คน`:'รายงานครบแล้ว'}${c.abs?` · ไม่เข้าประชุม ${c.abs} คน`:''}</span>${todoN||c.abs?'<button type="button" class="btn sm" data-mr-copy title="คัดลอกรายชื่อ ยังไม่รายงาน / ไม่เข้าประชุม แยกตามทีม ไปวางในกลุ่ม LINE">คัดลอกรายชื่อ (LINE)</button>':''}</div>`;
+  h+=D.teams.map(t=>{const l=t.list.filter(pass);if(!l.length)return '';
+    return `<section class="mr-grp mr-g-team"><header><h3>${mrTeamDot(t.id)}${esc(teamName(t.id))} <span class="md-count">${l.length}</span></h3><span class="mr-th">${t.todo?`<b class="bad">ยังไม่รายงาน ${t.todo}</b>`:'<b class="ok">รายงานครบ</b>'}${t.abs?` · <b class="abs">ไม่เข้าประชุม ${t.abs}</b>`:''}</span></header>
       <div class="mr-cards">${l.map(r=>mrCard(r,k)).join('')}</div></section>`}).join('')||'<p class="hint mr-none">ไม่มีคนในสถานะนี้</p>';
-  return h+`<p class="hint mr-foot">คนที่มีแผนงานในวันนั้นต้องรายงาน (ไม่นับคนลาทั้งวัน และแผนเลื่อน / ยกเลิก)${can('master')?' · กด แก้ไข เพื่อบันทึกแทน / ยกเว้น ต้องใส่เหตุผลทุกครั้ง':''}</p>`;
+  return h+`<p class="hint mr-foot">คนที่มีแผนงานในวันนั้นต้องรายงาน (ไม่นับคนลาทั้งวัน แผนเลื่อน / ยกเลิก และตำแหน่ง Safety) · ทีม = ทีมของพนักงานในข้อมูลหลัก · ติ๊ก "ไม่เข้าประชุมเช้า" ที่หน้าดูแผน › Team Service (กดชื่อแผนบนการ์ดเพื่อเปิด)${can('master')?' · กด แก้ไข เพื่อบันทึกแทน / ยกเว้น ต้องใส่เหตุผลทุกครั้ง':''}</p>`;
 }
 function mrMonthHtml(){
   const m=mrMonth();const [y,mo]=m.split('-').map(Number);const D=mrMonthData(m);
@@ -164,19 +204,21 @@ function mrMonthHtml(){
   if(!D)return bar+loading();
   if(D.empty||!D.people.length)return bar+'<div class="mr-empty"><b>ยังไม่มีวันที่ต้องรายงานในเดือนนี้</b></div>';
   const T=Object.assign({n:D.tot.need},D.tot);
-  let h=bar+mrSumHtml(T,T.rate,`ตรงเวลา ${T.ok} จาก ${T.need-T.ex} คน-วัน · นับถึง ${esc(fmtDay(D.to))}`,'ตรงเวลา ทั้งทีม',['miss','late','ok','ex']);
+  let h=bar+mrSumHtml(T,T.rate,`ตรงเวลา ${T.ok} จาก ${T.need-T.ex} คน-วัน${T.abs?` · ไม่เข้าประชุม ${T.abs} คน-วัน`:''} · นับถึง ${esc(fmtDay(D.to))}`,'ตรงเวลา ทั้งทีม',['miss','late','ok','ex'],mrAbsChip(T.abs));
+  h+=mrTeamTable(D.teams,true);
   const people=D.people.filter(p=>!S.mr.st||p[S.mr.st]);
-  const dayCell=(p,k)=>{const x=p.day[k];return x&&x.st?`<button type="button" class="mr-dc mr-${x.st}" data-mr-goday="${k}" title="${esc(`${fmtDay(k)} · ${MR_ST[x.st].th}${x.rec&&x.rec.time&&!x.rec.ex?' '+x.rec.time+' น.':''}${x.rec&&x.rec.reason?' · '+x.rec.reason:''} · ${x.plans.map(mrPlanTxt).join(', ')}`)}" aria-label="${esc(fmtDay(k)+' '+MR_ST[x.st].th)}"></button>`:'<span class="mr-dc"></span>'};
+  const tm=p=>p.s&&teamOf(p.s)?teamName(teamOf(p.s)):'';
+  const dayCell=(p,k)=>{const x=p.day[k];const ab=x&&mrAbs(x.rec);return x&&x.st?`<button type="button" class="mr-dc mr-${x.st}${ab?' abs':''}" data-mr-goday="${k}" title="${esc(`${fmtDay(k)} · ${MR_ST[x.st].th}${x.rec&&x.rec.time&&!x.rec.ex?' '+x.rec.time+' น.':''}${x.rec&&x.rec.reason?' · '+x.rec.reason:''}${ab?' · ไม่เข้าประชุมเช้า'+(x.rec.absentWhy?' ('+x.rec.absentWhy+')':''):''} · ${x.plans.map(mrPlanTxt).join(', ')}`)}" aria-label="${esc(fmtDay(k)+' '+MR_ST[x.st].th+(ab?' ไม่เข้าประชุม':''))}"></button>`:'<span class="mr-dc"></span>'};
   const num=(v,cls)=>`<td class="n${v&&cls?' '+cls:''}">${v||'–'}</td>`;
   /* wide screens: a table with one cell per day */
-  h+=`<div class="scroll-x plain mr-wide"><table class="mini mr-mt"><thead><tr><th>ชื่อ</th><th class="n">ต้องรายงาน</th><th class="n">ตรงเวลา</th><th class="n">ช้า</th><th class="n">ไม่รายงาน</th><th class="n">ยกเว้น</th><th class="n">% ตรงเวลา</th><th><div class="mr-days-h">${D.days.map(k=>{const d=parseD(k);return `<span class="${d.getDay()===0||d.getDay()===6?'we':''}">${d.getDate()}</span>`}).join('')}</div></th></tr></thead><tbody>
-    ${people.map(p=>`<tr><td><b>${esc(p.s?p.s.name:p.id)}</b><span class="sub">${esc(p.s&&p.s.role||'')}</span></td><td class="n">${p.need}</td>${num(p.ok)}${num(p.late,'warn')}${num(p.miss,'bad')}${num(p.ex)}
+  h+=`<div class="scroll-x plain mr-wide"><table class="mini mr-mt"><thead><tr><th>ชื่อ</th><th class="n">ต้องรายงาน</th><th class="n">ตรงเวลา</th><th class="n">ช้า</th><th class="n">ไม่รายงาน</th><th class="n">ยกเว้น</th><th class="n">ไม่เข้าประชุม</th><th class="n">% ตรงเวลา</th><th><div class="mr-days-h">${D.days.map(k=>{const d=parseD(k);return `<span class="${d.getDay()===0||d.getDay()===6?'we':''}">${d.getDate()}</span>`}).join('')}</div></th></tr></thead><tbody>
+    ${people.map(p=>`<tr><td><b>${esc(p.s?p.s.name:p.id)}</b><span class="sub">${esc([p.s&&p.s.role,tm(p)].filter(Boolean).join(' · '))}</span></td><td class="n">${p.need}</td>${num(p.ok)}${num(p.late,'warn')}${num(p.miss,'bad')}${num(p.ex)}${num(p.abs,'abs')}
       <td class="n"><span class="mr-rate${p.rate!=null&&p.rate<80?' low':''}">${p.rate==null?'–':p.rate+'%'}</span></td><td><div class="mr-days">${D.days.map(k=>dayCell(p,k)).join('')}</div></td></tr>`).join('')}</tbody></table></div>`;
   /* phones: one card a person */
-  h+=`<div class="mr-cards mr-narrow">${people.map(p=>`<article class="mr-card mr-mc"><div class="mr-ch"><span class="mr-av" aria-hidden="true">${esc(initialOf(p.s?p.s.name:p.id))}</span><span class="mr-nm"><b>${esc(p.s?p.s.name:p.id)}</b><small>${esc(p.s&&p.s.role||'')}</small></span><span class="mr-rate${p.rate!=null&&p.rate<80?' low':''}">${p.rate==null?'–':p.rate+'%'}</span></div>
-    <div class="mr-mn"><span>ต้องรายงาน <b>${p.need}</b></span><span class="ok">ตรงเวลา <b>${p.ok}</b></span><span class="late">ช้า <b>${p.late}</b></span><span class="miss">ไม่รายงาน <b>${p.miss}</b></span>${p.ex?`<span>ยกเว้น <b>${p.ex}</b></span>`:''}</div>
+  h+=`<div class="mr-cards mr-narrow">${people.map(p=>`<article class="mr-card mr-mc"><div class="mr-ch"><span class="mr-av" aria-hidden="true">${esc(initialOf(p.s?p.s.name:p.id))}</span><span class="mr-nm"><b>${esc(p.s?p.s.name:p.id)}</b><small>${esc([p.s&&p.s.role,tm(p)].filter(Boolean).join(' · '))}</small></span><span class="mr-rate${p.rate!=null&&p.rate<80?' low':''}">${p.rate==null?'–':p.rate+'%'}</span></div>
+    <div class="mr-mn"><span>ต้องรายงาน <b>${p.need}</b></span><span class="ok">ตรงเวลา <b>${p.ok}</b></span><span class="late">ช้า <b>${p.late}</b></span><span class="miss">ไม่รายงาน <b>${p.miss}</b></span>${p.ex?`<span>ยกเว้น <b>${p.ex}</b></span>`:''}${p.abs?`<span class="abs">ไม่เข้าประชุม <b>${p.abs}</b></span>`:''}</div>
     <div class="mr-days">${D.days.map(k=>dayCell(p,k)).join('')}</div></article>`).join('')}</div>`;
-  return h+`<p class="hint mr-foot">% ตรงเวลา = ตรงเวลา ÷ (วันที่ต้องรายงาน − ยกเว้น) · เรียงคนที่ไม่รายงานมากที่สุดก่อน · ช่องสีรายวัน: เขียว ตรงเวลา · ส้ม ช้า · แดง ไม่รายงาน · ฟ้า ยกเว้น · ว่าง = ไม่มีแผน · กดช่องเพื่อเปิดวันนั้น</p>`;
+  return h+`<p class="hint mr-foot">% ตรงเวลา = ตรงเวลา ÷ (วันที่ต้องรายงาน − ยกเว้น) · เรียงคนที่ไม่รายงานมากที่สุดก่อน · ช่องสีรายวัน: เขียว ตรงเวลา · ส้ม ช้า · แดง ไม่รายงาน · ฟ้า ยกเว้น · จุดม่วง = ไม่เข้าประชุมเช้า · ว่าง = ไม่มีแผน · กดช่องเพื่อเปิดวันนั้น</p>`;
 }
 function renderMrep(){
   if(notReady())return loading();
@@ -188,13 +230,16 @@ function renderMrep(){
 async function mrXlsx(btn){
   const D=mrMonthData(mrMonth());if(!D||!D.people)return;btn.disabled=true;
   try{const X=await loadXLSX();const wb=X.utils.book_new();const [y,mo]=D.m.split('-').map(Number);const title=[`BU1 Lab · รายงานแผนตอนเช้า · ${TH_MON_FULL[mo-1]} ${y+543}`];
-    const s1=[title,[`ต้องรายงานภายใน ${mrCfg().time} น. · นับถึง ${fmtDay(D.to)}`],['ชื่อ','ตำแหน่ง','ทีม','ต้องรายงาน (วัน)','ตรงเวลา','ช้า','ไม่รายงาน','ยกเว้น','% ตรงเวลา'],
-      ...D.people.map(p=>[p.s?p.s.name:p.id,p.s&&p.s.role||'',p.s&&teamOf(p.s)?teamName(teamOf(p.s)):'',p.need,p.ok,p.late,p.miss,p.ex,p.rate==null?'':p.rate+'%'])];
-    const w1=X.utils.aoa_to_sheet(s1);w1['!cols']=[22,14,14,14,10,8,10,8,10].map(w=>({wch:w}));X.utils.book_append_sheet(wb,w1,'สรุปรายคน');
-    const det=[];D.people.forEach(p=>D.days.forEach(k=>{const x=p.day[k];if(!x||!x.st||x.st==='wait')return;
-      det.push([k,p.s?p.s.name:p.id,MR_ST[x.st].th,x.rec&&x.rec.time&&!x.rec.ex?x.rec.time:'',x.rec&&x.rec.src?(x.rec.src==='self'?'รายงานเอง':'หัวหน้าบันทึก'):'',x.rec&&x.rec.reason||'',x.plans.map(mrPlanTxt).join(', ')])}));
-    det.sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1],'th'));
-    const w2=X.utils.aoa_to_sheet([title,['วันที่','ชื่อ','สถานะ','เวลา','บันทึกโดย','เหตุผล','แผนงาน'],...det]);w2['!cols']=[11,22,12,8,14,30,40].map(w=>({wch:w}));X.utils.book_append_sheet(wb,w2,'รายละเอียดรายวัน');
+    const tn=s=>s&&teamOf(s)?teamName(teamOf(s)):teamName('');
+    const s1=[title,[`ต้องรายงานภายใน ${mrCfg().time} น. · นับถึง ${fmtDay(D.to)}`],['ชื่อ','ตำแหน่ง','ทีม','ต้องรายงาน (วัน)','ตรงเวลา','ช้า','ไม่รายงาน','ยกเว้น','ไม่เข้าประชุมเช้า','% ตรงเวลา'],
+      ...D.people.map(p=>[p.s?p.s.name:p.id,p.s&&p.s.role||'',tn(p.s),p.need,p.ok,p.late,p.miss,p.ex,p.abs,p.rate==null?'':p.rate+'%'])];
+    const w1=X.utils.aoa_to_sheet(s1);w1['!cols']=[22,14,14,14,10,8,10,8,14,10].map(w=>({wch:w}));X.utils.book_append_sheet(wb,w1,'สรุปรายคน');
+    const s3=[title,['ทีม','คน','ต้องรายงาน (คน-วัน)','ตรงเวลา','ช้า','ไม่รายงาน','ยกเว้น','ไม่เข้าประชุมเช้า','% ตรงเวลา'],...D.teams.map(t=>[teamName(t.id),t.n,t.need,t.ok,t.late,t.miss,t.ex,t.abs,t.rate==null?'':t.rate+'%'])];
+    const w3=X.utils.aoa_to_sheet(s3);w3['!cols']=[16,6,18,10,8,10,8,16,10].map(w=>({wch:w}));X.utils.book_append_sheet(wb,w3,'สรุปรายทีม');
+    const det=[];D.people.forEach(p=>D.days.forEach(k=>{const x=p.day[k];if(!x||!x.st||(x.st==='wait'&&!mrAbs(x.rec)))return;
+      det.push([k,p.s?p.s.name:p.id,tn(p.s),MR_ST[x.st].th,x.rec&&x.rec.time&&!x.rec.ex?x.rec.time:'',x.rec&&x.rec.src?(x.rec.src==='self'?'รายงานเอง':'หัวหน้าบันทึก'):'',x.rec&&x.rec.reason||'',mrAbs(x.rec)?'ไม่เข้าประชุม':'',x.rec&&x.rec.absentWhy||'',x.plans.map(mrPlanTxt).join(', ')])}));
+    det.sort((a,b)=>a[0].localeCompare(b[0])||a[2].localeCompare(b[2],'th')||a[1].localeCompare(b[1],'th'));
+    const w2=X.utils.aoa_to_sheet([title,['วันที่','ชื่อ','ทีม','สถานะ','เวลา','บันทึกโดย','เหตุผล','ประชุมเช้า','เหตุผลไม่เข้าประชุม','แผนงาน'],...det]);w2['!cols']=[11,22,14,12,8,14,30,14,26,40].map(w=>({wch:w}));X.utils.book_append_sheet(wb,w2,'รายละเอียดรายวัน');
     await saveFile(`BU1-รายงานแผนตอนเช้า-${D.m}.xlsx`,X.write(wb,{type:'array',bookType:'xlsx'}))}
   catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
   finally{btn.disabled=false}
@@ -219,9 +264,43 @@ document.addEventListener('click',async e=>{
       S.mr.edit='';render();toast(`${staffName(id)}: ${st==='rep'?`รายงาน ${time} น.`:st==='ex'?'ยกเว้น':'ไม่รายงาน'}`)}
     catch(err){toast(errText(err));noteWriteError(err);sv.disabled=false}
     return}
-  if(e.target.closest('[data-mr-copy]')){const D=mrDayData(mrDay());if(!D)return;const l=D.list.filter(r=>r.st==='miss'||r.st==='wait');
-    copyText(`📋 ยังไม่รายงานแผน ${fmtDay(D.k)} (ภายใน ${mrCfg().time} น.)\n${l.map((r,i)=>`${i+1}. ${r.s?r.s.name:r.id} · ${r.plans.map(mrPlanTxt).join(', ')}`).join('\n')}`,'คัดลอกรายชื่อแล้ว วางใน LINE ได้เลย');return}
+  if(e.target.closest('[data-mr-copy]')){const D=mrDayData(mrDay());if(!D)return;
+    /* by team: not yet reported, then not in the morning meeting */
+    const part=(title,f,line)=>{const ts=D.teams.map(t=>[t,t.list.filter(f)]).filter(([,l])=>l.length);const n=ts.reduce((a,[,l])=>a+l.length,0);if(!n)return [];
+      return ['',`${title} (${n} คน)`,...ts.flatMap(([t,l])=>[`【${teamName(t.id)}】`,...l.map((r,i)=>`${i+1}. ${line(r)}`)])]};
+    const nm=r=>r.s?r.s.name:r.id;
+    const out=[`📋 รายงานแผนตอนเช้า ${fmtDay(D.k)} (ภายใน ${mrCfg().time} น.)`,
+      ...part('⏳ ยังไม่รายงานแผน',r=>r.st==='miss'||r.st==='wait',r=>`${nm(r)} · ${r.plans.map(mrPlanTxt).join(', ')}`),
+      ...part('🚫 ไม่เข้าประชุมเช้า',r=>mrAbs(r.rec),r=>`${nm(r)}${r.rec.absentWhy?' · '+r.rec.absentWhy:''}`)];
+    copyText(out.join('\n'),'คัดลอกรายชื่อแล้ว วางใน LINE ได้เลย');return}
   const x=e.target.closest('[data-mr-xlsx]');if(x)mrXlsx(x);
+});
+/* ---------- the plan view: ไม่เข้าประชุมเช้า per person of the Team Service (plans of today and before) ---------- */
+function mrPlanBox(t){
+  if(!t||isLeave(t)||!holdsTeam(t)||!t.date||t.date>mrToday())return '';
+  /* Admin / Planner only: other levels see nothing of the morning meeting (user, 2 Nov 2026) */
+  if(!mrAbsSee())return '';
+  const k=t.date;const ids=(t.staffIds||[]).filter(id=>{const s=staffById(id);return s&&s.active!==false&&!mrSafety(s)});if(!ids.length)return '';
+  const edit=true;const rows=mrRows(k.slice(0,7));
+  if(!rows)return '<div class="mr-pb"><div class="mr-pbh"><b>ประชุมเช้า</b><span class="hint">กำลังโหลด…</span></div></div>';
+  const abs=ids.filter(id=>mrAbs(mrRec(rows,k,id)));
+  const skip=(t.staffIds||[]).filter(id=>mrSafety(staffById(id)));
+  const row=id=>{const rec=mrRec(rows,k,id);const ab=mrAbs(rec);const nm=staffName(id);
+    return `<div class="mr-ab${ab?' on':''}"><span class="mr-pbn">${esc(nm)}</span><label class="mr-abt"><input type="checkbox" data-mr-abs="${esc(id)}" data-mr-absd="${esc(k)}"${ab?' checked':''}><span>ไม่เข้าประชุมเช้า</span></label>${ab?`<input type="text" class="mr-abw" id="mr-abw-${esc(id)}" data-mr-abwhy="${esc(id)}" data-mr-absd="${esc(k)}" maxlength="120" placeholder="เหตุผล (ถ้ามี) เช่น ออกหน้างานตั้งแต่เช้า" value="${esc(rec.absentWhy||'')}" autocomplete="off" aria-label="เหตุผลที่ ${esc(nm)} ไม่เข้าประชุม">`:''}</div>`};
+  return `<div class="mr-pb"><div class="mr-pbh"><b>ประชุมเช้า · ${esc(fmtDay(k))}</b><span class="hint">${abs.length?`ไม่เข้าประชุม ${abs.length} คน`:edit?'ติ๊กคนที่ไม่เข้าประชุม':''}</span></div>
+    ${ids.map(row).join('')}${edit&&skip.length?`<small class="hint">${esc(skip.map(staffName).join(', '))} · ตำแหน่ง Safety ไม่ต้องติ๊ก</small>`:''}</div>`;
+}
+/* ไม่เข้าประชุมเช้า: tick / untick at once, the reason saved when the box is left (date = the plan's day) */
+document.addEventListener('change',async e=>{const el=e.target;if(!el.dataset||!mrAbsSee())return;
+  const redraw=()=>{if(typeof dlg!=='undefined'&&dlg.open&&typeof refreshDrawerView==='function')refreshDrawerView()};
+  if(el.dataset.mrAbs){const id=el.dataset.mrAbs,k=el.dataset.mrAbsd||mrDay(),on=el.checked;el.disabled=true;
+    try{await mrPut(k,id,on?{absent:true,absentBy:S.me||null,absentAt:new Date().toISOString()}:{absent:false,absentWhy:'',absentBy:S.me||null,absentAt:new Date().toISOString()},on?'ติ๊กไม่เข้าประชุมเช้า':'เอาติ๊กไม่เข้าประชุมเช้าออก');
+      toast(`${staffName(id)}: ${on?'ไม่เข้าประชุมเช้า':'เข้าประชุมเช้า'}`);redraw();if(on)setTimeout(()=>{const w=document.getElementById('mr-abw-'+id);if(w)w.focus()},120)}
+    catch(err){toast(errText(err));noteWriteError(err);el.checked=!on;el.disabled=false}
+    return}
+  if(el.dataset.mrAbwhy){const id=el.dataset.mrAbwhy,k=el.dataset.mrAbsd||mrDay();const v=el.value.trim().slice(0,120);const cur=mrRec(mrRows(k.slice(0,7)),k,id);if(!cur||!cur.absent||(cur.absentWhy||'')===v)return;
+    try{await mrPut(k,id,{absentWhy:v},v?`เหตุผลไม่เข้าประชุม: ${v}`:'ลบเหตุผลไม่เข้าประชุม');el.defaultValue=v}
+    catch(err){toast(errText(err));noteWriteError(err)}}
 });
 /* keep the page fresh while it is open (other people report from their phones) */
 setInterval(()=>{if(S.view==='mrep'||S.view==='my'){mrInvalidate();if(S.view==='mrep'&&!document.querySelector('#view :focus'))render()}},30000);
@@ -231,8 +310,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(S.view==
 function mrNotices(tasks,add){
   const k=mrToday();const rows=mrRows(k.slice(0,7));if(!rows)return;const due=mrCfg().time;const late=mrHM(new Date())>due;
   const need=mrNeed(tasks,k);const me=mrMe();
-  if(me&&need.has(me)&&!mrRec(rows,k,me))add('mrep','self:'+k+(late?':late':''),late?`ยังไม่ได้รายงานแผนวันนี้ (เลย ${due} น.)`:`รายงานแผนวันนี้ก่อน ${due} น.`,need.get(me).map(mrPlanTxt).join(' · '),{t:'view',v:'my'});
-  if(isPlanner()&&late){const miss=[...need.keys()].filter(id=>!mrRec(rows,k,id));
+  if(me&&need.has(me)&&!mrDone(mrRec(rows,k,me)))add('mrep','self:'+k+(late?':late':''),late?`ยังไม่ได้รายงานแผนวันนี้ (เลย ${due} น.)`:`รายงานแผนวันนี้ก่อน ${due} น.`,need.get(me).map(mrPlanTxt).join(' · '),{t:'view',v:'my'});
+  if(isPlanner()&&late){const miss=[...need.keys()].filter(id=>!mrDone(mrRec(rows,k,id)));
     if(miss.length)add('mrep','miss:'+k+':'+miss.length,`ยังไม่รายงานแผน ${miss.length} คน`,miss.map(staffName).slice(0,8).join(', ')+(miss.length>8?` +${miss.length-8}`:''),{t:'view',v:'mrep'})}
 }
 
@@ -241,7 +320,7 @@ function mrSection(){
   const c=mrCfg();const A=mrAcct();const dis=can('master')?'':' disabled';const staff=S.staff.filter(s=>s.active!==false).slice().sort(sortPeople);
   const mails=(S.userRows||[]).map(r=>r.id);const bound=staff.filter(s=>A[s.id]).length;
   return {id:'mrep',title:'รายงานแผนตอนเช้า',sub:`ภายใน ${c.time} น. · ผูกบัญชี ${bound}/${staff.length} คน`,count:bound,
-    desc:'คนที่มีแผนงานวันนั้นต้องกด "รายงานแผนวันนี้" ในหน้างานของฉันภายในเวลานี้ เกินนับเป็น "ช้า" ไม่กดเลยนับ "ไม่รายงาน" · ผูกบัญชีอีเมลกับชื่อพนักงาน เพื่อให้แต่ละคนรายงานได้เฉพาะของตัวเอง (ไม่ผูก = ใช้ชื่อบัญชีที่ตรงกับชื่อพนักงานคนเดียว)',
+    desc:'คนที่มีแผนงานวันนั้นต้องกด "รายงานแผนวันนี้" ในหน้างานของฉันภายในเวลานี้ เกินนับเป็น "ช้า" ไม่กดเลยนับ "ไม่รายงาน" · ตำแหน่งที่ชื่อมีคำว่า Safety / จป. ไม่ต้องรายงานและไม่ต้องติ๊กประชุมเช้า · ติ๊ก "ไม่เข้าประชุมเช้า" ที่หน้าดูแผน › Team Service · ผูกบัญชีอีเมลกับชื่อพนักงาน เพื่อให้แต่ละคนรายงานได้เฉพาะของตัวเอง (ไม่ผูก = ใช้ชื่อบัญชีที่ตรงกับชื่อพนักงานคนเดียว)',
     body:`<div class="jb-kset"><label>ต้องรายงานภายใน <input type="time" data-mrcfg="time" value="${esc(c.time)}"${dis}> น.</label></div>
       ${mails.length?`<datalist id="dl-mr-mail">${mails.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`:''}
       <div class="scroll-x plain md-scroll"><table class="edit-table"><thead><tr><th>พนักงาน</th><th>ทีม</th><th>บัญชี (อีเมล)</th></tr></thead><tbody>

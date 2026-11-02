@@ -210,7 +210,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-action="logout"]')){
     if(!sb)return;
     askConfirm('ออกจากระบบ?',`แน่ใจไหมว่าจะออกจากระบบ${S.auth.email?`\n${S.auth.email}`:''}\nครั้งหน้าต้องเข้าสู่ระบบด้วยอีเมลและรหัสผ่านอีกครั้ง`,'ออกจากระบบ')
-      .then(ok=>{if(ok)sb.auth.signOut().then(()=>location.reload())});
+      .then(ok=>{if(ok)sb.auth.signOut().then(()=>{/* the next account starts on its own first page, not the page open now */try{sessionStorage.removeItem('bu1wp.view')}catch(e){}location.reload()})});
     return;
   }
   if(e.target.closest('#authRecheck')){if(!S.auth.user)return;authMsg('');myDepts().then(d=>{S.auth.depts=d;if(d&&!d.includes(DEPT()))authMsg(`ยังไม่มีสิทธิ์แผนก ${DEPT()} ติดต่อผู้ดูแลระบบกลาง`,'warn');else afterLogin(S.auth.user)})}

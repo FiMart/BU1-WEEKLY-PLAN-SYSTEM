@@ -109,10 +109,12 @@ function wcard(t,conf,i,short){/* short = Weekly Plan cards (GA car = plate only
   const ty=typeOf(t);const c=conf.get(t.id);const late=isLate(t);
   const confStaff=new Set((c||[]).flatMap(x=>x.staff));
   const sub=[t.planNo?typeLabel(t):'',t.timeNote].filter(Boolean).join(' · ');
-  const det=headline(t);const ch=transportChip(t.transport,t,short);
+  /* GA (user, 2 Nov 2026): the car chip in full + the time out, plans without a GA request faded (css/ga-requests.css) */
+  const ga=isGA();const gr=ga&&hasGA(t);
+  const det=headline(t);const ch=(gr?gqTimeChip(t):'')+transportChip(t.transport,t,short);
   /* compact card (user, 8 Oct 2026): customer and location on one line */
   const where=[t.customer&&S.pf.by!=='cust'?esc(t.customer):'',t.location?`<b>${esc(t.location)}</b>`:''].filter(Boolean).join(' · ');
-  return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}${S.pickMode?' pickable':''}${S.pickMode&&S.picked.has(t.id)?' picked':''}" style="--c:${planColor(t)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
+  return `<button type="button" class="wc st-${esc(t.status||'planned')}${c?' has-conf':''}${isLeave(t)?' is-leave':''}${flashIds.has(t.id)?' flash':''}${S.pickMode?' pickable':''}${S.pickMode&&S.picked.has(t.id)?' picked':''}${ga?(gr?' ga-req ga-'+gqState(t):' ga-none'):''}" style="--c:${planColor(t)};--i:${Math.min(i||0,60)}" data-edit="${esc(t.id)}">
     <span class="wc-top"><span class="wc-title" title="${esc(t.planNo||typeLabel(t))}">${esc(t.planNo||typeLabel(t))}</span>${noStatus(t)?'':`<i class="wc-dot s-${esc(t.status||'planned')}" title="${esc(stTh(t.status))}"></i>`}</span>
     <span class="wc-sub">${lineTag(t)}<span class="wc-per">${esc(pName(t))}</span>${esc(sub)}</span>
     ${where?`<span class="wc-where" title="${esc([t.customer,t.location].filter(Boolean).join(' · '))}">${where}</span>`:''}
@@ -199,7 +201,7 @@ function availPanel(days,avail,today){
 }
 function renderPlan(){
   if(notReady())return loading('plan');
-  const avail=Array.from({length:7},(_,i)=>availOn(ymd(addDays(S.week,i))));const showAv=S.showAvail&&S.staff.some(s=>s.active!==false);
+  const avail=Array.from({length:7},(_,i)=>availOn(ymd(addDays(S.week,i))));const showAv=S.showAvail&&!isGA()&&S.staff.some(s=>s.active!==false);/* GA: no ผู้ปฏิบัติงานที่ว่าง panel */
   const days=Array.from({length:7},(_,i)=>addDays(S.week,i));const today=ymd(new Date());const conf=allConflicts();
   const base=S.tasks.filter(planMatch);const groups=planGroups(base);
   const shown=S.pf.groups.length?groups.filter(g=>S.pf.groups.includes(g.key)):groups;
@@ -365,7 +367,7 @@ function planDayHtml({days,today,conf,shown,avail,showAv}){
   const k=planDay();const idx=days.findIndex(d=>ymd(d)===k);const d=days[idx];const a=freeOn(k);
   const LT=S.tasks.filter(lineMatch);const n=dayJobs(LT,k);
   let h=dayStrip(days,k,xk=>{const xn=dayJobs(LT,xk);return [xn,!xn?'zero':'',`${xn} แผน`]},'pday');
-  h+=pdHead(d,`${n} แผน${a?` · <span title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
+  h+=pdHead(d,`${n} แผน${a&&!isGA()?` · <span title="${esc(freeTitle(a))}">${freeText(a)}</span>`:''}`,'pday')+'<div class="pd-body" data-swipe="pday">';
   const groups=shown.map(g=>({g,list:g.tasks.filter(t=>t.date===k).sort(byTime)})).filter(x=>x.list.length);
   if(!groups.length)h+=`<div class="pd-empty">${n?'ไม่มีแผนงานที่ตรงกับตัวกรองในวันนี้':S.line?`ยังไม่มีแผนงาน ${esc(lineName())} ในวันนี้`:'ยังไม่มีแผนในวันนี้'}</div>`;
   let ci=0;

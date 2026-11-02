@@ -15,6 +15,7 @@ function renderWsheet(){
 }
 /* under the Weekly Plan board: where the sheets went, with this week's counts */
 function wsLinkHtml(){
+  if(typeof isGA==='function'&&isGA())return '';/* GA has no Weekly Cal / Ins page */
   const cr=calWeekRows(S.tasks).length,ir=insWeekRows(S.tasks).length;if(!cr&&!ir)return '';
   const b=(tab,t,n,u)=>n?`<button type="button" class="ws-go" data-ws-go="${tab}"><b>${t}</b><span>${n} ${u}</span>›</button>`:'';
   return `<nav class="ws-link" aria-label="ตารางรายสัปดาห์"><span>ตารางสัปดาห์นี้</span>${b('fm','Weekly plan calibration',cr,'เครื่อง')}${b('ins','Weekly plan instrument',ir,'รายการ')}</nav>`;

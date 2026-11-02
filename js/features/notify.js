@@ -19,6 +19,12 @@ const NTF_CATS=[
   ['safety','บัตร Safety','<path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>'],
 ];
 const NTF_CAT=Object.fromEntries(NTF_CATS.map(([k,l,i])=>[k,{l,i}]));
+/* GA level (user, 2 Nov 2026: "การแจ้งเตือนในส่วนของ GA ถ้าไม่เกี่ยวข้องไม่ต้องแจ้งเตือน"): only the car requests (new / changed /
+   withdrawn, today / tomorrow without a car). "GA จัดรถให้แล้ว" is GA's own work, the rest is the department's. */
+const NTF_GA_CATS=new Set(['gareq']);
+const ntfIsGA=()=>typeof isGA==='function'&&isGA();
+const ntfCats=()=>ntfIsGA()?NTF_CATS.filter(([k])=>NTF_GA_CATS.has(k)):NTF_CATS.filter(([k])=>k!=='gareq');
+const ntfCatOn=c=>!NTF.prefs.off.includes(c)&&(ntfIsGA()?NTF_GA_CATS.has(c):c!=='gareq');
 const NTF={key:'',snap:null,list:[],read:new Set(),seen:new Set(),prefs:{off:[]},live:[],range:null,rangeAt:0,busy:false,timer:null,ready:false};
 const ntfKeyOf=()=>`bu1wp.ntf|${S.backend||'local'}|${typeof DEPT==='function'?DEPT():''}|${norm(S.me)||'local'}`;
 function ntfLoad(){
@@ -62,7 +68,7 @@ function ntfClashes(tasks){
 
 /* ---------- follow-ups (live while the condition lasts) ---------- */
 function ntfLiveOf(tasks,clashes){
-  const L=[];const off=c=>NTF.prefs.off.includes(c);const td=ymd(new Date()),tm=ymd(addDays(new Date(),1));
+  const L=[];const off=c=>!ntfCatOn(c);const td=ymd(new Date()),tm=ymd(addDays(new Date(),1));
   const add=(cat,id,title,body,ref)=>{if(!off(cat))L.push({id:`live:${cat}:${id}`,cat,title,body,ref,live:true})};
   if(S.jobsReady)S.jobs.forEach(j=>{
     if(isPlanner()&&j.state==='pending'){const f=acceptFlow(j);if(f&&f[0]==='delay')add('job','acc:'+j.id,'ใบรับคำร้องรอรับเกินกำหนด',`${j.jobNo} · ${j.customer||''} · Sale ${j.sale||'—'}`,{t:'job',id:j.id})}
@@ -101,7 +107,8 @@ async function ntfTick(force){
     if(force||!NTF.range||Date.now()-NTF.rangeAt>60000){const {from,to}=ntfWin();
       try{NTF.range=await quietly(()=>Store.range('tasks',from,to));NTF.rangeAt=Date.now()}catch(e){if(!NTF.range)return}}
     const tasks=ntfTasks();const snap=NTF.snap||{};const ev=[];const now=new Date().toISOString();
-    const add=(cat,id,title,body,ref)=>{if(!NTF.prefs.off.includes(cat))ev.push({id:`${cat}:${id}:${Date.now().toString(36)}`,cat,title,body,ref,at:now})};
+    if(ntfIsGA())NTF.list=NTF.list.filter(x=>NTF_GA_CATS.has(x.cat));/* notices kept from before the rule */
+    const add=(cat,id,title,body,ref)=>{if(ntfCatOn(cat))ev.push({id:`${cat}:${id}:${Date.now().toString(36)}`,cat,title,body,ref,at:now})};
     /* GA level (user, 30 Oct 2026): every plan's car request — new, changed, withdrawn (snapshots from before have no q: skipped once) */
     if(snap.t&&typeof isGA==='function'&&isGA())for(const t of tasks){if(isLeave(t))continue;const p=snap.t[t.id];if(p&&p.q===undefined)continue;const was=p?p.q:'',now=gqSig(t);const ref={t:'task',id:t.id,date:t.date};
       const fresh=!p&&(!t.gaRequestedAt||Date.now()-new Date(t.gaRequestedAt)<2*864e5);/* a plan new to the window, asked for lately */
@@ -159,18 +166,36 @@ function ntfBadges(){const n=ntfUnread();
   const m=$('#myBadge');if(m){const k=NTF.live.length;m.hidden=!k;m.textContent=k>99?'99+':k}
   const mb=$('#myBadgeM');if(mb){const k=NTF.live.length;mb.hidden=!k;mb.textContent=k>99?'99+':k}}
 function ntfIcon(cat){const c=NTF_CAT[cat]||NTF_CAT.follow;return `<span class="ntf-ic c-${esc(cat)}" aria-hidden="true"><svg viewBox="0 0 24 24">${c.i}</svg></span>`}
+const ntfPhone=()=>window.innerWidth<=760;
+const NTF_BELL='<span class="ntf-ic c-all" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span>';
+/* phones (user, 2 Nov 2026: "ใน mobile ปรับการแจ้งเตือนใหม่ให้เหมาะสมมากกว่านี้"; chose one bar at the top): one notice = its title,
+   several = "มีการแจ้งเตือนใหม่ n รายการ"; tap opens it / the list, ✕ or a swipe up closes it, gone after 5 s */
+function ntfPhoneBar(items){
+  const box=ntfPopBox();box.classList.add('top');box.innerHTML='';if(NTF.open)return;
+  const x=items[0],one=items.length===1;const el=document.createElement('div');el.className='ntf-pop bar';el.setAttribute('role','status');
+  el.innerHTML=one?`${ntfIcon(x.cat)}<div><b>${esc(x.title)}</b><span>${esc(x.body)}</span></div><button type="button" class="ntf-x" aria-label="ปิด">✕</button>`
+    :`${NTF_BELL}<div><b>มีการแจ้งเตือนใหม่ ${items.length} รายการ</b><span>${esc(items.slice(0,2).map(y=>y.title).join(' · '))}${items.length>2?' …':''}</span></div><button type="button" class="ntf-x" aria-label="ปิด">✕</button>`;
+  let y0=null;const gone=()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)};
+  el.addEventListener('pointerdown',e=>{y0=e.clientY});
+  el.addEventListener('pointerup',e=>{if(y0!=null&&e.clientY-y0<-25){y0=null;el.dataset.sw='1';gone()}y0=null});
+  el.addEventListener('click',e=>{if(el.dataset.sw)return;el.remove();if(e.target.closest('.ntf-x'))return;if(one){NTF.read.add(x.id);ntfSave();ntfBadges();ntfOpen(x.ref)}else ntfPanel(true)});
+  box.appendChild(el);setTimeout(gone,5000);
+}
 function ntfAnnounce(items){
   if(!items.length)return;
-  const box=ntfPopBox();const show=items.slice(0,3);
+  if(ntfPhone())ntfPhoneBar(items);else ntfPops(items);
+  /* the system notification: only while this page is in the background, after the person allowed it */
+  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
+    try{const x=items[0];const n=new Notification(items.length>1?`${x.title} (+${items.length-1})`:x.title,{body:x.body,icon:'assets/apple-touch-icon.png',tag:'bu1wp-'+x.id});
+      n.onclick=()=>{window.focus();n.close();ntfOpen(x.ref)}}catch(e){}}
+}
+function ntfPops(items){
+  const box=ntfPopBox();box.classList.remove('top');const show=items.slice(0,3);
   show.forEach(x=>{const el=document.createElement('div');el.className='ntf-pop';el.setAttribute('role','status');
     el.innerHTML=`${ntfIcon(x.cat)}<div><b>${esc(x.title)}</b><span>${esc(x.body)}</span></div><button type="button" class="ntf-x" aria-label="ปิด">✕</button>`;
     el.addEventListener('click',e=>{el.remove();if(e.target.closest('.ntf-x'))return;NTF.read.add(x.id);ntfSave();ntfBadges();ntfOpen(x.ref)});
     box.appendChild(el);setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400)},8000)});
   if(items.length>3){const el=document.createElement('div');el.className='ntf-pop more';el.innerHTML=`<div><b>และอีก ${items.length-3} รายการ</b><span>กดเพื่อดูการแจ้งเตือนทั้งหมด</span></div>`;el.addEventListener('click',()=>{el.remove();ntfPanel(true)});box.appendChild(el);setTimeout(()=>el.remove(),8000)}
-  /* the system notification: only while this page is in the background, after the person allowed it */
-  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
-    try{const x=items[0];const n=new Notification(items.length>1?`${x.title} (+${items.length-1})`:x.title,{body:x.body,icon:'assets/apple-touch-icon.png',tag:'bu1wp-'+x.id});
-      n.onclick=()=>{window.focus();n.close();ntfOpen(x.ref)}}catch(e){}}
 }
 function ntfPopBox(){let b=$('#ntfPops');if(!b){b=document.createElement('div');b.id='ntfPops';b.className='ntf-pops';document.body.appendChild(b)}return b}
 
@@ -187,36 +212,62 @@ async function ntfOpen(ref){
 
 /* ---------- the panel (bell) ---------- */
 function ntfAgo(at){const s=(Date.now()-new Date(at))/1000;if(!(s>=0))return '';if(s<60)return 'เมื่อสักครู่';if(s<3600)return `${Math.floor(s/60)} นาทีที่แล้ว`;if(s<86400)return `${Math.floor(s/3600)} ชม. ที่แล้ว`;return jbWhen(at)}
-const ntfRow=x=>`<button type="button" class="ntf-row${NTF.read.has(x.id)?'':' unread'}${x.live?' live':''}" data-ntf="${esc(x.id)}">${ntfIcon(x.cat)}<span class="ntf-t"><b>${esc(x.title)}</b><span>${esc(x.body)}</span>${x.at?`<small>${esc(ntfAgo(x.at))}</small>`:''}</span></button>`;
+/* every row sits on a strip that a swipe to the left uncovers (touch: mark read, and hide a ล่าสุด item) */
+const ntfRow=x=>`<div class="ntf-sw"><span class="ntf-swl" aria-hidden="true">${x.live?'อ่านแล้ว':'อ่านแล้ว · ซ่อน'}</span><button type="button" class="ntf-row${NTF.read.has(x.id)?'':' unread'}${x.live?' live':''}" data-ntf="${esc(x.id)}">${ntfIcon(x.cat)}<span class="ntf-t"><b>${esc(x.title)}</b><span>${esc(x.body)}</span>${x.at?`<small>${esc(ntfAgo(x.at))}</small>`:''}</span></button></div>`;
+const NTF_SHORT={ga:'GA จัดรถ',job:'ใบรับคำร้อง',cs:'Check Sheet',ncr:'NCR',plan:'แผนงาน',clash:'จัดชน',follow:'งานค้าง',gareq:'คำขอรถ',mrep:'รายงานเช้า',odoc:'เอกสาร Onsite',safety:'Safety'};
+const ntfDay=at=>{const k=ymd(new Date(at));return k===ymd(new Date())?'วันนี้':k===ymd(addDays(new Date(),-1))?'เมื่อวาน':'ก่อนหน้านี้'};
 function ntfPanel(on){
   let p=$('#ntfPanel');
-  if(on===false||(on==null&&p&&!p.hidden)){if(p)p.hidden=true;NTF.open=false;document.querySelectorAll('[data-action="ntf"]').forEach(b=>b.setAttribute('aria-expanded','false'));return}
+  if(on===false||(on==null&&p&&!p.hidden)){if(p)p.hidden=true;NTF.open=false;document.body.classList.remove('ntf-lock');document.querySelectorAll('[data-action="ntf"]').forEach(b=>b.setAttribute('aria-expanded','false'));return}
   if(!p){p=document.createElement('section');p.id='ntfPanel';p.className='ntf-panel';p.setAttribute('aria-label','การแจ้งเตือน');document.body.appendChild(p)}
   NTF.open=true;NTF.tab=NTF.tab||'all';NTF.set=false;p.hidden=false;document.querySelectorAll('[data-action="ntf"]').forEach(b=>b.setAttribute('aria-expanded','true'));
-  ntfLoad();ntfDrawPanel();ntfPlace();ntfTick();
+  const pops=$('#ntfPops');if(pops)pops.innerHTML='';/* nothing pops over the open list */
+  ntfLoad();ntfPlace();ntfDrawPanel();ntfTick();
 }
+/* phones: the whole screen (page under it does not scroll); wider: beside the bell */
 function ntfPlace(){const p=$('#ntfPanel');if(!p||p.hidden)return;
-  const b=[...document.querySelectorAll('[data-action="ntf"]')].find(x=>x.offsetParent);const z=(window.uiZoom&&window.uiZoom())||1;
-  if(!b||window.innerWidth<=760){p.classList.add('sheet');p.style.left=p.style.top='';return}
-  p.classList.remove('sheet');const r=b.getBoundingClientRect();p.style.left=Math.round(r.right/z+8)+'px';p.style.top=Math.round(Math.max(8,r.top/z-6))+'px'}
+  const b=[...document.querySelectorAll('[data-action="ntf"]')].find(x=>x.offsetParent);const z=(window.uiZoom&&window.uiZoom())||1;const was=p.classList.contains('sheet');
+  if(!b||ntfPhone()){p.classList.add('sheet');p.style.left=p.style.top='';document.body.classList.add('ntf-lock');if(!was)ntfDrawPanel();return}
+  p.classList.remove('sheet');document.body.classList.remove('ntf-lock');if(was)ntfDrawPanel();const r=b.getBoundingClientRect();p.style.left=Math.round(r.right/z+8)+'px';p.style.top=Math.round(Math.max(8,r.top/z-6))+'px'}
 window.addEventListener('resize',ntfPlace);
 function ntfDrawPanel(){
   const p=$('#ntfPanel');if(!p||p.hidden)return;
-  const ev=NTF.tab==='unread'?NTF.list.filter(x=>!NTF.read.has(x.id)):NTF.list;const live=NTF.tab==='unread'?NTF.live.filter(x=>!NTF.read.has(x.id)):NTF.live;
+  const full=p.classList.contains('sheet');
+  /* unread tab, then the category chips (only categories that have something), then by day */
+  const keep=x=>NTF.tab!=='unread'||!NTF.read.has(x.id);const evAll=NTF.list.filter(keep),liveAll=NTF.live.filter(keep);
+  const cnt={};liveAll.concat(evAll).forEach(x=>{cnt[x.cat]=(cnt[x.cat]||0)+1});const cats=ntfCats().map(c=>c[0]).filter(k=>cnt[k]);
+  if(NTF.cat&&!cnt[NTF.cat])NTF.cat='';const inCat=x=>!NTF.cat||x.cat===NTF.cat;
+  const ev=evAll.filter(inCat),live=liveAll.filter(inCat);
+  const chips=cats.length>1?`<div class="ntf-cats" role="group" aria-label="หมวด"><button type="button" class="ntf-cat${!NTF.cat?' on':''}" data-ntf-cat-f="">ทั้งหมด <b>${liveAll.length+evAll.length}</b></button>${cats.map(k=>`<button type="button" class="ntf-cat${NTF.cat===k?' on':''}" data-ntf-cat-f="${k}">${esc(NTF_SHORT[k]||k)} <b>${cnt[k]}</b></button>`).join('')}</div>`:'';
+  const days=['วันนี้','เมื่อวาน','ก่อนหน้านี้'].map(d=>[d,ev.slice(0,80).filter(x=>ntfDay(x.at)===d)]).filter(([,l])=>l.length);
+  const readN=NTF.list.filter(x=>NTF.read.has(x.id)).length;
   const perm='Notification' in window?Notification.permission:'none';
-  p.innerHTML=`<header><b>การแจ้งเตือน</b><span class="grow"></span><button type="button" class="lnk" data-ntf-all>อ่านทั้งหมด</button><button type="button" class="icon-btn sm" data-ntf-set aria-label="ตั้งค่าการแจ้งเตือน" title="ตั้งค่า"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/></svg></button><button type="button" class="icon-btn sm" data-ntf-close aria-label="ปิด">✕</button></header>
-    ${NTF.set?`<div class="ntf-set"><p>เลือกเรื่องที่ต้องการให้แจ้ง (เก็บในเบราว์เซอร์นี้)</p>${NTF_CATS.map(([k,l])=>`<label><input type="checkbox" data-ntf-cat="${k}"${NTF.prefs.off.includes(k)?'':' checked'}> ${ntfIcon(k)} ${esc(l)}</label>`).join('')}
+  p.innerHTML=`<header>${full?'<button type="button" class="icon-btn sm ntf-back" data-ntf-close aria-label="กลับ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg></button>':''}<b>การแจ้งเตือน</b><span class="grow"></span>${NTF.set?'':`<button type="button" class="lnk" data-ntf-all>อ่านทั้งหมด</button>`}<button type="button" class="icon-btn sm" data-ntf-set aria-label="ตั้งค่าการแจ้งเตือน" title="ตั้งค่า"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/></svg></button>${full?'':'<button type="button" class="icon-btn sm" data-ntf-close aria-label="ปิด">✕</button>'}</header>
+    ${NTF.set?`<div class="ntf-set"><p>เลือกเรื่องที่ต้องการให้แจ้ง (เก็บในเบราว์เซอร์นี้)</p>${ntfCats().map(([k,l])=>`<label><input type="checkbox" data-ntf-cat="${k}"${NTF.prefs.off.includes(k)?'':' checked'}> ${ntfIcon(k)} ${esc(l)}</label>`).join('')}
       <div class="ntf-perm">${perm==='granted'?'✓ แจ้งเตือนบน Windows / มือถือ เปิดอยู่ (เด้งเมื่อหน้านี้เปิดค้างไว้ในแท็บอื่น)':perm==='denied'?'การแจ้งเตือนของเบราว์เซอร์ถูกปิดไว้ · เปิดได้ที่ไอคอนแม่กุญแจหน้าที่อยู่เว็บ':perm==='none'?'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนของระบบ':'<button type="button" class="btn sm primary" data-ntf-perm>เปิดแจ้งเตือนบน Windows / มือถือ</button>'}</div>
       <button type="button" class="btn sm" data-ntf-set>เสร็จ</button></div>`
     :`<div class="seg ntf-tabs" role="tablist"><button type="button" role="tab" data-ntf-tab="all" aria-selected="${NTF.tab!=='unread'}">ทั้งหมด</button><button type="button" role="tab" data-ntf-tab="unread" aria-selected="${NTF.tab==='unread'}">ยังไม่อ่าน ${ntfUnread()?`(${ntfUnread()})`:''}</button></div>
+    ${chips}${live.length||ev.length?'<p class="ntf-tip">ปัดรายการไปทางซ้าย = อ่านแล้ว / ซ่อน</p>':''}
     <div class="ntf-list">${live.length?`<p class="ntf-h">ต้องติดตาม · ${live.length}</p>${live.map(ntfRow).join('')}`:''}
-      ${ev.length?`<p class="ntf-h">ล่าสุด</p>${ev.slice(0,60).map(ntfRow).join('')}`:''}
-      ${!live.length&&!ev.length?`<p class="ntf-empty">${NTF.ready?'ไม่มีการแจ้งเตือน':'กำลังตรวจข้อมูล…'}<small>เรื่องใหม่ เช่น GA จัดรถ ใบรับคำร้องขอรับบริการสอบเทียบ Check Sheet จะขึ้นที่นี่</small></p>`:''}</div>
+      ${days.map(([d,l])=>`<p class="ntf-h">${d}</p>${l.map(ntfRow).join('')}`).join('')}
+      ${!live.length&&!ev.length?`<p class="ntf-empty">${!NTF.ready?'กำลังตรวจข้อมูล…':NTF.tab==='unread'?'อ่านครบแล้ว':'ไม่มีการแจ้งเตือน'}<small>${ntfIsGA()?'คำขอรถ GA ใหม่ แก้ไข หรือยกเลิก จะขึ้นที่นี่':'เรื่องใหม่ เช่น GA จัดรถ ใบรับคำร้องขอรับบริการสอบเทียบ Check Sheet จะขึ้นที่นี่'}</small></p>`:''}</div>
     ${perm==='default'?'<button type="button" class="ntf-ask" data-ntf-perm>🔔 เปิดแจ้งเตือนบน Windows / มือถือ เพื่อรู้แม้เปิดหน้าอื่นอยู่</button>':''}
-    <footer><button type="button" class="lnk" data-ntf-my>เปิดหน้างานของฉัน ›</button></footer>`}`;
+    <footer>${readN?`<button type="button" class="lnk" data-ntf-clear title="ลบรายการล่าสุดที่อ่านแล้วออกจากรายการในเบราว์เซอร์นี้">ล้างที่อ่านแล้ว (${readN})</button>`:''}<span class="grow"></span>${ntfIsGA()?'':'<button type="button" class="lnk" data-ntf-my>เปิดหน้างานของฉัน ›</button>'}</footer>`}`;
 }
+/* touch: swipe a row to the left = mark read (a ล่าสุด item is also hidden); the click that ends a swipe is ignored */
+let NSW=null,ntfSwAt=0;
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const r=e.target.closest&&e.target.closest('#ntfPanel .ntf-row');if(r)NSW={r,x:e.clientX,y:e.clientY,dx:0,on:false,id:e.pointerId}});
+document.addEventListener('pointermove',e=>{if(!NSW||e.pointerId!==NSW.id)return;const dx=e.clientX-NSW.x,dy=e.clientY-NSW.y;
+  if(!NSW.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.5){NSW.on=true;NSW.r.classList.add('swiping')}else{if(Math.abs(dy)>12)NSW=null;return}}
+  NSW.dx=Math.min(0,dx);NSW.r.style.transform=`translateX(${NSW.dx}px)`;NSW.r.parentElement.classList.toggle('go',NSW.dx<-80)});
+const ntfSwEnd=e=>{if(!NSW||(e&&e.pointerId!==NSW.id))return;const s=NSW;NSW=null;if(!s.on)return;ntfSwAt=Date.now();s.r.classList.remove('swiping');
+  if(e&&e.type==='pointerup'&&s.dx<-80){const id=s.r.dataset.ntf;NTF.read.add(id);if(!s.r.classList.contains('live'))NTF.list=NTF.list.filter(x=>x.id!==id);ntfSave();ntfBadges();s.r.style.transform='translateX(-110%)';setTimeout(ntfDrawPanel,180)}
+  else{s.r.style.transform='';s.r.parentElement.classList.remove('go')}};
+document.addEventListener('pointerup',ntfSwEnd);document.addEventListener('pointercancel',ntfSwEnd);
 document.addEventListener('click',e=>{const t=e.target;
-  const r=t.closest('[data-ntf]');if(r){const id=r.dataset.ntf;NTF.read.add(id);ntfSave();ntfBadges();const x=NTF.list.concat(NTF.live).find(y=>y.id===id);if(x)ntfOpen(x.ref);return}
+  const cf=t.closest('[data-ntf-cat-f]');if(cf){NTF.cat=cf.dataset.ntfCatF;ntfDrawPanel();return}
+  if(t.closest('[data-ntf-clear]')){NTF.list=NTF.list.filter(x=>!NTF.read.has(x.id));ntfSave();ntfBadges();ntfDrawPanel();return}
+  const r=t.closest('[data-ntf]');if(r){if(Date.now()-ntfSwAt<400)return;const id=r.dataset.ntf;NTF.read.add(id);ntfSave();ntfBadges();const x=NTF.list.concat(NTF.live).find(y=>y.id===id);if(x)ntfOpen(x.ref);return}
   if(t.closest('[data-ntf-close]')){ntfPanel(false);return}
   if(t.closest('[data-ntf-all]')){NTF.list.concat(NTF.live).forEach(x=>NTF.read.add(x.id));ntfSave();ntfBadges();ntfDrawPanel();return}
   if(t.closest('[data-ntf-set]')){NTF.set=!NTF.set;ntfDrawPanel();return}
