@@ -2,6 +2,7 @@
    "ให้พอดีสัดส่วนทั้ง web และ mobile layout") — colours of the states: ตรงเวลา good · ช้า warn · ไม่รายงาน crit · ยกเว้น accent */
 /* the menu item is for admin / Planner only (render() sets body.is-planner) */
 body:not(.is-planner) [data-view="mrep"]{display:none!important}
+.mr-page,.mr-my,.mr-pb{--mr-abs:#8b5cf6}
 .mr-page{--mr-ok:var(--good);--mr-late:var(--warn);--mr-miss:var(--crit);--mr-ex:var(--accent);--mr-wait:var(--muted);
   display:grid;gap:12px;min-width:0;max-width:100%;width:100%}
 .mr-page>*{min-width:0;max-width:100%}
@@ -120,6 +121,43 @@ button.mr-dc:hover{outline:2px solid var(--ink);outline-offset:1px}
 .mr-go{justify-self:start;min-height:44px;padding:0 22px;font-size:15px}
 .mr-my .mr-lnote{color:var(--crit);font-size:12.5px}
 .mr-done{margin:0;font-weight:600;color:var(--good)}
+
+/* ---------- ไม่เข้าประชุมเช้า + teams (user, 2 Nov 2026) ---------- */
+.mr-fc.mr-abs{--c:var(--mr-abs)}.mr-fc.mr-abs b{color:var(--mr-abs)}
+.mr-abchip{flex:none;padding:3px 9px;border-radius:999px;border:1px solid var(--mr-abs);color:var(--mr-abs);font-size:11.5px;font-weight:700;white-space:nowrap}
+.mr-ch .mr-abchip{margin-left:auto}.mr-ch .mr-abchip+.mr-st{margin-left:0}
+.mr-card.absent{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mr-abs) 45%,transparent)}
+.mr-ab{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
+.mr-abt{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);font-size:12.5px;font-weight:600;cursor:pointer;user-select:none}
+.mr-abt input{width:17px;height:17px;margin:0;accent-color:var(--mr-abs);cursor:pointer}
+.mr-ab.on .mr-abt{border-color:var(--mr-abs);background:color-mix(in srgb,var(--mr-abs) 12%,var(--surface));color:var(--ink)}
+.mr-abw{flex:1 1 180px;min-width:0;height:32px;font-size:13px}
+.mr-abtag{font-size:12.5px;font-weight:700;color:var(--mr-abs)}
+.mr-ab small{font-size:12px;color:var(--muted)}
+.mr-tdot{display:inline-block;width:10px;height:10px;margin-right:7px;border-radius:50%;background:var(--c);vertical-align:0}
+.mr-tsum{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.mr-tsum h3{margin:0;font-size:14.5px}
+table.mr-tt{min-width:440px}
+table.mr-tt td{vertical-align:middle}
+table.mr-tt td.bad,.mr-th .bad{color:var(--mr-miss);font-weight:700}
+table.mr-tt td.warn{color:color-mix(in srgb,var(--mr-late) 80%,var(--ink));font-weight:700}
+table.mr-tt td.abs,table.mr-mt td.abs,.mr-th .abs,.mr-mc .mr-mn .abs b{color:var(--mr-abs);font-weight:700}
+.mr-th{font-size:12.5px;color:var(--muted)}.mr-th .ok{color:var(--mr-ok)}
+.mr-g-team>header{flex-wrap:wrap}
+.mr-acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.mr-dc{position:relative}
+.mr-dc.abs::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--mr-abs);box-shadow:0 0 0 1.5px #fff}
+.mr-mc .mr-dc.abs::after{inset:3px}
+.mr-abnote{margin:0;font-size:13px;font-weight:600;color:var(--mr-abs)}
+/* the plan view's ประชุมเช้า box (inside Team Service, js/dialog/task-form.js → mrPlanBox) */
+.mr-pb{flex:1 1 100%;display:grid;gap:6px;width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.mr-pbh{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px}
+.mr-pbh b{font-size:13px}
+.mr-pb .mr-ab{display:grid;grid-template-columns:minmax(90px,1fr) auto;align-items:center;gap:6px 10px}
+.mr-pb .mr-abw{grid-column:1/-1;flex:none;width:100%}
+.mr-pb .mr-ab small{grid-column:1/-1}
+.mr-pbn{min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-pb .mr-abt{background:var(--surface)}
 
 /* ---------- tablets / phones ---------- */
 @media (max-width:1100px){
