@@ -115,6 +115,8 @@ function dzManpower(D){
       <h3 class="dz-sub">แยกตามทีม · คน-วันตามชนิดวัน</h3>${vzStackRows(TU.map(x=>({label:x.tm.name,v:dayV(x),extra:`${x.util}%`})),DAYKEYS,{unit:'คน-วัน'})}
       <h3 class="dz-sub">แยกตามทีม · ตัวเลข</h3><table class="mini"><thead><tr><th>ทีม</th><th class="n">คน</th><th class="n">แผน</th><th class="n">ปิดงาน</th><th class="n">คน-วัน</th><th class="n">ใช้กำลังคน</th></tr></thead><tbody>${D.teamRows.map(r=>{const u=TU.find(x=>x.tm.id===r.tm.id)||{};return `<tr><td><span class="tdot" style="--c:${r.tm.color}"><i></i>${esc(r.tm.name)}</span></td><td class="n">${r.people}</td><td class="n">${r.n}</td><td class="n">${r.doneRate==null?'–':r.doneRate+'%'}</td><td class="n">${f1(u.md||0)}</td><td class="n">${u.util==null?'–':u.util+'%'}</td></tr>`}).join('')}</tbody></table>
       <p class="hint dz-note">คน All Team นับอยู่ในทั้งสองทีม · ปิดงาน = เสร็จแล้ว ÷ แผนที่ถึงกำหนด</p>`:''),' style="--d:4"');
+  h+=attDashHtml(D);/* Plan Team เทียบ Actual + ชั่วโมง (js/dialog/done-sum.js) */
+  h+=awayDashHtml(D);/* ใครไม่ทำงานวันไหน */
   const maxJ=Math.max(1,...D.people.map(p=>p.jobs));const wdN=D.workDays.length;
   h+=`<details class="panel dz-card dz-det span-12" style="--d:5"><summary><h2>ตารางรายละเอียดรายคน</h2><span class="hint">${D.people.length} คน · กดเพื่อเปิด</span></summary>
     <div class="scroll-x plain" style="max-height:520px;overflow:auto"><table class="mini ptab"><thead><tr><th>#</th><th>ชื่อ</th><th>งาน (แผน)</th><th class="n">คน-วัน</th><th class="n">OT</th><th class="n">ใช้กำลังคน</th><th class="n">เช้า</th><th class="n">บ่าย</th><th class="n">ทั้งวัน</th><th class="n">ลา (วัน)</th><th class="n">ว่าง (วัน)</th><th class="n">จัดชน</th><th>งานที่ทำมากสุด</th></tr></thead><tbody>
@@ -139,12 +141,16 @@ function dzJobs(D){
   const o={unit:'แผน',prevLbl:pl};
   let h=dzCard('span-6','ลูกค้า',`${D.cust.size>10?'10 อันดับแรกจาก':'ทั้งหมด'} ${D.cust.size} ราย · ขีดดำ = ${esc(pl)} (ไม่มีขีด = ช่วงก่อนไม่มีงาน)`,vzRank(cust,o),' style="--d:1"');
   h+=dzCard('span-6','หัวข้องาน',`จำนวนแผนต่อหัวข้องาน · ขีดดำ = ${esc(pl)}`,vzRank(types,o),' style="--d:2"');
-  h+=dzCard('span-6','Sale',`แผนที่ Sale แต่ละคนดูแล`,vzRank(sales,o),' style="--d:3"');
-  h+=dzCard('span-6','การใช้รถแผนก',`จำนวนแผนต่อคัน (วัน = จำนวนวันที่ใช้)${D.noCar?` · ไม่ใช้รถ ${D.noCar} แผน`:''}`,vzRank(vehs,o),' style="--d:4"');
+  h+=dzCard('span-4','Sale',`แผนที่ Sale แต่ละคนดูแล`,vzRank(sales,o),' style="--d:3"');
   const pc=[{name:'เช้า',n:D.jobs.filter(t=>periodOf(t)==='am').length,color:'var(--vz-1)'},{name:'บ่าย',n:D.jobs.filter(t=>periodOf(t)==='pm').length,color:'var(--vz-2)'},{name:'ทั้งวัน',n:D.jobs.filter(t=>periodOf(t)==='full').length,color:'var(--vz-3)'}];
-  h+=dzCard('span-4','ช่วงเวลาของงาน',`ทีมเฉลี่ย ${f1(D.avgTeam)} คนต่องาน`,vzDonut(pc,{sub:'แผน',unit:'แผน',size:118,th:16,label:'ช่วงเวลาของงาน'}),' style="--d:5"');
   const tcols=D.types.filter(x=>x.n&&x.id);const crow=D.custList.slice(0,10);
-  h+=dzCard('span-8','ลูกค้า × หัวข้องาน','จำนวนแผนของลูกค้า 10 รายแรกแยกตามหัวข้องาน',crow.length&&tcols.length?`<div class="scroll-x plain"><table class="mini dz-x"><thead><tr><th>ลูกค้า</th>${tcols.map(c=>`<th class="n">${esc(c.label)}</th>`).join('')}<th class="n">รวม</th></tr></thead><tbody>${crow.map(([k,n])=>`<tr><td>${esc(k)}</td>${tcols.map(c=>{const v=D.jobs.filter(t=>D.custKeyOf(t)===k&&typeIdOf(t)===c.id).length;return `<td class="n${v?' v':''}" style="--a:${Math.round(v/Math.max(1,n)*60)}%">${v||'–'}</td>`}).join('')}<td class="n"><b>${n}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">ยังไม่มีข้อมูลในช่วงนี้</p>',' style="--d:6"');
+  h+=dzCard('span-8','ลูกค้า × หัวข้องาน','จำนวนแผนของลูกค้า 10 รายแรกแยกตามหัวข้องาน',crow.length&&tcols.length?`<div class="scroll-x plain"><table class="mini dz-x"><thead><tr><th>ลูกค้า</th>${tcols.map(c=>`<th class="n">${esc(c.label)}</th>`).join('')}<th class="n">รวม</th></tr></thead><tbody>${crow.map(([k,n])=>`<tr><td>${esc(k)}</td>${tcols.map(c=>{const v=D.jobs.filter(t=>D.custKeyOf(t)===k&&typeIdOf(t)===c.id).length;return `<td class="n${v?' v':''}" style="--a:${Math.round(v/Math.max(1,n)*60)}%">${v||'–'}</td>`}).join('')}<td class="n"><b>${n}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">ยังไม่มีข้อมูลในช่วงนี้</p>',' style="--d:4"');
+  /* time of day, then every car figure together (user, 4 Nov 2026: "เพิ่มการสรุปข้อมูลรถใน Dashboard ให้ Role อื่นๆเห็นด้วย") */
+  h+=dzCard('span-4','ช่วงเวลาของงาน',`ทีมเฉลี่ย ${f1(D.avgTeam)} คนต่องาน`,vzDonut(pc,{sub:'แผน',unit:'แผน',size:118,th:16,label:'ช่วงเวลาของงาน'}),' style="--d:5"');
+  const trav=gsTravel(D.jobs);const trN=trav.reduce((a,x)=>a+x[1],0);
+  h+=dzCard('span-4','วิธีเดินทาง',`แผนงานในช่วงนี้แยกตามวิธีเดินทาง · แผนละ 1 แบบ`,trav.length?vzRank(trav.map(([label,n])=>({label,n,extra:`${pct(n,trN)}%`})),{unit:'แผน'}):'<p class="hint">ยังไม่มีข้อมูลในช่วงนี้</p>',' style="--d:6"');
+  h+=dzCard('span-4','การใช้รถแผนก',`จำนวนแผนต่อคัน (วัน = จำนวนวันที่ใช้)${D.noCar?` · ไม่ใช้รถ ${D.noCar} แผน`:''}`,vehs.length?vzRank(vehs,o):'<p class="hint">ยังไม่มีข้อมูลในช่วงนี้</p>',' style="--d:7"');
+  h+=gsDashHtml(D);
   return h;
 }
 

@@ -3,6 +3,22 @@
 /* ---------- utils ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ผู้ติดต่อ = one field, name and phone together (user, 4 Nov 2026: "ให้ใส่ทั้งชื่อ และ เบอร์ในช่องผู้ติดต่อช่องเดียว … แผนงานเก่าๆ ให้ปรับใส่ในช่องเดียวกันอัตโนมัติ
+   และสามารถกดเบอร์และโทรได้เลย"). Older plans keep the phone in contactTel: backend.js merges it when reading and writing. */
+const TEL_RE=/(?<!\d)(?:\+?66[\s-]?\d|0\d)(?:[\s-]?\d){7,9}(?:\s*(?:ต่อ|ext\.?|#)\s*\d{1,5})?(?!\d)/gi;
+function contactMerge(name,tel){const n=String(name||'').trim(),p=String(tel||'').trim();if(!p)return n;if(!n)return p;const d=p.replace(/\D/g,'');return d&&n.replace(/\D/g,'').includes(d)?n:`${n} ${p}`}
+const contactOf=t=>t?contactMerge(t.contact,t.contactTel):'';
+/* for the places with their own name / phone columns (Check Sheet, Instrument "ชื่อลูกค้า") */
+const contactName=s=>String(s||'').replace(TEL_RE,' ').replace(/\s*[,/·]\s*(?=[,/·]|$)/g,' ').replace(/^[\s,/·-]+|[\s,/·-]+$/g,'').replace(/\s{2,}/g,' ');
+const contactPhones=s=>(String(s||'').match(TEL_RE)||[]).join(', ');
+/* the text, escaped, with every phone number as a link that dials */
+function telLinks(s){const t=String(s||'');let out='',i=0;
+  t.replace(TEL_RE,(m,pos)=>{out+=esc(t.slice(i,pos));const x=/(?:ต่อ|ext\.?|#)\s*(\d+)$/i.exec(m);const d=(x?m.slice(0,x.index):m).replace(/[^\d+]/g,'');
+    out+=`<a class="tel-link" href="tel:${esc(d)}${x?','+esc(x[1]):''}" title="กดเพื่อโทร ${esc(m)}">☎ ${esc(m)}</a>`;i=pos+m.length;return m});
+  return out+esc(t.slice(i))}
+/* Location opens Google Maps (user, 4 Nov 2026: "เวลาพิมพ์ location ให้สามารถกดแล้วเข้าไป google map ได้"): searched with the customer too, a bare "โรง 3" finds nothing */
+const mapUrl=(loc,cust)=>{const l=String(loc||'').trim();if(!l)return '';const c=String(cust||'').trim();return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c?`${l} ${c}`:l)}`};
+const mapLink=t=>{const u=t?mapUrl(t.location,t.customer):'';return u?`<a class="map-link" href="${esc(u)}" target="_blank" rel="noopener" title="เปิดใน Google Maps">📍 ${esc(t.location)} ↗</a>`:''};
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const parseD=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1)};
@@ -30,6 +46,8 @@ const isWorking=t=>t.status!=='cancelled';
 /* a plan that holds its people and vehicles that day: not cancelled and not เลื่อน (user, 14 Oct 2026: the team of a postponed
    plan goes back to ผู้ปฏิบัติงานที่ว่าง so the planner can send them to another job that day; no clash with it either) */
 const holdsTeam=t=>isWorking(t)&&t.status!=='postponed';
+/* who a plan really took: a done plan's คนเข้างานจริง (สรุปงาน, user 4 Nov 2026), else its Team Service */
+const teamActual=t=>t.status==='done'&&(t.doneTeam||[]).length?t.doneTeam:(t.staffIds||[]);
 function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.getDate()} ${EN_MON[sun.getMonth()]} ${String(sun.getFullYear()).slice(-2)}`}
 
 /* ---------- master data lookups ---------- */

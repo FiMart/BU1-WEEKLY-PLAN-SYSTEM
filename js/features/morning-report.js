@@ -71,13 +71,13 @@ function mrSt(rec,k){
 const mrChip=(st,rec)=>st?`<span class="mr-st mr-${st}">${MR_ST[st].th}${rec&&rec.time&&!rec.ex?` · ${esc(rec.time)} น.`:''}</span>`:'';
 const mrPlanTxt=t=>[t.planNo,t.customer].filter(Boolean).join(' · ')||typeLabel(t);
 /* write one person-day; the history line says what changed */
-async function mrPut(k,id,patch,txt){
+async function mrPut(k,id,patch,txt){await mrWrite(k,id,patch,txt);mrInvalidate();render()}
+async function mrWrite(k,id,patch,txt){
   const rows=mrRows(k.slice(0,7));const cur=mrRec(rows,k,id)||{};
   const rec=Object.assign({},cur,{month:k.slice(0,7),date:k,staffId:id},patch);delete rec.id;delete rec.dept_id;
   rec.hist=(Array.isArray(cur.hist)?cur.hist:[]).concat([{at:new Date().toISOString(),by:S.me||null,txt}]).slice(-20);
   await Store.set('mrep',`${k}_${id}`,rec);
   const e=RC.get('mr|'+k.slice(0,7));if(e&&e.data){e.data=e.data.filter(r=>!(r.date===k&&r.staffId===id)).concat([Object.assign({id:`${k}_${id}`},rec)])}
-  mrInvalidate();render();
 }
 async function mrSelf(){
   const id=mrMe();const k=mrToday();if(!id){toast('บัญชีนี้ยังไม่ได้ผูกกับชื่อพนักงาน ให้ Planner ผูกที่ ข้อมูลหลัก › รายงานแผนตอนเช้า');return}
@@ -195,7 +195,7 @@ function mrDayHtml(){
   h+=D.teams.map(t=>{const l=t.list.filter(pass);if(!l.length)return '';
     return `<section class="mr-grp mr-g-team"><header><h3>${mrTeamDot(t.id)}${esc(teamName(t.id))} <span class="md-count">${l.length}</span></h3><span class="mr-th">${t.todo?`<b class="bad">ยังไม่รายงาน ${t.todo}</b>`:'<b class="ok">รายงานครบ</b>'}${t.abs?` · <b class="abs">ไม่เข้าประชุม ${t.abs}</b>`:''}</span></header>
       <div class="mr-cards">${l.map(r=>mrCard(r,k)).join('')}</div></section>`}).join('')||'<p class="hint mr-none">ไม่มีคนในสถานะนี้</p>';
-  return h+`<p class="hint mr-foot">คนที่มีแผนงานในวันนั้นต้องรายงาน (ไม่นับคนลาทั้งวัน แผนเลื่อน / ยกเลิก และตำแหน่ง Safety) · ทีม = ทีมของพนักงานในข้อมูลหลัก · ติ๊ก "ไม่เข้าประชุมเช้า" ที่หน้าดูแผน › Team Service (กดชื่อแผนบนการ์ดเพื่อเปิด)${can('master')?' · กด แก้ไข เพื่อบันทึกแทน / ยกเว้น ต้องใส่เหตุผลทุกครั้ง':''}</p>`;
+  return h+`<p class="hint mr-foot">คนที่มีแผนงานในวันนั้นต้องรายงาน (ไม่นับคนลาทั้งวัน แผนเลื่อน / ยกเลิก และตำแหน่ง Safety) · ทีม = ทีมของพนักงานในข้อมูลหลัก · ติ๊ก "ไม่เข้าประชุมเช้า · ทั้งทีม" ที่หน้าดูแผน › Team Service (กดชื่อแผนบนการ์ดเพื่อเปิด)${can('master')?' · กด แก้ไข เพื่อบันทึกแทน / ยกเว้น ต้องใส่เหตุผลทุกครั้ง':''}</p>`;
 }
 function mrMonthHtml(){
   const m=mrMonth();const [y,mo]=m.split('-').map(Number);const D=mrMonthData(m);
@@ -275,31 +275,35 @@ document.addEventListener('click',async e=>{
     copyText(out.join('\n'),'คัดลอกรายชื่อแล้ว วางใน LINE ได้เลย');return}
   const x=e.target.closest('[data-mr-xlsx]');if(x)mrXlsx(x);
 });
-/* ---------- the plan view: ไม่เข้าประชุมเช้า per person of the Team Service (plans of today and before) ---------- */
+/* ---------- the plan view: one tick = the whole Team Service missed the morning meeting (plans of today and before; user, 4 Nov 2026:
+   "ให้ขึ้นติ๊กไม่เข้าประชุมเช้าปุ่มเดียว พอติ๊กปุ๊ปให้ตีว่า ไม่เข้ารายงานประชุมเช้าทั้ง Team เลย"). Stored per person as before, so the report page,
+   month and Excel read the same; someone on two plans that day shares one record. Safety positions are left out. ---------- */
 function mrPlanBox(t){
   if(!t||isLeave(t)||!holdsTeam(t)||!t.date||t.date>mrToday())return '';
   /* Admin / Planner only: other levels see nothing of the morning meeting (user, 2 Nov 2026) */
   if(!mrAbsSee())return '';
   const k=t.date;const ids=(t.staffIds||[]).filter(id=>{const s=staffById(id);return s&&s.active!==false&&!mrSafety(s)});if(!ids.length)return '';
-  const edit=true;const rows=mrRows(k.slice(0,7));
-  if(!rows)return '<div class="mr-pb"><div class="mr-pbh"><b>ประชุมเช้า</b><span class="hint">กำลังโหลด…</span></div></div>';
-  const abs=ids.filter(id=>mrAbs(mrRec(rows,k,id)));
+  const rows=mrRows(k.slice(0,7));
+  if(!rows)return '<div class="mr-pb"><span class="hint">ประชุมเช้า · กำลังโหลด…</span></div>';
+  const abs=ids.filter(id=>mrAbs(mrRec(rows,k,id)));const all=abs.length===ids.length;const why=abs.map(id=>mrRec(rows,k,id).absentWhy||'').find(Boolean)||'';
   const skip=(t.staffIds||[]).filter(id=>mrSafety(staffById(id)));
-  const row=id=>{const rec=mrRec(rows,k,id);const ab=mrAbs(rec);const nm=staffName(id);
-    return `<div class="mr-ab${ab?' on':''}"><span class="mr-pbn">${esc(nm)}</span><label class="mr-abt"><input type="checkbox" data-mr-abs="${esc(id)}" data-mr-absd="${esc(k)}"${ab?' checked':''}><span>ไม่เข้าประชุมเช้า</span></label>${ab?`<input type="text" class="mr-abw" id="mr-abw-${esc(id)}" data-mr-abwhy="${esc(id)}" data-mr-absd="${esc(k)}" maxlength="120" placeholder="เหตุผล (ถ้ามี) เช่น ออกหน้างานตั้งแต่เช้า" value="${esc(rec.absentWhy||'')}" autocomplete="off" aria-label="เหตุผลที่ ${esc(nm)} ไม่เข้าประชุม">`:''}</div>`};
-  return `<div class="mr-pb"><div class="mr-pbh"><b>ประชุมเช้า · ${esc(fmtDay(k))}</b><span class="hint">${abs.length?`ไม่เข้าประชุม ${abs.length} คน`:edit?'ติ๊กคนที่ไม่เข้าประชุม':''}</span></div>
-    ${ids.map(row).join('')}${edit&&skip.length?`<small class="hint">${esc(skip.map(staffName).join(', '))} · ตำแหน่ง Safety ไม่ต้องติ๊ก</small>`:''}</div>`;
+  return `<div class="mr-pb${all?' on':''}"><div class="mr-pbh"><label class="mr-abt"><input type="checkbox" data-mr-team="${esc(ids.join('|'))}" data-mr-absd="${esc(k)}"${all?' checked':''}><span>ไม่เข้าประชุมเช้า · ทั้งทีม</span></label>
+      <span class="hint">${esc(fmtDay(k))} · ${all?`ไม่เข้าทั้งทีม ${ids.length} คน`:abs.length?`ไม่เข้าแล้ว ${abs.length} จาก ${ids.length} คน · ติ๊กเพื่อให้ครบทั้งทีม`:`ติ๊กครั้งเดียว ตีว่าไม่เข้าทั้งทีม ${ids.length} คน`}</span></div>
+    ${abs.length?`<input type="text" class="mr-abw" id="mr-abw-team" data-mr-whyteam="${esc(abs.join('|'))}" data-mr-absd="${esc(k)}" maxlength="120" placeholder="เหตุผล (ถ้ามี) เช่น ออกหน้างานตั้งแต่เช้า" value="${esc(why)}" autocomplete="off" aria-label="เหตุผลที่ทีมไม่เข้าประชุมเช้า">`:''}
+    ${skip.length?`<small class="hint">${esc(skip.map(staffName).join(', '))} · ตำแหน่ง Safety ไม่นับ</small>`:''}</div>`;
 }
-/* ไม่เข้าประชุมเช้า: tick / untick at once, the reason saved when the box is left (date = the plan's day) */
+/* tick / untick at once, the reason saved when the box is left (date = the plan's day) */
 document.addEventListener('change',async e=>{const el=e.target;if(!el.dataset||!mrAbsSee())return;
   const redraw=()=>{if(typeof dlg!=='undefined'&&dlg.open&&typeof refreshDrawerView==='function')refreshDrawerView()};
-  if(el.dataset.mrAbs){const id=el.dataset.mrAbs,k=el.dataset.mrAbsd||mrDay(),on=el.checked;el.disabled=true;
-    try{await mrPut(k,id,on?{absent:true,absentBy:S.me||null,absentAt:new Date().toISOString()}:{absent:false,absentWhy:'',absentBy:S.me||null,absentAt:new Date().toISOString()},on?'ติ๊กไม่เข้าประชุมเช้า':'เอาติ๊กไม่เข้าประชุมเช้าออก');
-      toast(`${staffName(id)}: ${on?'ไม่เข้าประชุมเช้า':'เข้าประชุมเช้า'}`);redraw();if(on)setTimeout(()=>{const w=document.getElementById('mr-abw-'+id);if(w)w.focus()},120)}
-    catch(err){toast(errText(err));noteWriteError(err);el.checked=!on;el.disabled=false}
-    return}
-  if(el.dataset.mrAbwhy){const id=el.dataset.mrAbwhy,k=el.dataset.mrAbsd||mrDay();const v=el.value.trim().slice(0,120);const cur=mrRec(mrRows(k.slice(0,7)),k,id);if(!cur||!cur.absent||(cur.absentWhy||'')===v)return;
-    try{await mrPut(k,id,{absentWhy:v},v?`เหตุผลไม่เข้าประชุม: ${v}`:'ลบเหตุผลไม่เข้าประชุม');el.defaultValue=v}
+  if(el.dataset.mrTeam){const k=el.dataset.mrAbsd,on=el.checked;const ids=el.dataset.mrTeam.split('|');el.disabled=true;
+    try{const rows=mrRows(k.slice(0,7));const list=ids.filter(id=>mrAbs(mrRec(rows,k,id))!==on);const stamp={absentBy:S.me||null,absentAt:new Date().toISOString()};
+      for(const id of list)await mrWrite(k,id,on?Object.assign({absent:true},stamp):Object.assign({absent:false,absentWhy:''},stamp),on?'ติ๊กไม่เข้าประชุมเช้าทั้งทีม':'เอาติ๊กไม่เข้าประชุมเช้าทั้งทีมออก');
+      toast(on?`ไม่เข้าประชุมเช้าทั้งทีม ${ids.length} คน`:`เอาติ๊กไม่เข้าประชุมเช้าออกแล้ว ${ids.length} คน`);if(on)setTimeout(()=>{const w=$('#mr-abw-team');if(w)w.focus()},120)}
+    catch(err){toast(errText(err));noteWriteError(err)}
+    mrInvalidate();render();redraw();return}
+  if(el.dataset.mrWhyteam){const k=el.dataset.mrAbsd;const v=el.value.trim().slice(0,120);const rows=mrRows(k.slice(0,7));
+    const list=el.dataset.mrWhyteam.split('|').filter(id=>{const c=mrRec(rows,k,id);return c&&c.absent&&(c.absentWhy||'')!==v});if(!list.length)return;
+    try{for(const id of list)await mrWrite(k,id,{absentWhy:v},v?`เหตุผลไม่เข้าประชุม: ${v}`:'ลบเหตุผลไม่เข้าประชุม');el.defaultValue=v;mrInvalidate();render()}
     catch(err){toast(errText(err));noteWriteError(err)}}
 });
 /* keep the page fresh while it is open (other people report from their phones) */

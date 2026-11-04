@@ -42,6 +42,7 @@ function renderPickSel(still){
   $('#tpClear').hidden=!tags.length;$('#tpN').textContent=tags.length;syncTeamNeed();
   const area=($('#f-area')||{}).value;$('#tpCard').innerHTML=cardSummary(ids,area);
   $('#tpCardWrap').hidden=!(typeof hasSafety==='function'&&hasSafety()&&area&&areaRule(SAFE,area));
+  attFormFill();/* คนเข้างานจริง follows the team (js/dialog/done-sum.js) */
 }
 /* แผนงานนี้ใช้ … คน (user, 9 Oct 2026): the number typed, and how many are still missing against the people picked */
 const teamNeedIn=()=>Math.max(0,Math.min(99,Math.floor(Number($('#f-teamNeed').value)||0)));
@@ -142,7 +143,7 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='car-mode'||t.id==='f-carDept'){syncCarMode();checkConflicts();if(t.id==='f-carDept'&&t.checked)setTimeout(()=>$('#f-transport').focus(),30)}
   if(t.id==='f-gaCargo'){syncCarMode();if(t.checked)setTimeout(()=>$('#f-gaCargoSize').focus(),30)}
   if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30);
-    if(t.value==='done'&&!$('#f-sumWrap').hidden){const ta=$('#f-doneSum');/* สรุปงาน starts from the Detail, then Completed */
+    if(t.value==='done'&&!$('#f-sumWrap').hidden){attFormFill();const ta=$('#f-doneSum');/* สรุปงาน starts from the Detail, then Completed */
       if(!ta.value.trim())ta.value=[$('#f-detail').value.trim(),'Completed'].filter(Boolean).join('\n');setTimeout(()=>ta.focus(),30)}}
   if(t.id==='f-sale')syncSaleTel();
 });

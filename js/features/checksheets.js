@@ -106,7 +106,7 @@ function csPrefill(form,job,item,task){
   if(form==='rr'){const ty=norm(it.type||'');Object.assign(h,{plant:j.location||t.location||'',location:t.location||j.location||'',tag:it.tag||'',flange:it.size?it.size+'"':'',cls:it.cls||'',
     fm:/coriolis|mass/.test(ty)?['Mass Flow']:/vortex/.test(ty)?['Vortex flow']:/mag/.test(ty)?['Magnetic flow']:/ultra/.test(ty)?['Ultrasonic']:/pd|positive/.test(ty)?['PD Meter']:[],rangeTrans:it.range||''})}
   if(form==='sr'){const cars=typeof deptCars==='function'?deptCars(t):[];
-    Object.assign(h,{requestNo:t.planNo||j.planNo||'',customer:t.customer||j.customer||'',location:t.location||j.location||'',attn:t.contact||j.contact||'',tel:t.contactTel||j.contactTel||'',serviceDate:t.date||'',
+    Object.assign(h,{requestNo:t.planNo||j.planNo||'',customer:t.customer||j.customer||'',location:t.location||j.location||'',attn:contactName(contactOf(t))||j.contact||'',tel:contactPhones(contactOf(t))||j.contactTel||'',serviceDate:t.date||'',
       team:(t.staffIds||[]).map(staffName).concat(t.guests||[]).map((n,i)=>`${i+1}) ${n}`).join('\n'),transport:t.needGA?'Request transport from GA':cars.length?'Pickup truck of Laboratory department':'',plate:cars.join(', ')})}
   const tb={};
   if(form==='sr'&&job)tb.items=(job.items||[]).map(x=>({tag:x.tag||'',product:x.product||'',type:x.type||'',size:x.size||'',cls:x.cls||''}));

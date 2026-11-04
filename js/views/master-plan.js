@@ -239,7 +239,7 @@ async function mpImportIns(){
   tasks.filter(t=>!isLeave(t)&&isWorking(t)).sort(byTime).forEach(t=>insOf(t).forEach(x=>{const src=t.id+'|'+x.id;if(have.has(src))return;
     const k=x.cal||t.date;const n=insNum(x.actual)||insNum(x.plan);
     add.push({reqNo:insReq(t,x),lab:x.lab,cust:t.customer||'',plant:x.plant,tag:x.tag,type:x.type,range:x.range,remove:insDM(x.remove),cal:insDM(x.cal),install:insDM(x.install),
-      bu:x.bu,rs:'',sale:t.sale||'',contact:t.contact||'',booking:x.plan,remark:x.remark,days:k>=from&&k<=to&&n?{[parseD(k).getDate()]:String(n)}:{},src})}));
+      bu:x.bu,rs:'',sale:t.sale||'',contact:contactName(contactOf(t)),booking:x.plan,remark:x.remark,days:k>=from&&k<=to&&n?{[parseD(k).getDate()]:String(n)}:{},src})}));
   if(!add.length){toast('ไม่มีรายการใหม่จาก Weekly plan instrument ในเดือนนี้');return}
   if(!await askConfirm(`ดึง ${add.length} รายการจาก Weekly plan instrument?`,add.slice(0,8).map(r=>[r.reqNo,r.cust,r.tag].filter(Boolean).join(' · ')).join('\n')+(add.length>8?`\nและอีก ${add.length-8} รายการ`:''),'ดึงรายการ'))return;
   let order=S.mpRows.reduce((a,r)=>Math.max(a,Number(r.order)||0),0);const now=new Date().toISOString();

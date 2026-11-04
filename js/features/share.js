@@ -9,18 +9,19 @@ const workDate=k=>{const d=parseD(k);return `${String(d.getDate()).padStart(2,'0
 const lineBlock=(icon,label,text)=>{const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean);
   return !l.length?[]:l.length===1?[`${icon} ${label} : ${l[0]}`]:[`${icon} ${label} :`].concat(l)};
 function jobLines(t,withPeriod){
-  const tel=saleTel(t.sale);const team=teamNames(t);
+  const tel=saleTel(t.sale);const real=sumNeeded(t)&&attHas(t);/* a confirmed plan reports who really went (user, 4 Nov 2026) */
+  const team=real&&(t.doneTeam||[]).concat(t.doneGuests||[]).length?(t.doneTeam||[]).map(staffName).concat(t.doneGuests||[]):teamNames(t);
   const when=[workDate(t.date),withPeriod?`(${LINE_PERIOD[periodOf(t)]||pName(t)})`:'',t.timeNote?`· ${t.timeNote}`:''].filter(Boolean).join(' ');
   return [
-    ...lineBlock('🏢','ลูกค้า',t.customer),...lineBlock('🏭','สถานที่',t.location),`🕘 Work Date : ${when}`,
+    ...lineBlock('🏢','ลูกค้า',t.customer),...lineBlock('🏭','สถานที่',t.location),`🕘 Work Date : ${when}`,...(real&&(t.doneIn||t.doneOut)?[`⏱️ เวลาจริง : ถึงหน้างาน ${t.doneIn||'-'} น. · เลิกงาน ${t.doneOut||'-'} น.`]:[]),
     /* a confirmed done plan reports its สรุปงาน as รายละเอียด (user, 14 Oct 2026: the team's "Completed" message) */
     ...lineBlock('✍️','รายละเอียด',sumNeeded(t)&&!sumMissing(t)?t.doneSum:detailOf(t)),...lineBlock('📝','Request',t.request),...lineBlock('📌','หมายเหตุ',t.remark),
     ...(t.transport||t.needGA?[`🚗 รถ : ${transportText(t)}`]:[]),
-    ...((t.contact||t.contactTel)?[`☎️ ติดต่อ : ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`]:[]),
+    ...(contactOf(t)?[`☎️ ติดต่อ : ${contactOf(t)}`]:[]),
     ...calLines(t),...insLines(t),
     ...(prepText(t)?['🧰 '+prepText(t)]:[]),
     ...(()=>{const nd=teamNeedOf(t)?` (${team.length}/${teamNeedOf(t)} คน${teamShort(t)?` · ขาด ${teamShort(t)} คน`:''})`:'';/* จำนวนที่ต้องการ (user, 9 Oct 2026) */
-      return team.length>1?[`👷 ทีมงาน${nd} :`].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ทีมงาน${nd} : ${team[0]||'-'}`]})(),
+      const lb=real?'เข้างานจริง':'ทีมงาน';return team.length>1?[`👷 ${lb}${nd} :`].concat(team.map((n,i)=>`${i+1}. ${n}`)):[`👷 ${lb}${nd} : ${team[0]||'-'}`]})(),
     ...(t.sale?[`💼 Sale : ${t.sale}${tel?' '+tel:''}`]:[]),
     ...(LINE_STATUS[t.status]?[`${LINE_STATUS[t.status]} สถานะ : ${statusText(t)}`]:[]),
     ...(reportsOf(t).length||docNeeded(t)?[`📎 เอกสาร : ${DOC_KINDS.filter(k=>!docNAOf(t).includes(k.id)).map(k=>`${k.name} ${docsOf(t,k.id).length?'✅':'❌'}`).join(' · ')}`]:[]),

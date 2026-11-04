@@ -17,12 +17,12 @@ async function exportXlsx(btn){
   try{
     const X=await loadXLSX();const wb=X.utils.book_new();const days=weekDays();const all=shownTasks().slice().sort(byTime);const tasks=all.filter(lineMatch);
     const title=[`BU1 Lab · Weekly Plan${lineTitle()} ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`];
-    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','หมายเหตุ','Transport','Contact','เบอร์ติดต่อ','Team Service','ทีม','สถานะ','สรุปงาน','จัดชน'];
+    const head=['วันที่','วัน','สายงาน','หัวข้องาน','Plan No.','Sale','Customer','Location','ช่วงเวลา','Time','Detail','Request','หมายเหตุ','Transport','Contact','Team Service','ทีม','สถานะ','สรุปงาน','คนเข้างานจริง','ถึงหน้างาน','เลิกงาน','ชั่วโมง','จัดชน'];
     /* ทีม of the plan's people: "Lab On-Site, Lab" when both */
     const planTeams=t=>TEAMS.filter(tm=>(t.staffIds||[]).some(id=>teamOf(S.staff.find(s=>s.id===id))===tm.id)).map(tm=>tm.name).join(', ');
     const conf=allConflicts();
-    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',t.remark||'',transportText(t),t.contact||'',t.contactTel||'',teamNames(t).join(', '),planTeams(t),statusText(t),sumNeeded(t)?t.doneSum||'(ยังไม่สรุป)':'',conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
-    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,30,14,20,14,32,16,12,44,26].map(w=>({wch:w}));
+    const ws1=X.utils.aoa_to_sheet([title,isoXlsxRow('plan'),head,...tasks.map(t=>[t.date,TH_DAY_FULL[parseD(t.date).getDay()],LINE[lineOf(t)]?LINE[lineOf(t)].name:'',typeLabel(t),t.planNo||'',t.sale||'',t.customer||'',t.location||'',pName(t),t.timeNote||'',detailOf(t),t.request||'',t.remark||'',transportText(t),contactOf(t),teamNames(t).join(', '),planTeams(t),statusText(t),sumNeeded(t)?t.doneSum||'(ยังไม่สรุป)':'',sumNeeded(t)?(t.doneTeam||[]).map(staffName).concat(t.doneGuests||[]).join(', '):'',sumNeeded(t)?t.doneIn||'':'',sumNeeded(t)?t.doneOut||'':'',sumNeeded(t)&&attHours(t)?attNum(attHours(t)):'',conf.has(t.id)?confLabel(conf.get(t.id)):''])]);
+    ws1['!cols']=[11,10,20,18,14,16,24,24,10,22,44,30,30,14,32,32,16,12,44,32,10,10,8,26].map(w=>({wch:w}));
     X.utils.book_append_sheet(wb,ws1,'แผนงาน');
     /* per person: every line (one shared team), so "ว่าง" is true */
     const staff=visibleStaff(all.filter(isWorking));

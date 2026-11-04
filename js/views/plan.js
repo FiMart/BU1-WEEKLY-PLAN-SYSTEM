@@ -130,26 +130,27 @@ function wcard(t,conf,i,short){/* short = Weekly Plan cards (GA car = plate only
   </button>`;
 }
 /* who is free on a day: no working plan at all (ทั้งวัน), or only one half taken; full-day leave is not free */
-function availOn(k,team){
+function availOn(k,team,exact){/* exact = that team only, without All Team (the "On-Site ว่าง" count) */
   const work=S.tasks.filter(t=>t.date===k&&holdsTeam(t));const out={full:[],am:[],pm:[],leave:0,moved:new Map()};
   /* people of a เลื่อน plan that day are free again (user, 14 Oct 2026); moved = id → that plan, for the "งานเลื่อน" tag */
   S.tasks.filter(t=>t.date===k&&t.status==='postponed'&&!isLeave(t)).forEach(t=>(t.staffIds||[]).forEach(id=>{if(!out.moved.has(id))out.moved.set(id,t)}));
-  for(const s of S.staff.filter(s=>s.active!==false&&(team?inTeamId(s,team):inTeam(s))).sort(sortPeople)){/* the open ทีม only, or the asked one */
-    const mine=work.filter(t=>(t.staffIds||[]).includes(s.id));
+  for(const s of S.staff.filter(s=>s.active!==false&&(exact?teamOf(s)===team:team?inTeamId(s,team):inTeam(s))).sort(sortPeople)){/* the open ทีม only, or the asked one */
+    const mine=work.filter(t=>teamActual(t).includes(s.id));/* a done plan: who really went (สรุปงาน), not who was planned */
     const am=mine.some(t=>pA(t)===0),pm=mine.some(t=>pB(t)===1);
     if(am&&pm){if(mine.some(t=>isLeave(t)&&periodOf(t)==='full'))out.leave++;continue}
     out[!am&&!pm?'full':!am?'am':'pm'].push(s);
   }
   return out;
 }
-/* "ว่าง n คน" by each date counts ทีม Lab On-Site only (user, 14 Oct 2026; All Team people are in it too), whatever ทีม tab is open;
+/* "ว่าง n คน" by each date counts ทีม Lab On-Site only, whatever ทีม tab is open (user, 14 Oct 2026; All Team and the rest not any more,
+   user, 4 Nov 2026: "ให้นับแค่ On-Site จริงๆ All Team หรือ อื่นๆที่ไม่ใช่ On-Site ไม่ต้องนำมานับด้วย");
    null when nobody is in that team yet. The Available panel below still follows the open ทีม. */
 /* plans a day (user, 14 Oct 2026: "วันนี้มีกี่แผน ไม่นับ หัวข้องานลา, ลาป่วย, ลากิจ, ลาพักร้อน"): every leave type left out */
 /* + not เลื่อน · ยกเลิก · ไม่เสร็จ (user, 14 Oct 2026); a plan with no สถานะงาน (ประเภทระบบ) always counts */
 const DAY_SKIP=new Set(['postponed','cancelled','notdone']);
 const dayJobs=(list,k)=>list.filter(t=>t.date===k&&!isLeave(t)&&(noStatus(t)||!DAY_SKIP.has(t.status))).length;
 const FREE_TEAM='onsite';
-const freeOn=k=>S.staff.some(s=>s.active!==false&&inTeamId(s,FREE_TEAM))?availOn(k,FREE_TEAM):null;
+const freeOn=k=>S.staff.some(s=>s.active!==false&&teamOf(s)===FREE_TEAM)?availOn(k,FREE_TEAM,true):null;
 const freeTitle=a=>`${TEAM[FREE_TEAM].name} · ว่างทั้งวัน ${a.full.length} · ว่างเช้า ${a.am.length} · ว่างบ่าย ${a.pm.length}${a.leave?` · ลา ${a.leave}`:''}`;
 const freeText=a=>`On-Site ว่าง ${a.full.length} คน${a.am.length+a.pm.length?` · ครึ่งวัน ${a.am.length+a.pm.length}`:''}`;
 /* ผู้ปฏิบัติงานที่ว่าง (Available): a panel below the board, one column per day, people grouped by ตำแหน่ง,

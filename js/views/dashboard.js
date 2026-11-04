@@ -217,7 +217,7 @@ function dashCompute(){
 
   return {P,today,all,work,jobs,leaves,days,workDays,active,conf,stc,allJ,totalJ,due,doneDue,doneRate,pcN,pcRate,confN,lateN,gaN,docN,ncrIn,ncrOpen,ncrLate,
     people,manDays,weDays,otDays,teamUse,U,util,busyN,leaveDays,avgTeam,prevJobs,prevDoneRate,roleRows,types,cust,custList,vehList,noCar,saleList,
-    pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp,od};
+    pairs,follow,buckets,prevVals,calDays,prevBy,teamMix,heat,kpis,findings,custKeyOf,lineRows,noLineN,teamRows,noTeamN,calR,cal,passRate,calTypes,calLabs,calSizes,calCust,calFluids,calRounds,insR,ins,insRate,insTypes,insLabs,insPlants,insCust,mp,od,att:attStats(jobs)/* Plan Team เทียบ Actual (js/dialog/done-sum.js) */,raw/* every สายงาน: who did not work (awayStats) */};
 }
 
 /* the page itself (tabs, charts) is in js/views/dash-page.js — v4.27.0 */
@@ -235,6 +235,7 @@ function dashRows(D){
     trend:{sheet:'แนวโน้ม',title:`แนวโน้มงานราย${unitName}`,head:[unitName,'รวม (แผน)','เสร็จแล้ว','ไม่เสร็จ','วางแผน','เลื่อน'],num:[1,2,3,4,5],rows:D.buckets.map(b=>[b.name,b.n,b.c.done,b.c.notdone,b.c.planned,b.c.postponed])},
     status:{sheet:'สถานะ',title:'สถานะงาน',head:['สถานะ','แผน','%'],num:[1,2],rows:STATUSES.map(s=>[s.th,D.stc[s.id],pct(D.stc[s.id],D.allJ)])},
     role:{sheet:'ตำแหน่ง',title:'ภาระงานตามตำแหน่ง',head:['ตำแหน่ง','คน','แผน','คน-วัน','ใช้กำลังคน (%)'],num:[1,2,3,4],rows:D.roleRows.map(grp)},
+    ...attSheets(D),...awaySheets(D),...gsSheets(D),
     person:{sheet:'รายคน',title:'รายละเอียดรายคน',head:['#','ชื่อ','ตำแหน่ง','งาน (แผน)','คน-วัน','ในนั้น เสาร์–อาทิตย์','OT วันหยุดนักขัตฤกษ์','ใช้กำลังคน (%)','เช้า','บ่าย','ทั้งวัน','ลา (วัน)','ว่าง (วัน)','จัดชน','งานที่ทำมากสุด'],num:[0,3,4,5,6,7,8,9,10,11,12,13],
       rows:D.people.map((p,i)=>[i+1,p.s.name,p.s.role||'',p.jobs,Math.round(p.wd*10)/10,Math.round(p.we*10)/10,Math.round(p.ot*10)/10,pct(p.wd,p.cap),p.am,p.pm,p.full,p.leave.size,p.free,p.conf,p.top||''])},
     types:{sheet:'หัวข้องาน',title:'งานตามหัวข้องาน',head:['หัวข้องาน','แผน','%'],num:[1,2],rows:D.types.map(x=>[x.label,x.n,pct(x.n,D.totalJ)])},
@@ -288,9 +289,9 @@ ${sec(1,'สรุปภาพรวม','Summary')}
 ${!S.line?tbl(T.lines):''}${!S.team&&teamsUsed()?tbl(T.teams):''}${D.calR.length?tbl(Object.assign({},T.cal,{head:T.cal.head.filter((x,i)=>i!==CAL_HEAD.length-1),rows:T.cal.rows.map(r=>r.filter((x,i)=>i!==CAL_HEAD.length-1))})):''}${D.insR.length?tbl(Object.assign({},T.ins,{head:T.ins.head.filter((x,i)=>![7,13].includes(i)),num:[12,13],rows:T.ins.rows.map(r=>r.filter((x,i)=>![7,13].includes(i)))})):''}
 ${D.mp?`${sec(2,'แผนเทียบผล · Master Plan','Plan vs Actual')}${tbl(Object.assign({},T.mpTrend,S.line==='fm'?{head:T.mpTrend.head.slice(0,4),num:[1,2,3],rows:T.mpTrend.rows.map(r=>r.slice(0,4))}:S.line==='ins'?{head:[T.mpTrend.head[0],T.mpTrend.head[4]],num:[1],rows:T.mpTrend.rows.map(r=>[r[0],r[4]])}:{}))}<div class="two">${S.line!=='ins'?`<div>${tbl(T.mpCodes)}</div>`:''}${S.line!=='fm'?`<div>${tbl(Object.assign({},T.mpInsLab,{rows:T.mpInsLab.rows.slice(0,25)}))}</div>`:''}</div>`:''}
 ${sec(3,'ผลการดำเนินงาน','Performance')}<div class="two"><div>${tbl(T.trend)}</div><div>${tbl(T.status)}</div></div>
-${sec(4,'กำลังคน','Manpower')}${T.uto?tbl(T.uto):''}${tbl(T.role)}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,14),rows:T.person.rows.map(r=>r.slice(0,14))}))}
+${sec(4,'กำลังคน','Manpower')}${T.uto?tbl(T.uto):''}${tbl(T.role)}${T.att.rows.length?tbl(T.att):''}${T.away.rows.length?tbl(T.away):''}${tbl(Object.assign({},T.person,{head:T.person.head.slice(0,14),rows:T.person.rows.map(r=>r.slice(0,14))}))}
 ${sec(5,'ลูกค้าและประเภทงาน','Customers & Job Types')}<div class="two"><div>${tbl(T.types)}</div><div>${tbl(Object.assign({},T.cust,{title:T.cust.rows.length>15?'งานตามลูกค้า (15 อันดับแรก)':T.cust.title,rows:T.cust.rows.slice(0,15)}))}</div></div>
-${sec(6,'ทรัพยากรและผู้ประสานงาน','Resources & Sales')}<div class="two"><div>${tbl(T.veh)}</div><div>${tbl(T.sale)}</div></div>
+${sec(6,'ทรัพยากรและผู้ประสานงาน','Resources & Sales')}<div class="two"><div>${tbl(T.veh)}</div><div>${tbl(T.sale)}</div></div>${T.gaCar.rows.length?tbl(T.gaCar):''}
 ${sec(7,'ประเด็นที่ต้องติดตาม','Issues & Follow-up')}${tbl(Object.assign({},T.ncr,{head:T.ncr.head.filter((x,i)=>![2,7,8].includes(i)),rows:T.ncr.rows.map(r=>r.filter((x,i)=>![2,7,8].includes(i)))}))}${tbl(T.conf)}${tbl(T.follow)}
 ${sec(8,'แผนงานในช่วงนี้','Plans')}${tbl(planList)}
 <div class="sig"><div><span></span>ผู้จัดทำ</div><div><span></span>หัวหน้า Lab / ผู้ตรวจสอบ</div><div><span></span>ผู้อนุมัติ</div></div></body></html>`;
@@ -306,7 +307,7 @@ async function dashXlsx(btn){
     const widths=aoa=>{const w=[];aoa.forEach(r=>r.forEach((v,i)=>{w[i]=Math.max(w[i]||8,Math.min(50,String(v==null?'':v).length+2))}));return w.map(wch=>({wch}))};
     const add=(name,head,body)=>{const ws=X.utils.aoa_to_sheet([title,stamp,isoXlsxRow('dash'),...head,...body]);ws['!cols']=widths([...head,...body]);X.utils.book_append_sheet(wb,ws,name)};
     add('สรุป',[[T.kpi.title],T.kpi.head],[...T.kpi.rows,[],['ประเด็นสำคัญ'],...D.findings.map(f=>['• '+f.s])]);
-    for(const k of [...(T.uto?['uto']:[]),'lines','teams','cal','ins','insCert',...(D.mp?['mpTrend','mpCodes','mpFm','mpIns','mpInsLab']:[]),'trend','status','role','person','types','cust','veh','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
+    for(const k of [...(T.uto?['uto']:[]),'lines','teams','cal','ins','insCert',...(D.mp?['mpTrend','mpCodes','mpFm','mpIns','mpInsLab']:[]),'trend','status','role','person','att','attPlans','away','awayDays','types','cust','veh','gaCar','gaDays','sale','ncr','conf','follow','plans']){const t=T[k];add(t.sheet,[[t.title],t.head],t.rows.length?t.rows:[['ไม่มีข้อมูลในช่วงนี้']])}
     await saveFile(dashFile(P)+'.xlsx',X.write(wb,{type:'array',bookType:'xlsx'}));
   }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่')}
   finally{btn.disabled=false;btn.textContent=old}

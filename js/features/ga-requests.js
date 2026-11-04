@@ -37,7 +37,7 @@ function gqCar(t){
   const l=gaInfo(t);const v=k=>l?((l.find(([x])=>x===k)||[])[1]||''):'';
   return {plate:v('ทะเบียน')||gaPlateOf(t)||'',name:v('รถ'),driver:v('พนักงานขับรถ'),phone:v('เบอร์โทร'),out:v('เวลาออก'),day:v('วันที่ใช้รถ'),any:!!l||!!gaPlateOf(t),rest:l?l.filter(([k])=>!['ทะเบียน','รถ','พนักงานขับรถ','เบอร์โทร','เวลาออก','วันที่ใช้รถ'].includes(k)):[]};
 }
-const gqMap=t=>{const q=[t.location,t.customer].filter(Boolean).join(' ');return q?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`:''};
+const gqMap=t=>mapUrl(t.location,t.customer)||mapUrl(t.customer);/* no location: the customer's name is still worth a search */
 /* requests of a range (null while the range is loading) */
 function gqList(from,to){const l=rangeTasks(from,to);return l?l.filter(t=>t.date>=from&&t.date<=to&&gqReq(t)):null}
 /* one day's requests from the week the page reads (that range is already loaded) */
@@ -113,7 +113,7 @@ function gqReqLines(t,i){
   if(t.gaCargo)out.push(`📦 ${cargoText(t.gaCargo)}`);
   if(t.selfDrive&&ownCarText(t))out.push(`📝 ${ownCarText(t)}`);
   if(t.gaNote)out.push(`💬 ${t.gaNote}`);
-  if(t.contact||t.contactTel)out.push(`📞 หน้างาน ${[t.contact,t.contactTel].filter(Boolean).join(' ')}`);
+  if(contactOf(t))out.push(`📞 หน้างาน ${contactOf(t)}`);
   if(st==='done')out.push(`🚘 ${[c.plate,c.name,c.driver?'คนขับ '+c.driver:'',c.phone,c.out?'ออก '+c.out:''].filter(Boolean).join(' · ')||gaSummary(t)}`);
   if(st==='cancel'&&t.gaCancel&&t.gaCancel.reason)out.push(`เหตุผล: ${t.gaCancel.reason}`);
   return out;
@@ -132,7 +132,7 @@ function gqPrintHtml(day,list){
   const tr=(t,i)=>{const car=gqCar(t);const team=gqTeam(t);const st=gqState(t);
     return `<tr><td class="c">${i+1}</td><td class="c"><b class="tm">${esc(gqTime(t)||'—')}</b><br><small>${t.selfDrive?'รับรถ':'รถออก'}</small></td>
       <td>${st==='wait'?'<span class="w">รอจัดรถ</span>':'จัดแล้ว'}${t.gaUrgent?'<br><span class="u">ด่วน</span>':''}</td>
-      <td><b>${esc(gqWhere(t))}</b><br><small>${esc([t.planNo,typeLabel(t),pName(t)].filter(Boolean).join(' · '))}</small>${t.contact||t.contactTel?`<br><small>หน้างาน ${esc([t.contact,t.contactTel].filter(Boolean).join(' '))}</small>`:''}</td>
+      <td><b>${esc(gqWhere(t))}</b><br><small>${esc([t.planNo,typeLabel(t),pName(t)].filter(Boolean).join(' · '))}</small>${contactOf(t)?`<br><small>หน้างาน ${esc(contactOf(t))}</small>`:''}</td>
       <td>${esc(gqKind(t))}</td><td>${team.length} คน<br><small>${esc(team.join(', '))}</small></td>
       <td>${esc([t.gaCargo?'ของ: '+cargoText(t.gaCargo):'',t.selfDrive?ownCarText(t):'',t.gaNote].filter(Boolean).join(' · '))}</td>
       <td><b>${esc(car.plate)}</b>${car.name?`<br><small>${esc(car.name)}</small>`:''}</td><td>${esc(car.driver)}${car.phone?`<br><small>${esc(car.phone)}</small>`:''}</td>
@@ -169,27 +169,53 @@ function gsRank(list,key,max){
   const m=new Map();list.forEach(t=>{const k=key(t);if(!k)return;const o=m.get(k)||{label:k,n:0,days:new Set()};o.n++;o.days.add(t.date);m.set(k,o)});
   return [...m.values()].sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)).slice(0,max||8).map(o=>({label:o.label,n:o.n,extra:`${o.days.size} วัน`}));
 }
+/* the figures of a list of requests: this page and Dashboard › งานและลูกค้า read the same ones */
+function gsStats(all){
+  const c=gqCount(all);const live=all.filter(t=>gqState(t)!=='cancel');const done=all.filter(t=>gqState(t)==='done');const td=ymd(new Date());
+  const car=t=>{const x=gqCar(t);return x.plate?x.plate+(x.name?' · '+x.name:''):''};
+  return {c,live,done,missed:all.filter(t=>gqState(t)==='wait'&&t.date<td).length,short:live.filter(t=>{const d=gsLead(t);return d!=null&&d<=1}).length,pct:live.length?Math.round(done.length/live.length*100):0,urgent:live.filter(t=>t.gaUrgent).length,dayN:new Set(live.map(t=>t.date)).size,
+    plates:gsRank(done,car),drivers:gsRank(done,t=>gqCar(t).driver),kinds:gsRank(live,t=>gqKind(t).replace(/^รถ GA · /,'')),places:gsRank(live,t=>t.customer||t.location||'')};
+}
+/* one row a day: {k, n requests, done, wait, urgent, cancel, plates} */
+const gsDays=all=>[...new Set(all.map(t=>t.date))].sort().map(k=>{const l=all.filter(t=>t.date===k);const x=gqCount(l);return {k,n:x.n-x.cancel,done:x.done,wait:x.wait,urgent:x.urgent,cancel:x.cancel,plates:[...new Set(l.filter(t=>gqState(t)==='done').map(t=>gqCar(t).plate).filter(Boolean))]}});
+/* ---------- Dashboard › งานและลูกค้า (user, 4 Nov 2026: "เพิ่มการสรุปข้อมูลรถใน Dashboard ให้ Role อื่นๆเห็นด้วย"; chose that tab · รถแผนก · วิธีเดินทาง · คำขอรถ GA ·
+   ทะเบียนและคนขับ): follows the Dashboard's period and สายงาน / ทีม tabs. GA keeps its own page สรุปการใช้รถ. ---------- */
+function gsTravel(jobs){
+  const c={ga:0,both:0,self:0,dept:0,none:0,other:0,blank:0};
+  jobs.forEach(t=>{const d=deptCars(t).length>0;if(t.selfDrive)c.self++;else if(t.needGA||gaInfo(t))c[d?'both':'ga']++;else if(d)c.dept++;else if(t.transport===NO_CAR)c.none++;else if(t.transport)c.other++;else c.blank++});
+  return [['รถ GA',c.ga],['รถแผนก + รถ GA',c.both],['ขอรถไปเอง',c.self],['รถแผนก',c.dept],['ไม่ใช้รถ',c.none],['รถอื่น (ลูกค้า / ส่วนตัว)',c.other],['ยังไม่ระบุ',c.blank]].filter(x=>x[1]).sort((a,b)=>b[1]-a[1]);
+}
+function gsDashHtml(D){
+  const all=D.all.filter(gqReq);const A=gsStats(all);const c=A.c;const empty='<p class="hint">ไม่มีข้อมูลในช่วงนี้</p>';
+  const rk=(t,l,u)=>`<div><h3 class="dz-sub">${t}</h3>${l.length?vzRank(l,{unit:u}):empty}</div>`;const days=gsDays(all);const n=(v,cls)=>`<td class="n${v&&cls?' '+cls:''}">${v||'–'}</td>`;
+  return dzCard('span-12','สรุปรถ GA','คำขอรถส่วนกลางของแผนในช่วงนี้ (ตามแท็บสายงาน / ทีมที่เปิด) · ทะเบียนและคนขับนับเฉพาะคำขอที่ GA จัดรถแล้ว',
+    !all.length?empty:`<div class="dz-facts"><span><b>${A.live.length}</b>ขอรถ · ${A.dayN} วัน</span><span><b>${A.done.length}</b>จัดรถแล้ว · ${A.pct}%</span><span><b>${c.wait}</b>ยังไม่จัด${A.missed?` · เลยวันแล้ว ${A.missed}`:''}</span><span><b>${A.urgent}</b>ด่วน · ขอล่วงหน้า ≤ 1 วัน ${A.short}</span><span><b>${c.cancel}</b>ยกเลิกขอรถ</span><span><b>${c.self}</b>ขอรถไปเอง</span></div>
+    <div class="dz-grid2">${rk('ทะเบียนรถที่จัด',A.plates,'เที่ยว')}${rk('คนขับ',A.drivers,'เที่ยว')}${rk('รูปแบบที่ขอ',A.kinds,'คำขอ')}${rk('ปลายทาง',A.places,'คำขอ')}</div>
+    <details class="dz-det2"><summary>ตารางรายวัน · ${days.length} วัน</summary><div class="scroll-x plain"><table class="mini gs-days"><thead><tr><th>วัน</th><th class="n">ขอรถ</th><th class="n">จัดแล้ว</th><th class="n">รอจัด</th><th class="n">ด่วน</th><th class="n">ยกเลิก</th><th>รถที่ใช้</th></tr></thead><tbody>${days.map(x=>`<tr data-vz-go="${x.k}" tabindex="0" title="เปิดวันนี้ใน Weekly Plan"><td><b>${esc(fmtDayY(x.k))}</b></td><td class="n">${x.n}</td>${n(x.done)}${n(x.wait,'w')}${n(x.urgent)}${n(x.cancel)}<td>${esc(x.plates.join(', '))}</td></tr>`).join('')}</tbody></table></div></details>`,' style="--d:9"');
+}
+/* Excel + the A4 print (dashRows in js/views/dashboard.js) */
+function gsSheets(D){
+  const all=D.all.filter(gqReq);const A=gsStats(all);const c=A.c;const list=(t,l,u)=>l.map(x=>[t,x.label,x.n,u,x.extra||'']);const tr=gsTravel(D.jobs);const trN=tr.reduce((a,x)=>a+x[1],0);
+  return {gaCar:{sheet:'สรุปรถ GA',title:'สรุปรถ GA และวิธีเดินทาง',head:['หัวข้อ','รายการ','จำนวน','หน่วย','หมายเหตุ'],num:[2],rows:[...tr.map(([l,v])=>['วิธีเดินทาง',l,v,'แผน',`${trN?Math.round(v/trN*100):0}%`]),
+      ['คำขอรถ GA','ขอรถ',A.live.length,'คำขอ',`${A.dayN} วัน`],['คำขอรถ GA','จัดรถแล้ว',A.done.length,'คำขอ',`${A.pct}%`],['คำขอรถ GA','ยังไม่จัด',c.wait,'คำขอ',A.missed?`เลยวันแล้ว ${A.missed}`:''],['คำขอรถ GA','ด่วน',A.urgent,'คำขอ',`ขอล่วงหน้า ≤ 1 วัน ${A.short}`],['คำขอรถ GA','ยกเลิกขอรถ',c.cancel,'คำขอ',''],['คำขอรถ GA','ขอรถไปเอง',c.self,'คำขอ',''],
+      ...list('ทะเบียนรถที่จัด',A.plates,'เที่ยว'),...list('คนขับ',A.drivers,'เที่ยว'),...list('รูปแบบที่ขอ',A.kinds,'คำขอ'),...list('ปลายทาง',A.places,'คำขอ')]},
+    gaDays:{sheet:'รถ GA รายวัน',title:'คำขอรถ GA รายวัน',head:['วันที่','ขอรถ','จัดแล้ว','รอจัด','ด่วน','ยกเลิก','รถที่ใช้'],num:[1,2,3,4,5],rows:gsDays(all).map(x=>[x.k,x.n,x.done,x.wait,x.urgent,x.cancel,x.plates.join(', ')])}};
+}
 function renderGasum(){
   if(notReady())return loading();
   const [from,to,lbl]=gsRange();
   const tabs=`<div class="seg gq-tabs" role="tablist" aria-label="ช่วงเวลา">${[['week','สัปดาห์นี้'],['month','เดือนนี้'],['prev','เดือนก่อน']].map(([k,l])=>`<label><input type="radio" name="gs-per" value="${k}"${S.gs.per===k?' checked':''}><span>${l}</span></label>`).join('')}</div>`;
   const head=`<div class="gq-bar">${tabs}<span class="gs-lbl">${esc(lbl)}</span></div>`;
   const all=gqList(from,to);if(!all)return `<div class="gq-page">${head}${loading()}</div>`;
-  const c=gqCount(all);const live=all.filter(t=>gqState(t)!=='cancel');const done=all.filter(t=>gqState(t)==='done');
-  const td=ymd(new Date());const missed=all.filter(t=>gqState(t)==='wait'&&t.date<td).length;
-  const short=live.filter(t=>{const d=gsLead(t);return d!=null&&d<=1}).length;
-  const pct=live.length?Math.round(done.length/live.length*100):0;
+  const A=gsStats(all);const {c,live,done,missed,short,pct}=A;
   const tile=(k,n,l,sub)=>`<div class="gq-k gq-k-${k}"><b>${n}</b><span>${l}</span><small>${sub}</small></div>`;
   let h=head+`<div class="gq-ks gs-ks">${tile('',live.length,'ขอรถ',`${new Set(live.map(t=>t.date)).size} วันที่มีคำขอ`)}${tile('done',done.length,'จัดรถแล้ว',`${pct}% ของคำขอ`)}${tile('wait',c.wait,'ยังไม่จัด',missed?`เลยวันแล้ว ${missed}`:'ยังไม่ถึงวัน')}${tile('urgent',live.filter(t=>t.gaUrgent).length,'ด่วน',`ขอล่วงหน้า ≤ 1 วัน ${short}`)}${tile('cancel',c.cancel,'ยกเลิกขอรถ',`ขอรถไปเอง ${c.self}`)}</div>`;
   if(!all.length)return `<div class="gq-page">${h}<div class="gq-empty"><b>ไม่มีคำขอรถ GA ในช่วงนี้</b><span>${esc(lbl)}</span></div></div>`;
   const card=(t,body)=>`<section class="gs-card"><h3>${t}</h3>${body}</section>`;
-  const car=t=>{const x=gqCar(t);return x.plate?x.plate+(x.name?' · '+x.name:''):''};
-  h+=`<div class="gs-grid">${card('ทะเบียนรถที่จัด',vzRank(gsRank(done,car),{unit:'เที่ยว'}))}${card('คนขับ',vzRank(gsRank(done,t=>gqCar(t).driver),{unit:'เที่ยว'}))}
-    ${card('รูปแบบที่ขอ',vzRank(gsRank(live,t=>gqKind(t).replace(/^รถ GA · /,'')),{unit:'คำขอ'}))}${card('ปลายทาง',vzRank(gsRank(live,t=>t.customer||t.location||''),{unit:'คำขอ'}))}</div>`;
+  h+=`<div class="gs-grid">${card('ทะเบียนรถที่จัด',vzRank(A.plates,{unit:'เที่ยว'}))}${card('คนขับ',vzRank(A.drivers,{unit:'เที่ยว'}))}
+    ${card('รูปแบบที่ขอ',vzRank(A.kinds,{unit:'คำขอ'}))}${card('ปลายทาง',vzRank(A.places,{unit:'คำขอ'}))}</div>`;
   /* by day: click = open that day in จัดรถรายวัน */
-  const days=[...new Set(all.map(t=>t.date))].sort();
-  h+=card('รายวัน',`<div class="scroll-x"><table class="list gs-days"><thead><tr><th>วัน</th><th>ขอรถ</th><th>จัดแล้ว</th><th>รอจัด</th><th>ด่วน</th><th>ยกเลิก</th><th>รถที่ใช้</th></tr></thead><tbody>${days.map(k=>{const l=all.filter(t=>t.date===k);const x=gqCount(l);const plates=[...new Set(l.filter(t=>gqState(t)==='done').map(t=>gqCar(t).plate).filter(Boolean))];
-    return `<tr data-gq-go="${k}" tabindex="0" title="เปิดวันนี้ในจัดรถรายวัน"><td><b>${esc(fmtDayY(k))}</b></td><td>${x.n-x.cancel}</td><td>${x.done}</td><td class="${x.wait?'w':''}">${x.wait}</td><td>${x.urgent||''}</td><td>${x.cancel||''}</td><td>${esc(plates.join(', '))}</td></tr>`}).join('')}</tbody></table></div>`);
+  h+=card('รายวัน',`<div class="scroll-x"><table class="list gs-days"><thead><tr><th>วัน</th><th>ขอรถ</th><th>จัดแล้ว</th><th>รอจัด</th><th>ด่วน</th><th>ยกเลิก</th><th>รถที่ใช้</th></tr></thead><tbody>${gsDays(all).map(x=>`<tr data-gq-go="${x.k}" tabindex="0" title="เปิดวันนี้ในจัดรถรายวัน"><td><b>${esc(fmtDayY(x.k))}</b></td><td>${x.n}</td><td>${x.done}</td><td class="${x.wait?'w':''}">${x.wait}</td><td>${x.urgent||''}</td><td>${x.cancel||''}</td><td>${esc(x.plates.join(', '))}</td></tr>`).join('')}</tbody></table></div>`);
   return `<div class="gq-page">${h}</div>`;
 }
 
@@ -214,7 +240,7 @@ function gqViewHtml(t){
       ${f('ช่วงเวลางาน',esc([pName(t),t.timeNote].filter(Boolean).join(' · ')))}${f('ของต้องขน',t.gaCargo?esc(cargoText(t.gaCargo)):'')}
       ${t.gaRequestedAt?f('ขอรถเมื่อ',esc(jbWhen(t.gaRequestedAt))):''}</dl>${t.gaNote?`<p class="gv-note">💬 ${esc(t.gaNote)}</p>`:''}`;
   const teamH=team.length?`<div class="gv-team">${team.map((n,i)=>`<span${i===0?' class="lead" title="หัวหน้าทีม"':''}>${esc(n)}</span>`).join('')}</div>`:'<p class="hint">ยังไม่จัดคน</p>';
-  const contact=`<dl class="gq-dl">${f('ผู้ติดต่อหน้างาน',[esc(t.contact||''),t.contactTel?gqTel(t.contactTel):''].filter(Boolean).join(' '))}${f('Sale',[esc(t.sale||''),tel?gqTel(tel):''].filter(Boolean).join(' '))}</dl>`;
+  const contact=`<dl class="gq-dl">${f('ผู้ติดต่อหน้างาน',telLinks(contactOf(t)))}${f('Sale',[esc(t.sale||''),tel?gqTel(tel):''].filter(Boolean).join(' '))}</dl>`;
   const job=`<dl class="gq-dl">${f('งาน',esc([t.planNo,typeLabel(t)].filter(Boolean).join(' · ')))}${f('รายละเอียด',esc(headline(t)||''))}</dl>`;
   return `<div class="gq-view">${hero}${carBox}${sec('การเดินทาง',trip)}${sec(`ทีมที่ไปด้วย (${team.length} คน)`,teamH)}${sec('ติดต่อ',contact.includes('<dt>')?contact:'')}${sec('งาน',job)}${remarkBox(t)}</div>`;
 }

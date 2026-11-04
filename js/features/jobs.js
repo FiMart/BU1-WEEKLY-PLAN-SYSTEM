@@ -335,7 +335,9 @@ async function reviewJob(push){
   const j=jbEdit&&jbById(jbEdit.id);if(!j||!isPlanner()||!jbNeedsReview(j))return;
   const keys=[...new Set((j.review.ch||[]).map(c=>c[0]))].filter(k=>JB_SHARED.includes(k));let n=0;
   try{
-    if(push&&keys.length){await jbLoadPlans(j);for(const t of jbPlans(j)){const ch={};keys.forEach(k=>{if((t[k]||'')!==(j[k]||''))ch[k]=j[k]||''});
+    if(push&&keys.length){await jbLoadPlans(j);for(const t of jbPlans(j)){const ch={};keys.filter(k=>k!=='contact'&&k!=='contactTel').forEach(k=>{if((t[k]||'')!==(j[k]||''))ch[k]=j[k]||''});
+      /* a plan has one ผู้ติดต่อ field: name and phone travel together, so changing one never drops the other */
+      if(keys.includes('contact')||keys.includes('contactTel')){const c=contactMerge(j.contact,j.contactTel);if(contactOf(t)!==c){ch.contact=c;ch.contactTel=''}}
       if(Object.keys(ch).length){await Store.update('tasks',t.id,Object.assign(ch,meta()));n++}}}
     const now=new Date().toISOString();await Store.update('jobs',j.id,{reviewedAt:now,reviewedBy:S.me||null,updatedAt:now,updatedBy:S.me||null});
     toast(push?(n?`รับทราบแล้ว · อัปเดต ${n} แผน`:'รับทราบแล้ว · แผนไม่ต้องเปลี่ยน'):'รับทราบการแก้ไขแล้ว · อย่าลืมปรับแผนที่เกี่ยวข้อง');openJob(j.id)}

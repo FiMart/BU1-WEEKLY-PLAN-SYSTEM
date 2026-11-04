@@ -116,7 +116,7 @@ function insTableHtml(rows,opt){
     if(k==='reqNo')return `<td class="mono" data-l="Request No.">${esc(insReq(t,x)||'–')}</td>`;
     if(k==='cust')return `<td data-l="Customer"><b>${esc(t.customer||'–')}</b></td>`;
     if(k==='sale')return `<td data-l="SALE">${esc(t.sale||'–')}</td>`;
-    if(k==='contact')return `<td data-l="ชื่อลูกค้า">${esc(t.contact||'–')}</td>`;
+    if(k==='contact')return `<td data-l="ชื่อลูกค้า">${esc(contactName(contactOf(t))||'–')}</td>`;
     if(INS_YELLOW.has(k))return `<td class="y c" data-l="${k==='install'?'install':k==='cal'?'Cal':'Remove'}">${ed?`<label class="iw-dt${x[k]?'':' empty'}" title="เลือกวันที่"><span>${esc(insDM(x[k])||'+ วันที่')}</span>${edit(r,k,'date')}</label>`:esc(insDM(x[k])||'–')}</td>`;
     if(k==='actual')return `<td class="c num" data-l="Actual">${ed?edit(r,k,'number'):`<b>${esc(x.actual||'–')}</b>`}</td>`;
     if(k==='plan')return `<td class="c num" data-l="Plan">${esc(x.plan||'–')}</td>`;
@@ -174,6 +174,6 @@ document.addEventListener('click',e=>{if(e.target.closest('input,select,button,a
 /* ---------- exports: the sheet's columns ---------- */
 const INS_HEAD=['Date'].concat(INS_COLS.map(c=>c[1]));
 const INS_YELLOW_I=INS_HEAD.map((h,i)=>['Remove','Cal','install'].includes(h)?i:-1).filter(i=>i>=0);
-const insRowCells=r=>[insDayBar(r.t.date).replace('Date: ',''),insReq(r.t,r.x),r.x.lab,r.t.customer||'',r.x.plant,r.x.tag,r.x.type,r.x.range,insDM(r.x.remove),insDM(r.x.cal),insDM(r.x.install),r.x.bu||'-',r.t.sale||'',r.t.contact||'',r.x.plan,r.x.actual,r.x.remark];
+const insRowCells=r=>[insDayBar(r.t.date).replace('Date: ',''),insReq(r.t,r.x),r.x.lab,r.t.customer||'',r.x.plant,r.x.tag,r.x.type,r.x.range,insDM(r.x.remove),insDM(r.x.cal),insDM(r.x.install),r.x.bu||'-',r.t.sale||'',contactName(contactOf(r.t)),r.x.plan,r.x.actual,r.x.remark];
 const INS_CERT_HEAD=['TAG / SN.','Item','Certificate_No','Request_No','Tag_No','Description','Client Name','Cal_Date','Activity','Note'];
 const insCertCells=r=>r.x.certs.map((c,k)=>[r.x.tag,k+1,c.certNo,insReq(r.t,r.x),c.tagNo||r.x.tag,c.desc,c.client||r.t.customer||'',c.calDate?insDM(c.calDate):'',c.activity,c.note]);
