@@ -575,6 +575,88 @@ body.has-pickbar .app{padding-bottom:110px}
 .v-sum .v-sum-warn{margin:0;font-size:13px;font-weight:600;color:var(--crit-ink)}
 .v-sum.miss{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));border-left-color:var(--crit);background:var(--crit-soft)}
 .v-sum.miss>b,.v-sum.miss>label{color:var(--crit-ink)}
+/* คนเข้างานจริง + เวลา in สรุปงาน, and the เลื่อน plan's "ย้ายคนไปเสริมงานอื่น" (js/dialog/done-sum.js, user 4 Nov 2026) */
+.v-att,.mv-box{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.mv-box{margin-top:10px;border-left:4px solid var(--warn)}
+.v-att-h,.mv-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.v-att-h b,.mv-h b{font-size:13.5px;color:var(--ink)}
+.v-att-h small,.mv-h small{font-size:12px;color:var(--muted)}
+.v-att-l{display:flex;flex-wrap:wrap;gap:6px}
+#dlg .v-att-p{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0;padding:3px 11px 3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);color:var(--ink);font:500 13px var(--f-body);cursor:pointer}
+.v-att-p input{width:16px;height:16px;margin:0;flex:none;accent-color:var(--good)}
+.v-att-p small{font-size:11px;color:var(--muted)}
+#dlg .v-att-p:has(input:checked){border-color:color-mix(in srgb,var(--good) 55%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--surface))}
+.v-att-p.is-add small{color:var(--good-ink);font-weight:600}
+.v-att-p.is-away small{color:var(--warn-ink,var(--ink-2));font-weight:600}
+.v-att-add{width:100%;max-width:340px}
+.v-att-t{display:flex;flex-wrap:wrap;gap:8px 14px}
+#dlg .v-att-t label{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:600;color:var(--ink-2)}
+#dlg .v-att-t input{width:auto;min-width:112px}
+.v-att-old{margin:0;font-size:12.5px}
+/* Location → Google Maps */
+a.map-link{display:inline-flex;align-items:baseline;gap:3px;padding:2px 0;font-weight:600;color:var(--accent);text-decoration:none;overflow-wrap:anywhere}
+a.map-link:hover{text-decoration:underline}
+a.map-link[hidden]{display:none}
+a.f-map{display:block;margin-top:4px;font-size:12.5px;width:max-content;max-width:100%}
+@media (max-width:760px){a.map-link{padding:5px 0}}
+/* a phone number that dials */
+a.tel-link{display:inline-flex;align-items:center;gap:3px;padding:2px 0;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap}
+a.tel-link:hover{text-decoration:underline}
+@media (max-width:760px){a.tel-link{padding:5px 0}}
+/* ยกเลิก stays faded for good (user, 4 Nov 2026: "เวลากดยกเลิกให้เป็นตัวจางตลอดไป เวลาเปลี่ยนหน้าและกลับมายังจางเหมือนเดิม"): the cards' entry
+   animation ends at opacity 1 with fill "both" and beat a plain opacity after every page change; only !important outranks an animation */
+.wc.st-cancelled{opacity:.55!important}
+/* Plan Team / Actual after สรุปงาน: plan view, card chip, Dashboard (user 4 Nov 2026) */
+.att-pa{display:grid;gap:8px;width:100%;flex:1 1 100%;margin-top:8px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--good) 6%,var(--surface))}
+.att-r{display:grid;grid-template-columns:118px minmax(0,1fr);align-items:baseline;gap:4px 10px}
+.att-r>b{font-size:12.5px;color:var(--ink-2)}
+.att-r>div{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.att-c{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:500}
+.att-c small{font-size:11px;color:var(--muted)}
+.att-c.plus{border-color:color-mix(in srgb,var(--good) 55%,var(--line))}.att-c.plus small{color:var(--good-ink);font-weight:600}
+.att-c.off{color:var(--muted)}
+/* reason beside a person ticked off */
+.v-att-i{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;min-width:0;max-width:100%}
+#dlg .v-att-why{width:auto;max-width:100%;min-height:32px;height:32px;padding:2px 26px 2px 8px;font-size:12.5px}
+/* ทีมงานที่ไม่ทำงาน: person × day */
+.aw-sc{max-height:520px;overflow:auto;margin-bottom:6px}
+table.aw-t{width:auto;min-width:100%;border-collapse:separate;border-spacing:0}
+table.aw-t th,table.aw-t td{padding:3px 2px;text-align:center}
+table.aw-t .aw-n{position:sticky;left:0;z-index:1;min-width:136px;max-width:190px;padding:4px 10px 4px 4px;text-align:left;background:var(--surface)}
+table.aw-t thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
+table.aw-t thead th.aw-n{z-index:3}
+table.aw-t .aw-n .sub{display:block;font-size:11.5px;color:var(--muted);font-weight:400}
+table.aw-t td.n,table.aw-t th.n{padding:3px 8px;text-align:right;white-space:nowrap}
+table.aw-t td.bad{color:var(--crit-ink);font-weight:700}
+.aw-d{min-width:27px;font-size:11.5px;font-weight:600;line-height:1.2}
+.aw-d small{display:block;font-size:10px;color:var(--muted);font-weight:500}
+.aw-d.off,.aw-d.off small{color:var(--crit-ink)}
+.aw-c{display:inline-grid;place-items:center;width:24px;height:24px;padding:0;border:1px solid transparent;border-radius:6px;font:700 12px/1 var(--f-body);cursor:pointer}
+span.aw-c{cursor:default}
+button.aw-c:hover{outline:2px solid var(--ink);outline-offset:1px}
+.aw-work{background:color-mix(in srgb,var(--good) 18%,var(--surface));color:var(--good-ink)}
+.aw-away{background:var(--crit-soft);border-color:color-mix(in srgb,var(--crit) 55%,var(--line));color:var(--crit-ink)}
+.aw-idle{background:var(--surface);border-color:var(--warn);color:var(--warn-ink,var(--ink-2))}
+.aw-leave{background:var(--surface-2);border-color:var(--line);color:var(--muted);font-weight:600}
+.aw-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:6px 0 10px;padding:0;list-style:none;font-size:12.5px}
+.aw-leg li{display:inline-flex;align-items:center;gap:6px}
+.aw-leg .aw-c{width:20px;height:20px;font-size:11px}
+.aw-g{margin-top:6px}
+.att-tm{font-size:13.5px;display:block!important}
+.pcount.att-ch.diff{color:var(--warn-ink,var(--ink));font-weight:700}
+.att-dz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px 22px}
+.att-sc{max-height:360px;overflow:auto}
+table.att-t td.plus{color:var(--good-ink);font-weight:600}
+table.att-t td.bad{color:var(--crit-ink);font-weight:600}
+@media (max-width:900px){.att-dz{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.att-r{grid-template-columns:minmax(0,1fr)}}
+.v-att-v{display:grid;gap:3px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--good) 7%,var(--surface));font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}
+.v-att-v b{font-weight:700;margin-right:4px}
+.v-att-v small{font-size:12px;color:var(--muted)}
+.mv-go{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mv-go select{flex:1 1 220px;min-width:0}
+#dView .mv-box p{margin:0}
+@media (max-width:760px){.v-att-add{max-width:none}.v-att-t label{flex:1 1 40%}#dlg .v-att-t input{flex:1;min-width:0}.mv-go .btn{flex:1 1 100%;justify-content:center}}
 #f-sumWrap{margin-top:0}
 .pcount.sr svg{flex:none}
 

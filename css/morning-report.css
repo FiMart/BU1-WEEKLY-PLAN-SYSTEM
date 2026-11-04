@@ -151,13 +151,11 @@ table.mr-tt td.abs,table.mr-mt td.abs,.mr-th .abs,.mr-mc .mr-mn .abs b{color:var
 .mr-abnote{margin:0;font-size:13px;font-weight:600;color:var(--mr-abs)}
 /* the plan view's ประชุมเช้า box (inside Team Service, js/dialog/task-form.js → mrPlanBox) */
 .mr-pb{flex:1 1 100%;display:grid;gap:6px;width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
-.mr-pbh{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px}
-.mr-pbh b{font-size:13px}
-.mr-pb .mr-ab{display:grid;grid-template-columns:minmax(90px,1fr) auto;align-items:center;gap:6px 10px}
-.mr-pb .mr-abw{grid-column:1/-1;flex:none;width:100%}
-.mr-pb .mr-ab small{grid-column:1/-1}
-.mr-pbn{min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mr-pb .mr-abt{background:var(--surface)}
+.mr-pbh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.mr-pb.on{border-color:var(--mr-abs);background:color-mix(in srgb,var(--mr-abs) 8%,var(--surface))}
+.mr-pb .mr-abw{flex:none;width:100%}
+.mr-pb .mr-abt{background:var(--surface);min-height:36px}
+.mr-pb.on .mr-abt{border-color:var(--mr-abs);color:var(--ink)}
 
 /* ---------- tablets / phones ---------- */
 @media (max-width:1100px){

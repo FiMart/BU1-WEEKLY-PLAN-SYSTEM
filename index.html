@@ -48,18 +48,18 @@
         add("link", {
           rel: "icon",
           type: "image/svg+xml",
-          href: "assets/favicon.svg?v=4.38.0",
+          href: "assets/favicon.svg?v=4.43.0",
         });
         add("link", {
           rel: "icon",
           type: "image/png",
           sizes: "32x32",
-          href: "assets/favicon-32.png?v=4.38.0",
+          href: "assets/favicon-32.png?v=4.43.0",
         });
         add("link", {
           rel: "apple-touch-icon",
           sizes: "180x180",
-          href: "assets/apple-touch-icon.png?v=4.38.0",
+          href: "assets/apple-touch-icon.png?v=4.43.0",
         });
         add("meta", { name: "theme-color", content: "#0D46B5" });
       })();
@@ -86,7 +86,7 @@
       })();
     </script>
     <noscript
-      ><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.38.0"
+      ><link rel="icon" type="image/png" href="assets/favicon-32.png?v=4.43.0"
     /></noscript>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -133,7 +133,7 @@
         <span class="sb-mark">BU1</span
         ><span class="org-chip"
           ><img
-            src="assets/flowlab-logo.png?v=4.38.0"
+            src="assets/flowlab-logo.png?v=4.43.0"
             alt="FLOWLAB &amp; SERVICE"
             width="480"
             height="240" /></span
@@ -478,7 +478,7 @@
           data-action="about"
           title="เกี่ยวกับระบบ · ประวัติเวอร์ชัน"
         >
-          v4.38.0 · BU1 Lab
+          v4.43.0 · BU1 Lab
         </button>
       </div>
     </aside>
@@ -492,7 +492,7 @@
         <span class="sb-mark">BU1</span
         ><span class="org-chip"
           ><img
-            src="assets/flowlab-logo.png?v=4.38.0"
+            src="assets/flowlab-logo.png?v=4.43.0"
             alt="FLOWLAB &amp; SERVICE"
             width="480"
             height="240" /></span
@@ -1159,7 +1159,15 @@
                   maxlength="120"
                   autocomplete="off"
                   placeholder="เช่น ชื่อโรงงาน / นิคม / จังหวัด"
-                />
+                /><a
+                  class="map-link f-map"
+                  id="f-locMap"
+                  target="_blank"
+                  rel="noopener"
+                  title="เปิดใน Google Maps"
+                  hidden
+                  >📍 เปิดใน Google Maps ↗</a
+                >
               </div>
 
               <label class="fl" for="f-area" id="lblArea" hidden
@@ -1617,21 +1625,13 @@
                 ><b>Contact</b><small>ผู้ติดต่อหน้างาน</small></label
               >
               <div class="fv">
-                <div class="pair">
-                  <input
-                    id="f-contact"
-                    list="dl-contacts"
-                    maxlength="120"
-                    autocomplete="off"
-                    placeholder="ชื่อผู้ติดต่อ"
-                  /><input
-                    id="f-contactTel"
-                    maxlength="80"
-                    autocomplete="off"
-                    placeholder="เบอร์โทร"
-                    aria-label="เบอร์โทรผู้ติดต่อ"
-                  />
-                </div>
+                <input
+                  id="f-contact"
+                  list="dl-contacts"
+                  maxlength="200"
+                  autocomplete="off"
+                  placeholder="ชื่อและเบอร์โทร เช่น คุณเอ 081-234-5678"
+                />
               </div>
 
               <div class="fl fl-full" id="lblTeam">
@@ -1791,6 +1791,7 @@
               <label for="f-doneSum"
                 >สรุปงาน · ยืนยันว่างานนี้เสร็จแล้วจริง
                 <small>(ต้องกรอกเมื่อเลือก เสร็จแล้ว)</small></label
+              ><div id="f-attSlot"></div
               ><small
                 >เขียนสิ่งที่ทำจริงที่หน้างาน ผลงาน (Completed) และปัญหา /
                 ข้อสังเกตที่ต้องแจ้ง (ขึ้นต้นด้วย *)</small
@@ -2168,7 +2169,7 @@
         <div class="auth-brand">
           <span class="org-chip"
             ><img
-              src="assets/flowlab-logo.png?v=4.38.0"
+              src="assets/flowlab-logo.png?v=4.43.0"
               alt="FLOWLAB &amp; SERVICE"
               width="480"
               height="240" /></span
@@ -2215,7 +2216,7 @@
           <div class="auth-brand mobile">
             <span class="org-chip"
               ><img
-                src="assets/flowlab-logo.png?v=4.38.0"
+                src="assets/flowlab-logo.png?v=4.43.0"
                 alt="FLOWLAB &amp; SERVICE"
                 width="480"
                 height="240" /></span
