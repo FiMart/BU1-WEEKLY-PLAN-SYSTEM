@@ -2,7 +2,7 @@
    colours of the four states: ในเวลา = good · เกินเวลา = warn · รอเอกสาร = blue · ตามต่อ = crit */
 .od-page{--od-ok:var(--good);--od-late:var(--warn);--od-wait:var(--vz-1,#2a78d6);--od-follow:var(--crit);min-width:0;max-width:100%;width:100%;display:grid;gap:12px}
 .od-page>*{min-width:0;max-width:100%}
-.od-tabs{margin:0}
+.mp-tabs.od-tabs{margin:0;grid-template-columns:repeat(3,minmax(0,1fr))}
 .od-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--crit);color:#fff;font-size:11.5px;font-weight:700;vertical-align:1px}
 
 /* ---------- summary: % on time, one bar, chips that filter ---------- */
@@ -71,7 +71,8 @@
 .od-pt i{display:block;height:100%;border-radius:999px;background:var(--c)}
 .od-prog>span:last-child{font-size:11.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .od-steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none}
-.od-steps li{min-width:0}
+.od-steps li{min-width:0;display:flex;flex-direction:column;gap:3px}
+.od-steps li>.od-s{flex:1}
 .od-cf{display:flex;flex-wrap:wrap;gap:4px 14px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted)}
 .od-cf b{color:var(--ink);font-weight:600}
 .od-rm{color:var(--ink-2,var(--ink))}
@@ -151,6 +152,50 @@ td.od-c.over small{background:var(--crit);color:#fff}
 .od-pnote{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:13px;font-weight:600}
 .od-pnote input{flex:1;min-width:0}
 
+/* ---------- ผลตรวจเอกสาร: รอตรวจ · Complete · ไม่ผ่าน (a mark + a word, so colour is not the only signal) ---------- */
+.od-k{--kc:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:3px;min-height:24px;padding:1px 5px;border:1px solid var(--kc);border-radius:7px;background:color-mix(in srgb,var(--kc) 12%,var(--surface));color:var(--ink);font:700 11px/1.2 var(--f-body);font-style:normal;white-space:nowrap}
+.od-k.k-ok{--kc:var(--good);background:var(--good);color:#fff}
+.od-k.k-fail{--kc:var(--crit);background:var(--crit);color:#fff}
+.od-k.k-wait{border-style:dashed}
+.od-k.k-up{--kc:var(--muted);background:var(--surface)}
+.od-up{display:grid;gap:6px;min-width:0}
+.od-up .vr-add{justify-self:start}
+.od-pr>.od-up{grid-column:1/-1;padding:4px 0 2px}
+.od-fr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.od-fm{flex:1 1 120px;display:grid;min-width:0}
+.od-fm .fpv-name{justify-self:start;max-width:100%;padding:0;border:0;background:none;color:var(--accent);font:600 13px/1.3 var(--f-body);text-align:left;text-decoration:underline;text-underline-offset:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.od-fm small{font-size:11px;color:var(--muted)}
+.od-k.k-mini{min-width:20px;min-height:20px;padding:0 3px;font-size:11px}
+button.od-k{cursor:pointer}button.od-k:hover{box-shadow:0 0 0 1px var(--kc)}
+td.od-c .od-k{margin-left:3px;vertical-align:middle}
+td.od-tk-no{color:var(--crit);font-weight:700}
+.od-fck{align-items:center}
+.od-fl{font-size:12px;font-weight:600;color:var(--muted);margin-right:2px}
+.od-fc.f-wait{--c:var(--accent)}.od-fc.f-fail{--c:var(--crit)}.od-fc.f-ok{--c:var(--good)}
+.od-badge.ck{background:var(--accent)}
+.od-cf-no{flex-basis:100%;color:var(--crit)}.od-cf .od-cf-no b{color:var(--crit)}
+.od-popen{justify-self:start;margin-top:2px;font-size:12.5px}
+.od-ckw{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.od-pop .od-ckw{padding:10px;border-radius:10px;background:var(--surface-2)}
+.od-cks{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.od-cks small{font-size:11.5px;color:var(--muted)}
+.od-ckt{flex-basis:100%;margin:0;font-size:12.5px;color:var(--crit);overflow-wrap:anywhere}
+.od-ckf{flex-basis:100%;display:grid;gap:3px;font-size:12.5px;min-width:0}
+.od-ckf .lnk{justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.od-ckb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.od-pop .od-ckb{flex-basis:100%}
+.btn.od-ck-ok{background:var(--good);border-color:var(--good);color:#fff}
+.btn.od-ck-no{border-color:var(--crit);color:var(--crit)}
+.od-why{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.od-why input{flex:1 1 160px;min-width:0;height:34px}
+.od-ckn{margin:0;font-size:12.5px}
+.od-pdt{display:grid;gap:8px;font-size:12.5px}
+.od-pdt>summary{cursor:pointer;color:var(--muted);font-weight:600}
+.od-pdt[open]>summary{margin-bottom:8px}
+.od-pdt .od-pd{margin-top:6px}
+.od-pr>.od-ckw{grid-column:1/-1;padding:3px 0 2px}
+.od-pr>.od-ckw .btn{min-height:30px}
+
 /* ข้อมูลหลัก matrix */
 table.od-mx th.c,table.od-mx td.c{text-align:center;font-size:11.5px;line-height:1.25}
 
@@ -165,6 +210,7 @@ table.od-mx th.c,table.od-mx td.c{text-align:center;font-size:11.5px;line-height
   .od-card{padding:12px 12px 12px 16px}
   .od-steps{grid-template-columns:repeat(4,minmax(0,1fr))}
   .od-s{min-height:58px}
+  .od-steps .od-k{min-height:32px}
   .od-pr{grid-template-columns:minmax(0,1fr) auto}
   .od-pr>.od-v,.od-pr>small{grid-column:1}
   .od-pr .od-pa{grid-column:2;grid-row:1/span 3}
