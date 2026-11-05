@@ -196,8 +196,7 @@ function openJob(id){
         ${f('sale','Contact Sale <b class="req">*</b>',`<select id="jb-sale" name="sale"${dis}>${jbSaleOptions(v.sale)}</select>`)}
         ${f('address','ที่อยู่ (Address)',inp('address',' maxlength="300"'),'wide')}
         ${f('location','สถานที่ทำงาน / Plant <b class="req">*</b>',inp('location',' list="jb-dl-loc" maxlength="120"'))}
-        ${f('contact','ผู้ติดต่อ (Contact)',inp('contact',' maxlength="80"'))}
-        ${f('contactTel','โทรศัพท์ (Tel)',inp('contactTel',' maxlength="40" inputmode="tel"'))}
+        ${f('contact','ผู้ติดต่อ (ชื่อ และ เบอร์โทร)',inp('contact',' maxlength="200" placeholder="เช่น K.สมชาย 081-234-5678" autocomplete="off"')+(contactPhones(v.contact)?`<small class="hint">โทร ${telLinks(contactPhones(v.contact))}</small>`:''))}
         ${f('email','Email',inp('email',' maxlength="120" type="email"'))}
         ${f('poNo','เลขที่ PO / ใบเสนอราคา',inp('poNo',' maxlength="60"'))}
         <div class="field wide"><label class="jb-urg"><input type="checkbox" id="jb-certSame"${v.certSame!==false?' checked':''}${dis}> ใบ Cert ใช้ชื่อบริษัท / ที่อยู่เดียวกับด้านบน (As above)</label></div>
@@ -288,7 +287,7 @@ function jbRead(){
   const items=(jbEdit?jbEdit.items:[]).map(it=>{const o={id:it.id,witness:(it.witness||[]).slice()};JB_ITEM_F.forEach(k=>{o[k]=String(it[k]||'').trim()});return o})
     .filter(it=>JB_ITEM_F.some(k=>it[k]&&!(k==='product'&&it[k]==='Flowmeter'))||it.witness.length);/* a row with only the default Product is an unused row */
   const certSame=!!($('#jb-certSame')||{}).checked;
-  return {svcType:r('svcType'),customer:g('customer'),address:g('address'),location:g('location'),contact:g('contact'),contactTel:g('contactTel'),email:g('email'),sale:g('sale'),poNo:g('poNo'),
+  return {svcType:r('svcType'),customer:g('customer'),address:g('address'),location:g('location'),contact:g('contact'),contactTel:'',email:g('email'),sale:g('sale'),poNo:g('poNo'),
     certSame,certName:certSame?'':g('certName'),certAddress:certSame?'':g('certAddress'),items,qty:items.length?`${items.length} เครื่อง`:'',
     reports:c('reports'),reportOther:g('reportOther'),materialBy:r('materialBy'),materials:c('materials'),adjust:r('adjust'),adjustPoints:g('adjustPoints'),highPressure:!!($('#jb-highPressure')||{}).checked,
     installBy:r('installBy'),disconnectDate:g('disconnectDate'),installDate:g('installDate'),transportBy:r('transportBy'),receiveDate:g('receiveDate'),returnDate:g('returnDate'),
@@ -410,7 +409,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #6b7c96;padding
 <div class="top"><div style="display:flex;gap:12px;align-items:center">${orgLogo(52)}<div><b>${esc(ORG_NAME)}</b><h1 style="text-align:left">ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div></div>
 <div class="req"><b>REQUEST No. ${esc(j.planNo||'(รอ Planner ออก PN)')}</b><br>CONTACT SALE : ${esc(j.sale||'')}<br>เลขที่คำร้อง : ${esc(j.jobNo)} · รับคำร้องเมื่อ ${esc(jbWhen(j.bookedAt))}</div></div>
 <p><b>ส่วนที่ 1 สำหรับ SALE</b> &nbsp; ${svc('inhouse')} In-house calibration &nbsp; ${svc('onsite')} On-site calibration &nbsp; ${svc('mobile')} Mobile calibration</p>
-<table><tr><th style="width:16%">บริษัท / Customer</th><td>${esc(j.customer)}</td><th style="width:12%">ผู้ติดต่อ / Contact</th><td>${esc(j.contact)}</td><th style="width:9%">โทร / Tel</th><td>${esc(j.contactTel)}</td></tr>
+<table><tr><th style="width:16%">บริษัท / Customer</th><td>${esc(j.customer)}</td><th style="width:12%">ผู้ติดต่อ / Contact · Tel</th><td colspan="3">${esc(contactOf(j))}</td></tr>
 <tr><th>ที่อยู่ / Address</th><td colspan="3">${esc(j.address||'')} ${j.location?'· สถานที่ '+esc(j.location):''}</td><th>Email</th><td>${esc(j.email||'')}</td></tr>
 <tr><th>ชื่อบริษัท / ที่อยู่ในใบ Cert</th><td colspan="5">${j.certSame!==false?'☑ ใช้ข้อมูลเดียวกับด้านบน (As above)':esc([j.certName,j.certAddress].filter(Boolean).join(' · '))}</td></tr></table>
 <p><b>รายการเครื่องที่ส่งสอบเทียบ (UUTs List and Calibration Requirements)</b></p>

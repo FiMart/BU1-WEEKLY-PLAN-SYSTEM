@@ -143,10 +143,11 @@ async function previewFile(id,meta){
   try{
     const b=await fileBlob(id,f);if(fvFile!==f)return;
     if(fvUrl)URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(b);const m=b.type;
-    $('#fvTab').href=fvUrl;$('#fvTab').hidden=!/^(image\/|application\/pdf|text\/)/.test(m);
+    /* HTML / XML / SVG in a tab or an iframe would run as this site: they only download (Onsite upload steps take any file type) */
+    const live=/html|xml/.test(m);$('#fvTab').href=fvUrl;$('#fvTab').hidden=live||!/^(image\/|application\/pdf|text\/)/.test(m);
     if(/^image\//.test(m))body.innerHTML=`<img src="${fvUrl}" alt="${esc(f.name)}">`;
     else if(m==='application/pdf')body.innerHTML=`<iframe src="${fvUrl}" title="${esc(f.name)}"></iframe>`;
-    else if(/^text\//.test(m)){/* shown by the browser itself, read as UTF-8 (Thai) */
+    else if(/^text\//.test(m)&&!live){/* shown by the browser itself, read as UTF-8 (Thai) */
       URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(new Blob([b],{type:m.split(';')[0]+';charset=utf-8'}));$('#fvTab').href=fvUrl;
       body.innerHTML=`<iframe class="txt" src="${fvUrl}" title="${esc(f.name)}"></iframe>`}
     else body.innerHTML=`<div class="fpv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>ไฟล์ ${esc(ext)} ดูตัวอย่างในเบราว์เซอร์ไม่ได้<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมในเครื่อง</p></div>`;

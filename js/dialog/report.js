@@ -68,7 +68,7 @@ function docBox(t,edit){
       <div class="doc-rh"><i class="doc-ic">${st==='ok'?'✓':st==='na'?'–':st==='miss'?'✗':'○'}</i><span class="doc-nm"><b>${esc(k.name)}</b><small>${st==='na'?'ไม่มีสำหรับงานนี้':esc(k.sub)}</small></span>
         <span class="doc-act">${up}${edit&&!n?`<button type="button" class="lnk" data-rep-na="${k.id}">${st==='na'?'ต้องส่ง':'ไม่มี'}</button>`:''}</span></div>
       ${sh?`<div class="vr-list"><button type="button" class="fchip doc-file cs-docrow" data-cs-open="${esc(sh.id)}"><span class="fext" data-ext="CS">CS</span><span class="fmeta"><b>${esc(sh.no)} · Check Sheet ในระบบ</b><small>อนุมัติ ${esc(jbWhen(sh.approvedAt))} โดย ${esc(String(sh.approvedBy||'').split('@')[0])}</small></span></button></div>`:''}${n?`<div class="vr-list">${fs.map(f=>reportRow(f,edit,k.id)).join('')}</div>`:''}</div>`}).join('');
-  const other=reportsOf(t).filter(f=>!DOC_KINDS.some(k=>docOfKind(f,k.id)));
+  const other=reportsOf(t).filter(f=>!f.odStep&&!DOC_KINDS.some(k=>docOfKind(f,k.id)));/* odStep: shown in ติดตามเอกสาร Onsite (js/features/onsite-docs.js) */
   return `<div class="v-report${done&&!ok?' miss':''}" id="vReport">
     <div class="vr-head">${REP_ICON}<b>เอกสารหลังจบงาน</b><span class="opt${done?ok?' ok':' bad':''}">ส่งแล้ว ${s.have}/${s.need}</span>${done?'':'<span class="hint">แนบล่วงหน้าได้ · ต้องครบเมื่องานเสร็จ</span>'}</div>
     <div class="doc-rows">${rows}

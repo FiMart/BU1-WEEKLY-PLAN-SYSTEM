@@ -11,7 +11,10 @@
    ส่ง QC ← the uploaded document / approved Check Sheet (SR, Remove-Reinstall) · Config Flow com ← an approved Data Flow Meter sheet.
    Working days = Mon–Fri without public holidays (odWorkDay). The number beside a date = working days after the work date (the sheet's).
    Complete = every needed step after the work has a date; sent = the latest of them. Status: ในเวลา (sent ≤ Final) · เกินเวลา ·
-   รอเอกสาร (not complete, Final not passed) · ตามต่อ (not complete, Final passed; "−n" = calendar days past, like the sheet). */
+   รอเอกสาร (not complete, Final not passed) · ตามต่อ (not complete, Final passed; "−n" = calendar days past, like the sheet).
+   ผลตรวจเอกสาร (user, 5 Nov 2026: "ปุ่ม Status … คนที่คอยเช็คจะได้กด Complete ได้เลย"; chose per document box · Admin / Planner · apart from ในเวลา / เกินเวลา
+   · ไม่ผ่าน + reason, bell to the Lead): docTrack.chk = {<step>:{st:'ok'|'fail',by,at,why}}. A step with a date and no result = รอตรวจ. Changing the step's value
+   (odMerged) or a file attached after the result (odCkOf) brings it back to รอตรวจ; the on-time status above never reads chk. */
 const OD_STEPS=[
   {id:'prep',name:'เตรียมใบรับงานก่อนเริ่ม',short:'ใบรับงาน<br>ก่อนเริ่ม',pre:true},
   {id:'sr',name:'Service Report',short:'Service<br>Report'},
@@ -45,11 +48,25 @@ function odAuto(t,id){
   if(id==='prep'){const j=t.jobId&&typeof jbById==='function'?jbById(t.jobId):null;return pick([j&&{d:odDay(j.bookedAt),src:`ใบรับคำร้อง ${j.jobNo||''}`},...files('job')])}
   if(id==='sr')return pick([...files('sr'),sheet('sr')]);
   if(id==='qc')return pick([...files('qc'),sheet('qc')]);
+  const own=()=>odFiles(t,id).map(f=>({d:odDay(f.at),src:`แนบไฟล์ ${f.name}`}));
   if(id==='cfg'){const c=(S.checks||[]).filter(c=>c.form==='data'&&c.state==='approved'&&(c.taskId===t.id||(t.jobId&&c.jobId===t.jobId))).sort((a,b)=>String(a.approvedAt).localeCompare(String(b.approvedAt)))[0];
-    return c?{d:odDay(c.approvedAt),src:`Check Sheet ${c.no} อนุมัติ`}:null}
+    return pick([...own(),c&&{d:odDay(c.approvedAt),src:`Check Sheet ${c.no} อนุมัติ`}])}
+  if(OD_UP.has(id))return pick(own());
   return null;
 }
-/* one step of one plan: {id, need, na, date, auto, src, lag, over} */
+/* ผลตรวจเอกสาร of a step that has a date */
+const OD_CK={ok:{th:'Complete',g:'✓'},fail:{th:'ไม่ผ่าน',g:'✗'},wait:{th:'รอตรวจ',g:'○'}};
+const odChkOk=()=>can('master');
+const OD_FILE_KIND={prep:'job',sr:'sr',qc:'qc'};
+/* steps whose files are stored from this page (user, 5 Nov 2026: Config Flow com · Draft + Report · Back up / Flowcom "สามารถอัปโหลดเพื่อจัดเก็บในหน้าติดตามเอกสารได้"):
+   in task.reports with odStep = the step, so they are not one of เอกสารหลังจบงาน's DOC_KINDS and never count as missing there */
+const OD_UP=new Set(['cfg','draft','bak']);
+const odFiles=(t,id)=>OD_UP.has(id)?reportsOf(t).filter(f=>f.odStep===id):OD_FILE_KIND[id]&&typeof docsOf==='function'?docsOf(t,OD_FILE_KIND[id]):[];
+function odCkOf(t,id){const c=(odTrack(t).chk||{})[id];if(!c||!OD_CK[c.st]||c.st==='wait')return {st:'wait'};
+  const at=new Date(c.at);return odFiles(t,id).some(f=>new Date(f.at)>at)?{st:'wait',renew:true}:c}
+const odCkWho=c=>c.renew?'มีไฟล์ใหม่หลังตรวจ · ต้องตรวจอีกครั้ง':c.st==='wait'?'':`${c.st==='ok'?'ตรวจ':'ตีกลับ'}โดย ${String(c.by||'—').split('@')[0]} · ${jbWhen(c.at)}`;
+const odCkTip=c=>[OD_CK[c.st].th,c.why,odCkWho(c)].filter(Boolean).join(' · ');
+/* one step of one plan: {id, need, na, date, auto, src, lag, over, ck} */
 function odStep(t,id){
   const m=odTrack(t)[id];const pre=id==='prep';
   if(m==='na')return {id,na:true,need:false,why:'ไม่มีสำหรับงานนี้'};
@@ -57,43 +74,52 @@ function odStep(t,id){
   if(!need)return {id,na:true,need:false,why:`หัวข้องานนี้ไม่ต้องส่ง (ข้อมูลหลัก)`};
   const a=typed?null:odAuto(t,id);const date=typed||(a?a.d:'');
   const lag=date?odLag(t.date,date):null;
-  return {id,need:true,date,auto:!typed&&!!date,src:typed?'กรอกเอง':a?a.src:'',lag,over:date?(pre?date>t.date:lag>odCfg().days):false};
+  return {id,need:true,date,auto:!typed&&!!date,src:typed?'กรอกเอง':a?a.src:'',lag,over:date?(pre?date>t.date:lag>odCfg().days):false,ck:date?odCkOf(t,id):null};
 }
 function odRow(t){
   const steps=OD_STEPS.map(s=>odStep(t,s.id));const post=steps.filter(s=>s.need&&s.id!=='prep');
   const final=odFinal(t.date);const today=ymd(new Date());
-  if(!post.length)return {t,steps,final,none:true,done:false,sent:'',status:'',miss:[]};
+  const ckN=st=>steps.filter(s=>s.ck&&s.ck.st===st).length;const ck={n:steps.filter(s=>s.need).length,ok:ckN('ok'),fail:ckN('fail'),wait:ckN('wait')};
+  const ckSt=ck.fail?'fail':ck.wait?'wait':ck.n&&ck.ok===ck.n?'ok':'';
+  if(!post.length)return {t,steps,final,none:true,done:false,sent:'',status:'',miss:[],ck,ckSt};
   const miss=post.filter(s=>!s.date);const done=!miss.length;const sent=done?post.map(s=>s.date).sort().pop():'';
   const status=done?(sent<=final?'ok':'late'):(today<=final?'wait':'follow');
   const prep=steps[0];
-  return {t,steps,final,done,sent,status,miss,over:status==='follow'?odCal(final,today):0,left:status==='wait'?odCal(today,final):0,prepBad:prep.need&&(!prep.date||prep.date>t.date)};
+  return {t,steps,final,done,sent,status,miss,ck,ckSt,over:status==='follow'?odCal(final,today):0,left:status==='wait'?odCal(today,final):0,prepBad:prep.need&&(!prep.date||prep.date>t.date)};
 }
 const odRows=list=>(list||[]).filter(odOn).map(odRow).filter(r=>!r.none);
 const odLeadId=t=>(t.staffIds||[]).find(x=>staffById(x))||'';
 const odLead=t=>{const id=odLeadId(t);return id?staffName(id):''};
 const odWorkSt=t=>t.status==='done'?'Complete':(t.status||'planned')==='planned'?'On Process':stTh(t.status);
 /* counts of a list of rows; rate = ในเวลา ÷ rows already due (sent, or Final passed) */
-function odCount(rows){const c={n:rows.length,ok:0,late:0,wait:0,follow:0};rows.forEach(r=>c[r.status]++);const due=c.ok+c.late+c.follow;c.due=due;c.rate=due?Math.round(c.ok/due*100):null;return c}
+function odCount(rows){const c={n:rows.length,ok:0,late:0,wait:0,follow:0,ck:{ok:0,fail:0,wait:0}};rows.forEach(r=>{c[r.status]++;if(r.ckSt)c.ck[r.ckSt]++});const due=c.ok+c.late+c.follow;c.due=due;c.rate=due?Math.round(c.ok/due*100):null;return c}
 const odSummary=list=>odCount(odRows(list));
 /* the ISO 9001 history line of docTrack */
-const odTrackText=v=>Object.entries(v||{}).filter(([k,x])=>x&&OD_NAME[k]||k==='note'&&x).map(([k,x])=>k==='note'?`Remark: ${x}`:`${OD_NAME[k]} ${x==='na'?'ไม่มี':x==='need'?'ต้องส่ง':odDM(x)}`).join(' · ')||'—';
+const odTrackText=v=>[...Object.entries(v||{}).filter(([k,x])=>x&&OD_NAME[k]||k==='note'&&x).map(([k,x])=>k==='note'?`Remark: ${x}`:`${OD_NAME[k]} ${x==='na'?'ไม่มี':x==='need'?'ต้องส่ง':odDM(x)}`),
+  ...Object.entries((v&&v.chk)||{}).filter(([k])=>OD_NAME[k]).map(([k,x])=>`ตรวจ ${OD_NAME[k]}: ${x.st==='ok'?'Complete':`ไม่ผ่าน${x.why?` (${x.why})`:''}`}`)].join(' · ')||'—';
 
 /* ---------- the page (user, 22 Oct 2026: "ปรับ layout ของหน้านี้ด้วยให้ดูดีและเข้าใจง่าย"; chose cards + table switch, quick entry, notices) ----------
    Summary bar (ส่งทันเวลา % + one stacked bar + status chips that filter) → tools (search · การ์ด / ตาราง · เลือกหลายงาน · Excel) →
    legend → the work, grouped by day (รายสัปดาห์) or most urgent first (ค้างส่ง). A step (card box or table cell) opens #odPop:
    วันนี้ · เมื่อวาน · วันทำงาน · any date · ไม่มี / ต้องส่ง · ใช้ค่าจากระบบ. เลือกหลายงาน = tick cards, then one step + date for all. */
-const odTab=()=>S.od.tab==='todo'?'todo':'week';
+const odTab=()=>S.od.tab==='todo'||S.od.tab==='check'?S.od.tab:'week';
+S.od.ck='';
 S.od.view=(()=>{try{return localStorage.getItem('bu1wp.odView')==='table'?'table':'card'}catch(e){return 'card'}})();
 S.od.pick=false;S.od.sel=new Set();
 function odBase(){
   if(odTab()==='week'){const days=new Set(weekDays().map(ymd));return odRows(S.tasks.filter(t=>days.has(t.date)))}
-  const today=ymd(new Date());const list=rangeTasks(ymd(addDays(parseD(today),-OD_DAYS_BACK)),today);
-  return list?odRows(list).filter(r=>!r.done):null;
+  const list=odRecent();if(!list)return null;
+  return odTab()==='check'?list.filter(odCkOpen):list.filter(r=>!r.done);
 }
-const odMatch=r=>{const q=norm(S.od.q);return (!S.od.st||r.status===S.od.st)&&(!q||norm([r.t.planNo,r.t.customer,r.t.location,odLead(r.t),typeLabel(r.t),r.t.sale].join(' ')).includes(q))};
+/* the last 90 days; null until loaded */
+const odRecent=()=>{const today=ymd(new Date());const l=rangeTasks(ymd(addDays(parseD(today),-OD_DAYS_BACK)),today);return l?odRows(l):null};
+const odCkOpen=r=>r.ckSt==='wait'||r.ckSt==='fail';
+const odMatch=r=>{const q=norm(S.od.q);return (!S.od.st||r.status===S.od.st)&&(!S.od.ck||r.ckSt===S.od.ck)&&(!q||norm([r.t.planNo,r.t.customer,r.t.location,odLead(r.t),typeLabel(r.t),r.t.sale].join(' ')).includes(q))};
 /* most urgent first: ตามต่อ (longest past Final), รอเอกสาร (nearest Final), เกินเวลา, ในเวลา */
 const OD_RANK={follow:0,wait:1,late:2,ok:3};
 const odUrgent=(a,b)=>OD_RANK[a.status]-OD_RANK[b.status]||(a.status==='follow'?b.over-a.over:a.status==='wait'?a.left-b.left:0)||a.t.date.localeCompare(b.t.date)||String(a.t.planNo).localeCompare(String(b.t.planNo));
+/* แท็บ รอตรวจ: what the checker still has to look at first (oldest first), then what went back to the team */
+const odCkSort=(a,b)=>(a.ckSt==='fail')-(b.ckSt==='fail')||a.t.date.localeCompare(b.t.date)||String(a.t.planNo).localeCompare(String(b.t.planNo));
 const odChip=r=>r.status?`<span class="od-st od-${r.status}" title="${esc(OD_ST[r.status].sub)}">${OD_ST[r.status].th}</span>`:'';
 const odFollowTxt=r=>r.done?'ครบ':r.status==='follow'?`−${r.over}`:r.left?`อีก ${r.left} วัน`:'วันนี้';
 /* the line beside the status: what it means for this work */
@@ -104,32 +130,60 @@ function odLook(r,s){
   const st=OD_STEPS.find(x=>x.id===s.id);const pre=s.id==='prep';
   if(s.na)return {cls:'na',val:'–',sub:'ไม่มี',tip:`${st.name} · ${s.why}`};
   const cls=s.date?(s.over?'over':s.auto?'auto':'ok'):(pre?'miss':'owe');
-  const tip=`${st.name}${s.date?` · ${thDate(s.date)}${pre?(s.date>r.t.date?' · หลังวันทำงาน':''):` · ${s.lag} วันทำงานหลังวันทำงาน`}${s.src?` · ${s.src}`:''}`:pre?' · ยังไม่มีใบรับงานก่อนเริ่มงาน':' · ยังไม่ได้รับ (ตาม)'}${canWork()?' · กดเพื่อกรอก':''}`;
-  return {cls,val:s.date?fmtShort(parseD(s.date)):pre?'ไม่มี':'ตาม',sub:s.date?(pre?(s.date>r.t.date?'หลังวันงาน':'ก่อนเริ่ม'):`${s.lag} วัน`):pre?'ก่อนเริ่มงาน':'ยังไม่ได้รับ',dm:s.date?odDM(s.date):pre?'ไม่มี':'ตาม',tip};
+  const tip=`${st.name}${s.date?` · ${thDate(s.date)}${pre?(s.date>r.t.date?' · หลังวันทำงาน':''):` · ${s.lag} วันทำงานหลังวันทำงาน`}${s.src?` · ${s.src}`:''} · ผลตรวจ: ${odCkTip(s.ck)}`:pre?' · ยังไม่มีใบรับงานก่อนเริ่มงาน':' · ยังไม่ได้รับ (ตาม)'}${canWork()?(OD_UP.has(s.id)?' · กดเพื่ออัปโหลดหรือกรอก':' · กดเพื่อกรอก'):''}`;
+  const fn=OD_UP.has(s.id)?odFiles(r.t,s.id).length:0;
+  return {cls,fn,val:s.date?fmtShort(parseD(s.date)):pre?'ไม่มี':'ตาม',sub:s.date?(pre?(s.date>r.t.date?'หลังวันงาน':'ก่อนเริ่ม'):`${s.lag} วัน${fn?` · 📎${fn}`:''}`):pre?'ก่อนเริ่มงาน':'ยังไม่ได้รับ',dm:s.date?odDM(s.date):pre?'ไม่มี':'ตาม',tip};
 }
 const odStepBtn=(r,s,inner,cls)=>canWork()?`<button type="button" class="${cls}" data-od-pop="${s.id}" data-od-t="${esc(r.t.id)}" title="${esc(odLook(r,s).tip)}" aria-haspopup="dialog">${inner}</button>`:`<span class="${cls}" title="${esc(odLook(r,s).tip)}">${inner}</span>`;
+/* the status button of a document box: opens the same popover (mini = the table's cell, the mark only) */
+const odKPill=(r,s,mini)=>{if(!s.ck){if(!OD_UP.has(s.id)||!s.need||!canWork())return '';const up=`อัปโหลด ${OD_NAME[s.id]}`;
+    return `<button type="button" class="od-k k-up${mini?' k-mini':''}" data-od-pop="${s.id}" data-od-t="${esc(r.t.id)}" title="${esc(up)}" aria-label="${esc(up)}" aria-haspopup="dialog">${mini?'⬆':'⬆ อัปโหลด'}</button>`}
+  const K=OD_CK[s.ck.st];const tip=`${OD_NAME[s.id]} · ${odCkTip(s.ck)}`;const cls=`od-k k-${s.ck.st}${mini?' k-mini':''}`;const inner=mini?K.g:`${K.g} ${K.th}`;
+  return canWork()?`<button type="button" class="${cls}" data-od-pop="${s.id}" data-od-t="${esc(r.t.id)}" title="${esc(tip)}" aria-label="${esc(tip)}" aria-haspopup="dialog">${inner}</button>`:`<span class="${cls}" title="${esc(tip)}">${inner}</span>`};
+const odKBadge=c=>`<span class="od-k k-${c.st}">${OD_CK[c.st].g} ${OD_CK[c.st].th}</span>`;
+/* the files of an upload step + its upload button, in the popover and the plan view */
+function odUpHtml(t,s){
+  if(!OD_UP.has(s.id))return '';const fs=odFiles(t,s.id);const key=`${t.id}|${s.id}`;const busy=odUpBusy===key;const full=reportsOf(t).length>=MAX_REPORTS;const a=`data-od-t="${esc(t.id)}"`;
+  if(!fs.length&&(s.na||!canWork()))return '';
+  const rows=fs.map(f=>{const w=new Date(f.at);return `<div class="od-fr"><span class="fext" data-ext="${esc(fileExt(f.name))}">${esc(fileExt(f.name))}</span><span class="od-fm"><button type="button" class="fpv-name" data-od-file="${esc(f.id)}" ${a} title="ดู ${esc(f.name)}">${esc(f.name)}</button><small>${fmtSize(f.size||0)}${isNaN(w)?'':` · ${fmtShort(w)}`}${uploaderOf(f)?` · ${esc(uploaderOf(f))}`:''}</small></span>
+    <button type="button" class="btn sm" data-od-fdl="${esc(f.id)}" ${a}>ดาวน์โหลด</button>${canDelReport(f)?`<button type="button" class="ph-x2" data-od-fdel="${esc(f.id)}" ${a} aria-label="ลบ ${esc(f.name)}" title="ลบไฟล์ (เฉพาะคนที่อัปโหลด)">×</button>`:''}</div>`}).join('');
+  const up=canWork()&&!s.na?(full?`<small class="hint">แนบครบ ${MAX_REPORTS} ไฟล์ต่อแผนแล้ว</small>`:`<label class="btn sm vr-add${busy?' busy':''}"><input type="file" class="sr-only" data-od-up="${s.id}" ${a} multiple${odUpBusy?' disabled':''} aria-label="อัปโหลด ${esc(OD_NAME[s.id])}">${UP_ICON}<span data-od-uplbl="${esc(key)}">${busy?'กำลังอัปโหลด…':fs.length?'เพิ่มไฟล์':'อัปโหลดไฟล์'}</span></label>`):'';
+  return `<div class="od-up">${rows}${up}</div>`;
+}
+/* result + buttons of one step, in the popover and the plan view (pre keeps the reason box's id apart) */
+function odCkBlock(t,s,pre,files){
+  const c=s.ck;const a=`data-od-ck-s="${s.id}" data-od-t="${esc(t.id)}"`;let btns='';
+  if(odChkOk())btns=`<div class="od-ckb">${c.st!=='ok'?`<button type="button" class="btn sm od-ck-ok" data-od-ck="ok" ${a}>✓ Complete</button>`:''}${c.st!=='fail'?`<button type="button" class="btn sm od-ck-no" data-od-ck="no" ${a}>✗ ไม่ผ่าน</button>`:''}${c.st!=='wait'?`<button type="button" class="lnk" data-od-ck="undo" ${a}>ยกเลิกผลตรวจ</button>`:''}</div>
+    <div class="od-why" hidden><input type="text" id="od-why-${pre}-${s.id}" maxlength="200" placeholder="เหตุผล / ต้องแก้อะไร เช่น ลายเซ็นลูกค้าไม่ครบ" aria-label="เหตุผลที่ไม่ผ่าน" autocomplete="off"><button type="button" class="btn sm od-ck-no" data-od-ck="fail" ${a}>ยืนยัน</button><button type="button" class="lnk" data-od-ck="nocancel">ยกเลิก</button></div>`;
+  else if(c.st==='fail'&&canWork())btns=`<div class="od-ckb"><button type="button" class="btn sm" data-od-ck="undo" ${a}>แก้แล้ว ส่งตรวจใหม่</button></div>`;
+  const sh=files&&(s.id==='sr'||s.id==='qc')?docBySheet(t,s.id):null;
+  const fs=files&&!OD_UP.has(s.id)?odFiles(t,s.id).map(f=>`<button type="button" class="lnk" data-od-file="${esc(f.id)}" data-od-t="${esc(t.id)}" title="ดู ${esc(f.name)}">ดู ${esc(f.name)}</button>`):[];
+  if(sh)fs.push(`<button type="button" class="lnk" data-cs-open="${esc(sh.id)}">ดู Check Sheet ${esc(sh.no)}</button>`);
+  return `<div class="od-ckw"><div class="od-cks">${odKBadge(c)}${odCkWho(c)?`<small>${esc(odCkWho(c))}</small>`:''}</div>${c.why?`<p class="od-ckt">${esc(c.why)}</p>`:''}${fs.length?`<div class="od-ckf">${fs.join('')}</div>`:''}${btns}</div>`;
+}
 const odPickBox=r=>S.od.pick?`<label class="od-pk" title="เลือกงานนี้"><input type="checkbox" data-od-sel="${esc(r.t.id)}"${S.od.sel.has(r.t.id)?' checked':''} aria-label="เลือก ${esc(r.t.planNo||typeLabel(r.t))}"></label>`:'';
 function odCard(r,withDate){
   const t=r.t;const n=(t.staffIds||[]).length;const need=odNeedN(r);const got=need.filter(s=>s.date).length;const note=odTrack(t).note;
   const steps=r.steps.map(s=>{const L=odLook(r,s);const st=OD_STEPS.find(x=>x.id===s.id);
-    return `<li>${odStepBtn(r,s,`<span class="od-sl">${st.short.replace('<br>',' ')}</span><b>${esc(L.val)}</b><small>${esc(L.sub)}</small>`,`od-s ${L.cls}`)}</li>`}).join('');
+    return `<li>${odStepBtn(r,s,`<span class="od-sl">${st.short.replace('<br>',' ')}</span><b>${esc(L.val)}</b><small>${esc(L.sub)}</small>`,`od-s ${L.cls}`)}${odKPill(r,s)}</li>`}).join('');
+  const bad=r.steps.filter(s=>s.ck&&s.ck.st==='fail');
   return `<article class="od-card od-${r.status}${S.od.sel.has(t.id)?' sel':''}">
     <header class="od-ch">${odPickBox(r)}${odChip(r)}<span class="od-say">${esc(odSay(r))}</span><span class="od-fin" title="Final Date = วันทำงาน + ${odCfg().days} วันทำงาน">Final <b>${esc(fmtShort(parseD(r.final)))}</b></span></header>
     <div class="od-cm"><button type="button" class="od-pno mono" data-edit="${esc(t.id)}" title="เปิดแผน">${esc(t.planNo||'ไม่มี PN')}</button><b class="od-cu">${esc(t.customer||'–')}</b><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span></div>
     <div class="od-mt"><span>Lead <b>${esc(odLead(t)||'—')}</b>${n>1?` +${n-1}`:''}</span>${t.sale?`<span>${esc(t.sale)}</span>`:''}<span class="od-ws ${t.status==='done'?'done':''}">${esc(odWorkSt(t))}</span>${withDate?`<span>วันทำงาน ${esc(fmtDay(t.date))}</span>`:''}</div>
-    <div class="od-prog" title="เอกสารหลังงานได้รับ ${got} จาก ${need.length}"><span class="od-pt"><i style="width:${need.length?Math.round(got/need.length*100):0}%"></i></span><span>เอกสาร ${got}/${need.length}</span></div>
+    <div class="od-prog" title="เอกสารหลังงานได้รับ ${got} จาก ${need.length}"><span class="od-pt"><i style="width:${need.length?Math.round(got/need.length*100):0}%"></i></span><span>เอกสาร ${got}/${need.length} · ตรวจแล้ว ${r.ck.ok}/${r.ck.n}</span></div>
     <ol class="od-steps">${steps}</ol>
-    ${r.miss.length||note?`<footer class="od-cf">${r.miss.length?`<span>ยังขาด <b>${esc(r.miss.map(s=>OD_NAME[s.id]).join(' · '))}</b></span>`:''}${note?`<span class="od-rm">📝 ${esc(note)}</span>`:''}</footer>`:''}</article>`;
+    ${r.miss.length||note||bad.length?`<footer class="od-cf">${bad.map(s=>`<span class="od-cf-no">✗ ไม่ผ่าน <b>${esc(OD_NAME[s.id])}</b>${s.ck.why?` · ${esc(s.ck.why)}`:''}</span>`).join('')}${r.miss.length?`<span>ยังขาด <b>${esc(r.miss.map(s=>OD_NAME[s.id]).join(' · '))}</b></span>`:''}${note?`<span class="od-rm">📝 ${esc(note)}</span>`:''}</footer>`:''}</article>`;
 }
 function odCell(r,s){const L=odLook(r,s);if(s.na)return `<td class="od-c na" title="${esc(L.tip)}">–</td>`;
-  return `<td class="od-c ${L.cls}">${odStepBtn(r,s,`${esc(L.dm)}${s.date&&s.id!=='prep'?`<small>${s.lag}</small>`:''}`,'od-cb')}</td>`}
+  return `<td class="od-c ${L.cls}">${odStepBtn(r,s,`${esc(L.dm)}${s.date&&s.id!=='prep'?`<small>${s.lag}</small>`:''}${L.fn?`<small>📎${L.fn}</small>`:''}`,'od-cb')}${odKPill(r,s,true)}</td>`}
 function odTable(rows,withDate){
-  const head=`<tr>${S.od.pick?'<th></th>':''}<th>Status</th><th>ติดตาม</th><th>Final<br>Date</th>${withDate?'<th>Date<br>Work</th>':''}<th>Lead</th><th>PN</th><th>Job Work</th><th>DETAIL</th><th>Status of<br>Work</th><th>ผู้ออก<br>ใบรับงาน</th>${OD_STEPS.map(s=>`<th class="od-sh">${s.short}</th>`).join('')}<th>ส่งครบ<br>วันที่</th><th>Remark</th></tr>`;
+  const head=`<tr>${S.od.pick?'<th></th>':''}<th>Status</th><th>ติดตาม</th><th>Final<br>Date</th>${withDate?'<th>Date<br>Work</th>':''}<th>Lead</th><th>PN</th><th>Job Work</th><th>DETAIL</th><th>Status of<br>Work</th><th>ผู้ออก<br>ใบรับงาน</th>${OD_STEPS.map(s=>`<th class="od-sh">${s.short}</th>`).join('')}<th>ส่งครบ<br>วันที่</th><th>ตรวจ<br>แล้ว</th><th>Remark</th></tr>`;
   return `<div class="scroll-x plain od-scroll"><table class="mini od-t"><thead>${head}</thead><tbody>${rows.map(r=>{const t=r.t;const n=(t.staffIds||[]).length;
     return `<tr class="od-r od-${r.status}${S.od.sel.has(t.id)?' sel':''}">${S.od.pick?`<td>${odPickBox(r)}</td>`:''}<td>${odChip(r)}</td><td class="n od-f od-${r.status}">${odFollowTxt(r)}</td><td class="n mono">${odDM(r.final)}</td>${withDate?`<td class="n mono">${odDM(t.date)}</td>`:''}
       <td class="od-lead">${esc(odLead(t)||'—')}${n>1?` <small>+${n-1}</small>`:''}</td><td><button type="button" class="lnk mono" data-edit="${esc(t.id)}" title="เปิดแผน">${esc(t.planNo||'–')}</button></td><td class="od-cust">${esc(t.customer||'–')}</td>
       <td><span class="tdot" style="--c:${planColor(t)}"><i></i>${esc(typeLabel(t))}</span></td><td><span class="od-ws ${t.status==='done'?'done':''}">${esc(odWorkSt(t))}</span></td><td>${esc(t.sale||'–')}</td>
-      ${r.steps.map(s=>odCell(r,s)).join('')}<td class="n mono">${r.sent?odDM(r.sent):''}</td><td class="od-note">${esc(odTrack(t).note||'')}</td></tr>`}).join('')}</tbody></table></div>`;
+      ${r.steps.map(s=>odCell(r,s)).join('')}<td class="n mono">${r.sent?odDM(r.sent):''}</td><td class="n mono${r.ck.fail?' od-tk-no':''}">${r.ck.ok}/${r.ck.n}</td><td class="od-note">${esc(odTrack(t).note||'')}</td></tr>`}).join('')}</tbody></table></div>`;
 }
 const odList=(rows,withDate)=>S.od.view==='table'?odTable(rows,withDate):`<div class="od-cards">${rows.map(r=>odCard(r,withDate)).join('')}</div>`;
 /* the summary: ส่งทันเวลา %, one bar of the four states, chips that filter */
@@ -138,17 +192,18 @@ function odSumHtml(c){
   const chip=(st,n,lbl)=>`<button type="button" class="od-fc${st?' od-'+st:''}${S.od.st===st?' on':''}" data-od-st="${st}" aria-pressed="${S.od.st===st}">${st?'<i></i>':''}${lbl}<b>${n}</b></button>`;
   return `<section class="panel od-sum"><div class="od-rate"><span>ส่งเอกสารทันเวลา</span><b>${c.rate==null?'–':c.rate+'%'}</b><small>${c.due?`ในเวลา ${c.ok} จาก ${c.due} งานที่ถึง Final แล้ว`:'ยังไม่มีงานที่ถึง Final'}</small></div>
     <div class="od-mid"><div class="od-bar2" role="img" aria-label="${seg.map(s=>`${OD_ST[s].th} ${c[s]}`).join(' · ')}">${seg.map(s=>c[s]?`<i class="od-${s}" style="flex:${c[s]/tot}" title="${OD_ST[s].th} ${c[s]} งาน"></i>`:'').join('')||'<i class="od-none" style="flex:1"></i>'}</div>
-      <div class="od-fcs">${chip('',c.n,'ทั้งหมด')}${seg.map(s=>chip(s,c[s],OD_ST[s].th)).join('')}</div></div></section>`;
+      <div class="od-fcs">${chip('',c.n,'ทั้งหมด')}${seg.map(s=>chip(s,c[s],OD_ST[s].th)).join('')}</div>
+      <div class="od-fcs od-fck"><span class="od-fl">ผลตรวจเอกสาร</span>${['wait','fail','ok'].map(s=>`<button type="button" class="od-fc f-${s}${S.od.ck===s?' on':''}" data-od-ckf="${s}" aria-pressed="${S.od.ck===s}">${OD_CK[s].g} ${s==='ok'?'ตรวจครบ':OD_CK[s].th}<b>${c.ck[s]}</b></button>`).join('')}</div></div></section>`;
 }
-const OD_LEGEND=`<div class="od-legend" aria-label="ความหมายของช่องเอกสาร"><span><i class="od-s ok"></i>ได้รับแล้ว (ตัวเลข = วันทำงานหลังวันทำงาน)</span><span><i class="od-s auto"></i>ระบบเติมให้</span><span><i class="od-s owe"></i>ตาม = ยังไม่ได้รับ</span><span><i class="od-s over"></i>ช้ากว่า Final / ใบรับงานไม่พร้อม</span><span><i class="od-s na"></i>ไม่มีสำหรับงานนี้</span></div>`;
+const OD_LEGEND=`<div class="od-legend" aria-label="ความหมายของช่องเอกสาร"><span><i class="od-s ok"></i>ได้รับแล้ว (ตัวเลข = วันทำงานหลังวันทำงาน)</span><span><i class="od-s auto"></i>ระบบเติมให้</span><span><i class="od-s owe"></i>ตาม = ยังไม่ได้รับ</span><span><i class="od-s over"></i>ช้ากว่า Final / ใบรับงานไม่พร้อม</span><span><i class="od-s na"></i>ไม่มีสำหรับงานนี้</span><span><i class="od-k k-wait k-mini">○</i>รอตรวจ</span><span><i class="od-k k-ok k-mini">✓</i>Complete = ตรวจแล้ว ครบ ถูกต้อง</span><span><i class="od-k k-fail k-mini">✗</i>ไม่ผ่าน = ตีกลับให้ทีมแก้</span></div>`;
 function renderOdoc(){
   if(notReady())return loading();
   const tab=odTab();const base=odBase();
-  const todo=(()=>{if(tab==='todo')return base;const today=ymd(new Date());const l=rangeTasks(ymd(addDays(parseD(today),-OD_DAYS_BACK)),today);return l?odRows(l).filter(r=>!r.done):null})();
-  const fol=todo?todo.filter(r=>r.status==='follow').length:0;
-  const tabs=`<div class="mp-tabs od-tabs" role="tablist" aria-label="ติดตามเอกสาร Onsite">${[['week','รายสัปดาห์',`งานของสัปดาห์ ${weekName(S.week)} แบ่งตามวัน`],['todo','ค้างส่ง',`เอกสารยังไม่ครบ · ${OD_DAYS_BACK} วันล่าสุด${todo?` · ${todo.length} งาน`:''}`]].map(([id,th,sub])=>`<button type="button" role="tab" class="mp-tab${tab===id?' on':''}" data-od-tab="${id}" aria-selected="${tab===id}"><span class="mp-tab-t"><b>${th}${id==='todo'&&fol?` <span class="od-badge" title="ตามต่อ ${fol} งาน">${fol}</span>`:''}</b><small>${esc(sub)}</small></span></button>`).join('')}</div>`;
+  const recent=odRecent();const todo=recent?recent.filter(r=>!r.done):null;const open=recent?recent.filter(odCkOpen):null;
+  const fol=todo?todo.filter(r=>r.status==='follow').length:0;const ckWait=open?open.filter(r=>r.ckSt==='wait').length:0;
+  const tabs=`<div class="mp-tabs od-tabs" role="tablist" aria-label="ติดตามเอกสาร Onsite">${[['week','รายสัปดาห์',`งานของสัปดาห์ ${weekName(S.week)} แบ่งตามวัน`],['todo','ค้างส่ง',`เอกสารยังไม่ครบ · ${OD_DAYS_BACK} วันล่าสุด${todo?` · ${todo.length} งาน`:''}`],['check','รอตรวจ',`เอกสารที่ต้องตรวจ · ${OD_DAYS_BACK} วันล่าสุด${open?` · ${open.length} งาน`:''}`]].map(([id,th,sub])=>`<button type="button" role="tab" class="mp-tab${tab===id?' on':''}" data-od-tab="${id}" aria-selected="${tab===id}"><span class="mp-tab-t"><b>${th}${id==='todo'&&fol?` <span class="od-badge" title="ตามต่อ ${fol} งาน">${fol}</span>`:''}${id==='check'&&ckWait?` <span class="od-badge ck" title="รอตรวจ ${ckWait} งาน">${ckWait}</span>`:''}</b><small>${esc(sub)}</small></span></button>`).join('')}</div>`;
   if(!base)return `<div class="od-page">${tabs}${loading()}</div>`;
-  const c=odCount(base);const rows=base.filter(odMatch).sort(odUrgent);const ed=canWork();
+  const c=odCount(base);const rows=base.filter(odMatch).sort(tab==='check'?odCkSort:odUrgent);const ed=canWork();
   const seg=(v,l)=>`<label><input type="radio" name="od-view" value="${v}"${S.od.view===v?' checked':''} data-od-view="${v}"><span>${l}</span></label>`;
   let h=tabs+odSumHtml(c)+`<div class="od-tools"><input type="search" id="od-q" value="${esc(S.od.q)}" placeholder="ค้นหา PN · ลูกค้า · Lead · หัวข้องาน" aria-label="ค้นหางาน" autocomplete="off">
     <div class="seg od-vw" role="radiogroup" aria-label="รูปแบบการแสดง">${seg('card','การ์ด')}${seg('table','ตาราง')}</div>
@@ -162,6 +217,9 @@ function renderOdoc(){
       if(!all.length&&k>today)return '';const fc=all.filter(r=>r.status==='follow').length;
       return `<section class="od-day${all.length?'':' empty'}"><header><h2>${TH_DAY_FULL[d.getDay()]} ${fmtShort(d)} ${be(d)}</h2>${all.length?`<span class="od-dn">${all.length} งาน</span><span class="od-dn">Final ${esc(fmtDay(odFinal(k)))}</span>${fc?`<span class="od-dn bad">ตามต่อ ${fc}</span>`:''}`:'<span class="hint">ไม่มีงานหน้างาน</span>'}${holidayOf(k)?`<span class="od-dn hol">${esc(holidayOf(k))}</span>`:''}</header>
         ${l.length?odList(l,false):all.length?'<p class="hint">ไม่มีงานที่ตรงกับตัวกรอง</p>':''}</section>`}).join('')||'<p class="hint">ยังไม่มีงานหน้างานในสัปดาห์นี้</p>';
+  }else if(tab==='check'){
+    h+=`<section class="od-day"><header><h2>เอกสารที่ต้องตรวจ · ${rows.length} งาน</h2><span class="hint">กดช่องเอกสารเพื่อดูไฟล์ แล้วกด Complete หรือ ไม่ผ่าน · เรียงงานเก่าสุดก่อน งานที่ไม่ผ่าน (รอทีมแก้) อยู่ท้าย</span></header>
+      ${rows.length?odList(rows,true):'<p class="hint od-empty">ไม่มีเอกสารรอตรวจ 🎉</p>'}</section>`;
   }else{
     h+=`<section class="od-day"><header><h2>เอกสารยังไม่ครบ · ${rows.length} งาน</h2><span class="hint">งานหน้างาน ${OD_DAYS_BACK} วันล่าสุด เรียงจากเร่งด่วนที่สุด (เลย Final นานสุดก่อน)</span></header>
       ${rows.length?odList(rows,true):'<p class="hint od-empty">ไม่มีงานค้างส่งเอกสาร 🎉</p>'}</section>`;
@@ -188,11 +246,14 @@ function odPopOpen(tid,step){
   const btn=(v,l,sub)=>`<button type="button" class="od-pb" data-od-set="${v}">${l}${sub?`<small>${esc(sub)}</small>`:''}</button>`;
   const now=s.na?'ไม่มีสำหรับงานนี้':s.date?`${thDate(s.date)}${s.src?' · '+s.src:''}`:'ยังไม่ได้รับ';
   OD_POP.el.setAttribute('aria-label',`${OD_NAME[step]} ของ ${t.planNo||typeLabel(t)}`);
-  OD_POP.el.innerHTML=`<div class="od-ph2"><b>${esc(OD_NAME[step])}</b><span>${esc([t.planNo,t.customer].filter(Boolean).join(' · '))}</span><small>ตอนนี้: ${esc(now)}</small></div>
-    ${s.na&&m!=='na'?'':`<div class="od-pbs">${btn(today,'วันนี้',fmtShort(parseD(today)))}${btn(yest,'เมื่อวาน',fmtShort(parseD(yest)))}${step==='prep'?'':btn(t.date,'วันทำงาน',fmtShort(parseD(t.date)))}</div>
-    <div class="od-pd"><input type="date" id="odPopDate" value="${esc(s.date||today)}" aria-label="เลือกวันที่"><button type="button" class="btn sm primary" data-od-set="pick">ใส่วันที่นี้</button></div>`}
+  const dates=s.na&&m!=='na'?'':`<div class="od-pbs">${btn(today,'วันนี้',fmtShort(parseD(today)))}${btn(yest,'เมื่อวาน',fmtShort(parseD(yest)))}${step==='prep'?'':btn(t.date,'วันทำงาน',fmtShort(parseD(t.date)))}</div>
+    <div class="od-pd"><input type="date" id="odPopDate" value="${esc(s.date||today)}" aria-label="เลือกวันที่"><button type="button" class="btn sm primary" data-od-set="pick">ใส่วันที่นี้</button></div>`;
+  OD_POP.el.innerHTML=`<div class="od-ph2"><b>${esc(OD_NAME[step])}</b><span>${esc([t.planNo,t.customer].filter(Boolean).join(' · '))}</span><small>ตอนนี้: ${esc(now)}</small><button type="button" class="lnk od-popen" data-od-open="${esc(t.id)}">เปิดแผน ›</button></div>
+    ${odUpHtml(t,s)}
+    ${s.ck?odCkBlock(t,s,'pop',true):!s.na&&odChkOk()?`<p class="hint od-ckn">ยังไม่ได้รับเอกสาร ${OD_UP.has(step)?'อัปโหลดไฟล์หรือใส่วันที่ก่อน':'ใส่วันที่ได้รับก่อน'} จึงกด Complete ได้</p>`:''}
+    ${s.ck&&odChkOk()&&dates?`<details class="od-pdt"><summary>แก้วันที่ได้รับ</summary>${dates}</details>`:dates}
     <div class="od-pf">${s.na?`<button type="button" class="lnk" data-od-set="need">ต้องส่งเอกสารนี้</button>`:`<button type="button" class="lnk" data-od-set="na">ไม่มีสำหรับงานนี้</button>`}${odIsDate(m)?`<button type="button" class="lnk" data-od-set="auto">ใช้ค่าจากระบบ</button>`:''}<button type="button" class="lnk" data-od-set="close">ปิด</button></div>`;
-  OD_POP.el.hidden=false;odPopPlace();const f=OD_POP.el.querySelector('.od-pb')||OD_POP.el.querySelector('button');if(f)f.focus();
+  OD_POP.el.hidden=false;odPopPlace();const f=OD_POP.el.querySelector('[data-od-ck="ok"]')||OD_POP.el.querySelector('.od-pb')||OD_POP.el.querySelector('button');if(f)f.focus();
 }
 function odPopClose(focus){if(!OD_POP.el||OD_POP.el.hidden)return;const b=focus?odPopAnchor():null;OD_POP.el.hidden=true;OD_POP.tid='';if(b)b.focus()}
 /* what a choice writes for one step of one plan ('' = remove the typed value) */
@@ -206,16 +267,72 @@ document.addEventListener('click',e=>{
   if(!e.target.closest)return;
   const pb=e.target.closest('[data-od-pop]');if(pb){const same=OD_POP.el&&!OD_POP.el.hidden&&OD_POP.tid===pb.dataset.odT&&OD_POP.step===pb.dataset.odPop;if(same)odPopClose();else odPopOpen(pb.dataset.odT,pb.dataset.odPop);return}
   if(OD_POP.el&&!OD_POP.el.hidden){
-    if(!OD_POP.el.contains(e.target)){odPopClose();return}
+    /* a file or Check Sheet opened from the popover: the checker comes back to it to press Complete */
+    if(!OD_POP.el.contains(e.target)){if(!e.target.closest('#fileView,#csDlg,#confirmDlg'))odPopClose();return}
     const b=e.target.closest('[data-od-set]');if(!b)return;const v=b.dataset.odSet;const tid=OD_POP.tid,step=OD_POP.step;const t=odTaskOf(tid);
     if(v==='close'||!t){odPopClose(true);return}
     const date=v==='pick'?($('#odPopDate')||{}).value:odIsDate(v)?v:'';if(v==='pick'&&!date){toast('เลือกวันที่ก่อน');return}
     const kind=v==='na'||v==='need'||v==='auto'?v:'date';odPopClose(true);
-    odSave(tid,{[step]:odPatchFor(t,step,kind,date)},`${OD_NAME[step]}: ${kind==='na'?'ไม่มีสำหรับงานนี้':kind==='need'?'ต้องส่ง':kind==='auto'?'ใช้ค่าจากระบบ':thDate(date)}`);
+    odSave(tid,{[step]:odPatchFor(t,step,kind,date)},`${OD_NAME[step]}: ${kind==='na'?'ไม่มีสำหรับงานนี้':kind==='need'?'ต้องส่ง':kind==='auto'?'ใช้ค่าจากระบบ':thDate(date)}`)
+      .then(()=>{if(kind==='date'&&odChkOk())odPopOpen(tid,step)});/* the checker goes on to Complete */
   }
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&OD_POP.el&&!OD_POP.el.hidden){e.preventDefault();odPopClose(true)}
-  if(e.key==='Enter'&&e.target.id==='odPopDate'){e.preventDefault();const b=OD_POP.el.querySelector('[data-od-set="pick"]');if(b)b.click()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&OD_POP.el&&!OD_POP.el.hidden&&!document.querySelector('#fileView[open],#csDlg[open],#confirmDlg[open]')){e.preventDefault();odPopClose(true)}
+  if(e.key==='Enter'&&e.target.id==='odPopDate'){e.preventDefault();const b=OD_POP.el.querySelector('[data-od-set="pick"]');if(b)b.click()}
+  if(e.key==='Enter'&&e.target.id&&e.target.id.startsWith('od-why-')){e.preventDefault();const b=e.target.parentElement.querySelector('[data-od-ck="fail"]');if(b)b.click()}});
+/* upload / delete for Config Flow com · Draft + Report · Back up / Flowcom: same store and limits as เอกสารหลังจบงาน (bytes in filechunks, ≤ 4 MB a file, 15 a plan,
+   deleted only by the uploader), any file type since flow-computer backups have their own extensions; works from this page, without the plan open */
+let odUpBusy='';
+function odUpRedraw(tid,step){if(OD_POP.el&&!OD_POP.el.hidden&&OD_POP.tid===tid&&OD_POP.step===step)odPopOpen(tid,step);if(typeof editing!=='undefined'&&editing&&editing.id===tid)refreshDrawerView()}
+function odPutReports(tid,reports){const nt=Object.assign({},odTaskOf(tid),{reports});known.set(tid,nt);if(typeof editing!=='undefined'&&editing&&editing.id===tid)editing=nt}
+async function odAddFiles(tid,step,files){
+  if(!OD_UP.has(step)||!canWork()||odUpBusy)return;const t=odTaskOf(tid);if(!t)return;
+  const room=MAX_REPORTS-reportsOf(t).length;const all=[...(files||[])].filter(Boolean);if(!all.length)return;
+  const ok=all.filter(f=>f.size&&f.size<=MAX_FILE_BYTES).slice(0,Math.max(0,room));const big=all.filter(f=>!f.size||f.size>MAX_FILE_BYTES).length;
+  if(!ok.length){toast(room<=0?`แนบเอกสารได้สูงสุด ${MAX_REPORTS} ไฟล์ต่อแผน`:'ไฟล์ใหญ่เกิน 4 MB หรือเป็นไฟล์ว่าง ลดขนาดไฟล์ก่อน');return}
+  const key=`${tid}|${step}`;const now=new Date().toISOString();const added=[];odUpBusy=key;odUpRedraw(tid,step);
+  try{
+    for(const [k,file] of ok.entries()){
+      const f={id:newId('f'),name:String(file.name||'document').slice(0,120),size:file.size,type:file.type||'',blob:file};
+      await putFileChunks(f,(x,i,n)=>{document.querySelectorAll(`[data-od-uplbl="${CSS.escape(key)}"]`).forEach(l=>{l.textContent=`กำลังอัปโหลด ${ok.length>1?`ไฟล์ ${k+1}/${ok.length} · `:''}${Math.round((i+1)/n*100)}%`})});
+      added.push({id:f.id,name:f.name,size:f.size,type:f.type,at:now,by:S.me||null,label:OD_NAME[step],odStep:step});fileCache.set(f.id,new Blob([file],{type:fileMime(f)}));
+    }
+    const reports=reportsOf(odTaskOf(tid)).concat(added);
+    await Store.update('tasks',tid,Object.assign({reports},meta()));odPutReports(tid,reports);
+    toast(`${OD_NAME[step]}: แนบ ${added.length} ไฟล์แล้ว${big?` · ข้าม ${big} ไฟล์ที่ใหญ่เกิน 4 MB`:''}${all.length-big>ok.length?` · แนบได้สูงสุด ${MAX_REPORTS} ไฟล์`:''}`);
+  }catch(err){toast(errText(err));noteWriteError(err);if(added.length)cleanupFiles(added.map(f=>f.id))}
+  finally{odUpBusy='';odUpRedraw(tid,step)}
+}
+async function odDelFile(tid,fid){
+  const t=odTaskOf(tid);const f=t&&reportsOf(t).find(x=>x.id===fid);if(!f)return;
+  if(!canDelReport(f)){toast(`ลบไม่ได้ · ไฟล์นี้ลบได้เฉพาะคนที่อัปโหลด${f.by?` (${f.by})`:' หรือผู้ดูแลระบบ'}`);return}
+  if(!await askConfirm('ลบไฟล์เอกสาร?',`ลบไฟล์ ${f.name} (${f.label||''}) ออกจากแผนนี้\nลบแล้วกู้คืนไม่ได้`,'ลบไฟล์'))return;
+  const reports=reportsOf(odTaskOf(tid)).filter(x=>x.id!==fid);
+  try{await Store.update('tasks',tid,Object.assign({reports},meta()));odPutReports(tid,reports);cleanupFiles([fid]);toast(`ลบ ${f.name} แล้ว`);odUpRedraw(tid,f.odStep)}
+  catch(err){toast(errText(err));noteWriteError(err)}
+}
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset&&el.dataset.odUp){const fs=[...el.files];el.value='';odAddFiles(el.dataset.odT,el.dataset.odUp,fs)}});
+document.addEventListener('click',e=>{
+  if(!e.target.closest)return;
+  const d=e.target.closest('[data-od-fdl]');if(d){const t=odTaskOf(d.dataset.odT);downloadFile(d.dataset.odFdl,d,t?reportsOf(t).find(x=>x.id===d.dataset.odFdl):null);return}
+  const x=e.target.closest('[data-od-fdel]');if(x)odDelFile(x.dataset.odT,x.dataset.odFdel);
+});
+/* Complete · ไม่ผ่าน (reason required) · ยกเลิกผลตรวจ; "แก้แล้ว ส่งตรวจใหม่" = the team, on a step that did not pass */
+async function odCkSet(tid,step,rec,msg){const t=odTaskOf(tid);if(!t)return;const chk=Object.assign({},odTrack(t).chk);if(rec)chk[step]=rec;else delete chk[step];
+  await odSave(tid,{chk:Object.keys(chk).length?chk:''},msg)}
+document.addEventListener('click',e=>{
+  if(!e.target.closest)return;
+  const fb=e.target.closest('[data-od-file]');if(fb){const t=odTaskOf(fb.dataset.odT);previewFile(fb.dataset.odFile,t?reportsOf(t).find(x=>x.id===fb.dataset.odFile):null);return}
+  const ob=e.target.closest('[data-od-open]');if(ob){odPopClose();openTask(ob.dataset.odOpen);return}
+  const b=e.target.closest('[data-od-ck]');if(!b)return;const k=b.dataset.odCk;const w=b.closest('.od-ckw');const why=w&&w.querySelector('.od-why');
+  if(k==='no'||k==='nocancel'){if(!why)return;why.hidden=k==='nocancel';odPopPlace();if(k==='no')why.querySelector('input').focus();return}
+  const tid=b.dataset.odT,step=b.dataset.odCkS;const t=odTaskOf(tid);if(!t)return;const s=odStep(t,step);if(!s.ck)return;
+  const inPop=OD_POP.el&&OD_POP.el.contains(b);const stamp={by:S.me||'',at:new Date().toISOString()};
+  if(k==='ok'&&odChkOk()){if(inPop)odPopClose(true);odCkSet(tid,step,Object.assign({st:'ok'},stamp),`${OD_NAME[step]}: Complete`);return}
+  if(k==='fail'&&odChkOk()){const inp=why.querySelector('input');const txt=inp.value.trim().slice(0,200);if(!txt){toast('ใส่เหตุผลก่อน ทีมจะได้รู้ว่าต้องแก้อะไร');inp.focus();return}
+    if(inPop)odPopClose(true);odCkSet(tid,step,Object.assign({st:'fail',why:txt},stamp),`${OD_NAME[step]}: ไม่ผ่าน · แจ้ง Lead แล้ว`);return}
+  if(k==='undo'&&(odChkOk()||(canWork()&&s.ck.st==='fail'))){if(inPop)odPopClose(true);odCkSet(tid,step,null,`${OD_NAME[step]}: ${odChkOk()?'ยกเลิกผลตรวจแล้ว':'ส่งตรวจใหม่แล้ว'}`)}
+});
 window.addEventListener('resize',odPopPlace);window.addEventListener('scroll',odPopPlace,true);
 
 /* ---------- เลือกหลายงาน: one step + one date (or ไม่มี / ค่าจากระบบ) for every ticked work ---------- */
@@ -235,7 +352,7 @@ async function odBulk(kind){
   const ids=[...S.od.sel];if(!ids.length)return;S.od.bStep=step;S.od.bDate=date;
   let ok=0,fail=0;S.bulk=true;
   try{for(const id of ids){const t=findTask(id);if(!t){fail++;continue}
-      const docTrack=Object.assign({},odTrack(t),{[step]:odPatchFor(t,step,kind,date)});Object.keys(docTrack).forEach(k=>{if(docTrack[k]===''||docTrack[k]==null)delete docTrack[k]});
+      const docTrack=odMerged(t,{[step]:odPatchFor(t,step,kind,date)});
       try{await Store.update('tasks',id,Object.assign({docTrack},meta()));known.set(id,Object.assign({},t,{docTrack}));ok++}catch(err){fail++;noteWriteError(err)}}}
   finally{S.bulk=false;invalidate();render()}
   toast(`${OD_NAME[step]}: ${kind==='date'?thDate(date):kind==='na'?'ไม่มีสำหรับงานนี้':'ใช้ค่าจากระบบ'} · ${ok} งาน${fail?` · ไม่สำเร็จ ${fail} งาน`:''}`);
@@ -257,10 +374,11 @@ async function odXlsx(btn){
   const base=odBase();if(!base)return;const rows=base.filter(odMatch).sort((a,b)=>a.t.date.localeCompare(b.t.date));
   btn.disabled=true;const old=btn.textContent;btn.textContent='กำลังสร้างไฟล์…';
   try{const X=await loadXLSX();const wb=X.utils.book_new();
-    const title=[`BU1 Lab · Status Update เอกสาร Onsite · ${odTab()==='week'?`สัปดาห์ ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`:`ค้างส่ง ${OD_DAYS_BACK} วันล่าสุด`}`];
-    const head=['Status','ติดตาม','Final Date','Date Work','เอกสารครบ','วันที่ส่งเอกสาร','Lead','Team Service','PN','Job Work','DETAIL','Status of Work','ผู้ออกใบรับงาน',...OD_STEPS.flatMap(s=>s.id==='prep'?[s.name]:[s.name,'วัน']),'Remark'];
+    const title=[`BU1 Lab · Status Update เอกสาร Onsite · ${odTab()==='week'?`สัปดาห์ ${weekName(S.week)} (${fmtShort(S.week)} – ${fmtShort(addDays(S.week,6))} ${be(addDays(S.week,6))})`:`${odTab()==='check'?'รอตรวจ':'ค้างส่ง'} ${OD_DAYS_BACK} วันล่าสุด`}`];
+    const head=['Status','ติดตาม','Final Date','Date Work','เอกสารครบ','วันที่ส่งเอกสาร','Lead','Team Service','PN','Job Work','DETAIL','Status of Work','ผู้ออกใบรับงาน',...OD_STEPS.flatMap(s=>s.id==='prep'?[s.name]:[s.name,'วัน']),'ตรวจแล้ว','ผลตรวจ','Remark'];
+    const ckTxt=r=>['wait','fail'].flatMap(st=>{const l=r.steps.filter(s=>s.ck&&s.ck.st===st);return l.length?[`${OD_CK[st].th}: ${l.map(s=>OD_NAME[s.id]+(s.ck.why?` (${s.ck.why})`:'')).join(', ')}`]:[]}).join(' · ');
     const body=rows.map(r=>{const t=r.t;return [OD_ST[r.status].th,odFollowTxt(r),r.final,t.date,r.done?'/':'',r.sent,odLead(t),teamNames(t).join(', '),t.planNo||'',t.customer||'',typeLabel(t),odWorkSt(t),t.sale||'',
-      ...r.steps.flatMap(s=>{const v=s.na?'–':s.date||'ตาม';return s.id==='prep'?[v]:[v,s.date?s.lag:'']}),odTrack(t).note||'']});
+      ...r.steps.flatMap(s=>{const v=s.na?'–':s.date||'ตาม';return s.id==='prep'?[v]:[v,s.date?s.lag:'']}),`${r.ck.ok}/${r.ck.n}`,ckTxt(r),odTrack(t).note||'']});
     const ws=X.utils.aoa_to_sheet([title,isoXlsxRow('docs'),head,...body]);ws['!cols']=head.map(x=>({wch:x==='วัน'?5:Math.max(10,Math.min(24,String(x).length+4))}));
     X.utils.book_append_sheet(wb,ws,'เอกสาร Onsite');
     await saveFile(`BU1-เอกสาร-Onsite-${odTab()==='week'?ymd(S.week):ymd(new Date())}.xlsx`,X.write(wb,{type:'array',bookType:'xlsx'}));
@@ -275,7 +393,7 @@ function odPlanHtml(t){
     const val=s.na?'<span class="od-v na">ไม่มีสำหรับงานนี้</span>':s.date?`<span class="od-v${s.over?' over':''}">${thDate(s.date)}${s.id==='prep'?(s.date>t.date?' · หลังวันทำงาน':''):` · ${s.lag} วันทำงาน`}</span>`:`<span class="od-v ${s.id==='prep'?'miss':'owe'}">${s.id==='prep'?'ยังไม่มี':'ตาม (ยังไม่ได้รับ)'}</span>`;
     const src=s.na?(m==='na'?'':esc(s.why)):s.src?esc(s.src):'';
     const tog=ed?(s.na?`<button type="button" class="lnk" data-od-na="${s.id}" data-od-t="${esc(t.id)}">ต้องส่ง</button>`:!odIsDate(m)?`<button type="button" class="lnk" data-od-na="${s.id}" data-od-t="${esc(t.id)}">ไม่มี</button>`:''):'';
-    return `<div class="od-pr${s.na?' na':''}"><span class="od-pn">${esc(st.name)}</span>${val}${src?`<small>${src}</small>`:''}<span class="od-pa">${ed&&!s.na?`<input type="date" class="od-pin" data-od-step="${s.id}" data-od-t="${esc(t.id)}" value="${esc(odIsDate(m)?m:'')}" aria-label="วันที่ ${esc(st.name)}" title="กรอกวันที่เอง (ว่าง = ใช้ค่าจากระบบ)">`:''}${tog}</span></div>`}).join('');
+    return `<div class="od-pr${s.na?' na':''}"><span class="od-pn">${esc(st.name)}</span>${val}${src?`<small>${src}</small>`:''}<span class="od-pa">${ed&&!s.na?`<input type="date" class="od-pin" data-od-step="${s.id}" data-od-t="${esc(t.id)}" value="${esc(odIsDate(m)?m:'')}" aria-label="วันที่ ${esc(st.name)}" title="กรอกวันที่เอง (ว่าง = ใช้ค่าจากระบบ)">`:''}${tog}</span>${odUpHtml(t,s)}${s.ck?odCkBlock(t,s,'v',false):''}</div>`}).join('');
   return `<div class="od-plan"><div class="od-ph"><b>ติดตามเอกสาร Onsite</b>${r.none?'<span class="hint">หัวข้องานนี้ไม่ต้องส่งเอกสาร</span>':`${odChip(r)}<span class="hint">Final Date ${thDate(r.final)} · ${r.done?`ส่งครบ ${thDate(r.sent)}`:r.status==='follow'?`เลยมา ${r.over} วัน · ยังขาด ${r.miss.map(s=>OD_NAME[s.id]).join(', ')}`:`ยังขาด ${r.miss.map(s=>OD_NAME[s.id]).join(', ')}`}</span>`}
     <button type="button" class="lnk" data-od-go>เปิดหน้าติดตามเอกสาร ›</button></div>
     <div class="od-prs">${rows}</div>
@@ -283,9 +401,15 @@ function odPlanHtml(t){
 }
 
 /* ---------- saving (at once, like เอกสารหลังจบงาน) ---------- */
+/* docTrack after a patch; a step whose value changes loses its ผลตรวจ (what was checked is no longer what is there) */
+function odMerged(t,patch){
+  const o=Object.assign({},odTrack(t),patch);
+  if(!('chk' in patch)&&o.chk){const c=Object.assign({},o.chk);Object.keys(patch).forEach(k=>{delete c[k]});o.chk=Object.keys(c).length?c:''}
+  Object.keys(o).forEach(k=>{if(o[k]===''||o[k]==null)delete o[k]});return o;
+}
 async function odSave(tid,patch,msg){
   if(!canWork())return;const t=(typeof editing!=='undefined'&&editing&&editing.id===tid?editing:null)||findTask(tid);if(!t)return;
-  const docTrack=Object.assign({},odTrack(t),patch);Object.keys(docTrack).forEach(k=>{if(docTrack[k]===''||docTrack[k]==null)delete docTrack[k]});
+  const docTrack=odMerged(t,patch);
   try{await Store.update('tasks',tid,Object.assign({docTrack},meta()));
     const nt=Object.assign({},t,{docTrack});known.set(tid,nt);
     if(typeof editing!=='undefined'&&editing&&editing.id===tid){editing=nt;refreshDrawerView()}
@@ -304,8 +428,9 @@ document.addEventListener('input',e=>{if(e.target.id!=='od-q')return;S.od.q=e.ta
 document.addEventListener('click',e=>{
   if(!e.target.closest)return;
   if(e.target.closest('[data-od-go]')){if(typeof dlg!=='undefined'&&dlg.open)dlg.close();goView('odoc');window.scrollTo(0,0);return}
-  const tb=e.target.closest('[data-od-tab]');if(tb){S.od.tab=tb.dataset.odTab;S.od.st='';S.od.sel.clear();S.anim='view';render();return}
+  const tb=e.target.closest('[data-od-tab]');if(tb){S.od.tab=tb.dataset.odTab;S.od.st='';S.od.ck='';S.od.sel.clear();S.anim='view';render();return}
   const k=e.target.closest('[data-od-st]');if(k){S.od.st=S.od.st===k.dataset.odSt?'':k.dataset.odSt;render();return}
+  const kf=e.target.closest('[data-od-ckf]');if(kf){S.od.ck=S.od.ck===kf.dataset.odCkf?'':kf.dataset.odCkf;render();return}
   const n=e.target.closest('[data-od-na]');if(n){const t=(typeof editing!=='undefined'&&editing&&editing.id===n.dataset.odT?editing:null)||findTask(n.dataset.odT);if(!t)return;
     const id=n.dataset.odNa;const s=odStep(t,id);odSave(t.id,{[id]:s.na?(odTypeNeeds(t,id)?'':'need'):'na'},`${OD_NAME[id]}: ${s.na?'ต้องส่ง':'ไม่มีสำหรับงานนี้'}`);return}
   const x=e.target.closest('[data-action="od-xlsx"]');if(x)odXlsx(x);

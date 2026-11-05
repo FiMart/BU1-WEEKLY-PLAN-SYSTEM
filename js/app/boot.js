@@ -63,7 +63,7 @@ function wireData(){
   db.collection('resources').onSnapshot(s=>{S.resources=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.resReady=true;render()},dbErr);
   db.collection('projects').onSnapshot(s=>{S.projects=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.projReady=true;render()},dbErr);
   db.collection('ncr').onSnapshot(s=>{S.ncr=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.ncrReady=true;render()},dbErr);
-  db.collection('jobs').onSnapshot(s=>{S.jobs=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.jobsReady=true;render()},dbErr);/* ใบรับคำร้องขอรับบริการสอบเทียบ */
+  db.collection('jobs').onSnapshot(s=>{S.jobs=s.docs.map(x=>contactOne(Object.assign({id:x.id},x.data())));S.jobsReady=true;render()},dbErr);/* ใบรับคำร้องขอรับบริการสอบเทียบ */
   db.collection('checks').onSnapshot(s=>{S.checks=s.docs.map(x=>Object.assign({id:x.id},x.data()));S.checksReady=true;render()},dbErr);/* Check Sheet */
   db.doc('config/main').onSnapshot(s=>{S.cfg=s.exists?s.data():{};S.cfgReady=true;render();migrateRoles()},dbErr);
   subscribeWeek();

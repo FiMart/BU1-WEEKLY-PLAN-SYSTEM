@@ -8,6 +8,8 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const TEL_RE=/(?<!\d)(?:\+?66[\s-]?\d|0\d)(?:[\s-]?\d){7,9}(?:\s*(?:ต่อ|ext\.?|#)\s*\d{1,5})?(?!\d)/gi;
 function contactMerge(name,tel){const n=String(name||'').trim(),p=String(tel||'').trim();if(!p)return n;if(!n)return p;const d=p.replace(/\D/g,'');return d&&n.replace(/\D/g,'').includes(d)?n:`${n} ${p}`}
 const contactOf=t=>t?contactMerge(t.contact,t.contactTel):'';
+/* ใบรับคำร้อง FLS-F-018 (user, 5 Nov 2026): one ผู้ติดต่อ field too; an older row's phone moves in as it is read, and is written that way the next time it is saved */
+const contactOne=j=>Object.assign(j,{contact:contactOf(j),contactTel:''});
 /* for the places with their own name / phone columns (Check Sheet, Instrument "ชื่อลูกค้า") */
 const contactName=s=>String(s||'').replace(TEL_RE,' ').replace(/\s*[,/·]\s*(?=[,/·]|$)/g,' ').replace(/^[\s,/·-]+|[\s,/·-]+$/g,'').replace(/\s{2,}/g,' ');
 const contactPhones=s=>(String(s||'').match(TEL_RE)||[]).join(', ');

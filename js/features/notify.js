@@ -90,6 +90,7 @@ function ntfLiveOf(tasks,clashes){
   /* ติดตามเอกสาร Onsite (user, 22 Oct 2026; js/features/onsite-docs.js): the Planner and the work's Lead, near or past its Final Date */
   if(typeof odOn==='function')tasks.forEach(t=>{if(!odOn(t)||!(isPlanner()||(!!ntfMeStaff()&&odLeadId(t)===ntfMeStaff())))return;const r=odRow(t);if(r.none)return;
     const miss=r.miss.map(s=>OD_NAME[s.id]).join(', ');const ref={t:'task',id:t.id,date:t.date};
+    if(!!ntfMeStaff()&&odLeadId(t)===ntfMeStaff())r.steps.forEach(s=>{if(s.ck&&s.ck.st==='fail')add('odoc',`fail:${t.id}:${s.id}:${s.ck.at}`,`เอกสารไม่ผ่านการตรวจ · ${OD_NAME[s.id]}`,`${ntfPlan(t)}${s.ck.why?' · '+s.ck.why:''}`,ref)});/* ผลตรวจเอกสาร: the Lead fixes it */
     if(r.status==='follow')add('odoc','over:'+t.id,'เอกสาร Onsite เลย Final แล้ว',`${ntfPlan(t)} · เลยมา ${r.over} วัน · ขาด ${miss}`,ref);
     else if(r.status==='wait'&&r.left<=1)add('odoc','soon:'+t.id+':'+r.final,r.left?'เอกสาร Onsite ถึง Final พรุ่งนี้':'เอกสาร Onsite ถึง Final วันนี้',`${ntfPlan(t)} · Final ${fmtDay(r.final)} · ขาด ${miss}`,ref)});
   if(typeof mrNotices==='function')mrNotices(tasks,add);

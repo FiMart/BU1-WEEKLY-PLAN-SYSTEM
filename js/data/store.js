@@ -9,7 +9,7 @@ const normTask=t=>{if(t&&t.status==='progress')t.status='planned';return t};
 const rows=m=>[...m].map(([id,d])=>normTask(Object.assign({id},d)));
 const docRows=s=>s.docs.map(d=>normTask(Object.assign({id:d.id},d.data())));
 function localPublish(){
-  S.staff=rows(L.staff);S.resources=rows(L.resources);S.projects=rows(L.projects);S.ncr=rows(L.ncr);S.ncrReady=true;S.jobs=rows(L.jobs);S.jobsReady=true;S.checks=rows(L.checks);S.checksReady=true;
+  S.staff=rows(L.staff);S.resources=rows(L.resources);S.projects=rows(L.projects);S.ncr=rows(L.ncr);S.ncrReady=true;S.jobs=rows(L.jobs).map(contactOne);S.jobsReady=true;S.checks=rows(L.checks);S.checksReady=true;
   const {from,to}=weekRange();S.tasks=rows(L.tasks).filter(t=>t.date>=from&&t.date<=to);
   if(S.mpKey){const [tb,m]=S.mpKey.split('|');S.mpRows=rows(L[MP_ENT[tb]]).filter(r=>r.month===m)}/* Master Plan of the open tab and month */
   S.cfg=Object.assign({},L.config.get('main')||{});S.tasksReady=true;S.projReady=true;invalidate();render();
