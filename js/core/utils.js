@@ -49,7 +49,7 @@ const isWorking=t=>t.status!=='cancelled';
    plan goes back to ผู้ปฏิบัติงานที่ว่าง so the planner can send them to another job that day; no clash with it either) */
 const holdsTeam=t=>isWorking(t)&&t.status!=='postponed';
 /* who a plan really took: a done plan's คนเข้างานจริง (สรุปงาน, user 4 Nov 2026), else its Team Service */
-const teamActual=t=>t.status==='done'&&(t.doneTeam||[]).length?t.doneTeam:(t.staffIds||[]);
+const teamActual=t=>(t.status==='done'||t.status==='notdone')&&(t.doneTeam||[]).length?t.doneTeam:(t.staffIds||[]);
 function weekName(mon){const sun=addDays(mon,6);return `${mon.getDate()}-${sun.getDate()} ${EN_MON[sun.getMonth()]} ${String(sun.getFullYear()).slice(-2)}`}
 
 /* ---------- master data lookups ---------- */

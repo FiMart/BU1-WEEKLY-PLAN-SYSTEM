@@ -98,7 +98,7 @@ const curStatus=()=>noStatusId($('#f-type').value)?'planned':(form.querySelector
 const fNcCont=()=>(form.querySelector('input[name="f-nc"]:checked')||{}).value==='cont';
 function syncReason(){const s=curStatus();$('#f-reasonWrap').hidden=!NEEDS_REASON.has(s);$('#f-reasonLbl').textContent=s==='notdone'&&typeof vNcrLabel==='function'?vNcrLabel(fNcCont()):reasonLabel(s);
   {const p=$('#f-ncPick');if(p){p.hidden=s!=='notdone';$('#f-contWrap').hidden=s!=='notdone'||!fNcCont()}}/* ไม่เสร็จ: NCR or งานต่อเนื่อง (user, 28 Oct 2026) */
-  $('#f-sumWrap').hidden=s!=='done'||isLeaveId($('#f-type').value)}/* สรุปงาน (js/dialog/done-sum.js) */
+  $('#f-sumWrap').hidden=s!=='done'||isLeaveId($('#f-type').value);if(typeof attFormPlace==='function')attFormPlace()}/* สรุปงาน + คนเข้างานจริง (js/dialog/done-sum.js) */
 /* สีของแผน from the plan view (user, 9 Oct 2026: "แก้ไขสีที่แผนงานได้เลย"): '' = ตาม Plan No. */
 async function setPlanColor(c){
   if(!editing||!S.canWrite)return;const color=/^#[0-9a-f]{6}$/i.test(c||'')?String(c).toLowerCase():'';if(color===ownColor(editing))return;
@@ -112,7 +112,9 @@ const vNcrLabel=cont=>cont?'ทำได้ถึงไหน / ทำไมต�
 const vNcrBtn=cont=>cont?'บันทึก “ไม่เสร็จ · งานต่อเนื่อง”':'เปิดฟอร์ม NCR';
 const vNcrCont=()=>(dlg.querySelector('input[name="v-nc"]:checked')||{}).value==='cont';
 function syncVNcr(){
-  const st=(dlg.querySelector('input[name="v-status"]:checked')||{}).value;const p=$('#v-ncPick');if(!p)return;const on=st==='notdone';p.hidden=!on;if(!on)return;
+  const st=(dlg.querySelector('input[name="v-status"]:checked')||{}).value;const p=$('#v-ncPick');if(!p)return;const on=st==='notdone';p.hidden=!on;
+  const sl=$('#v-ndAttSlot');if(sl){sl.hidden=!on;if(on&&!sl.innerHTML.trim()&&editing)sl.innerHTML=attHtml('n',attModel(editing))}/* คนเข้างานจริง + เวลา (js/dialog/done-sum.js) */
+  if(!on)return;
   const cont=vNcrCont();$('#v-contWrap').hidden=!cont;$('#vReasonLbl').textContent=vNcrLabel(cont);$('#vReasonSave').textContent=vNcrBtn(cont);
   $('#v-reason').placeholder=cont?'เช่น ทำได้ 3 จาก 5 ตัว ที่เหลือทำต่อพรุ่งนี้ · รอลูกค้าปิดไลน์ · งานหลายวันตามแผน':'เช่น Standard ไม่พร้อม · สอบเทียบไม่ผ่าน · ลูกค้าไม่ปิดไลน์ (ใส่ต่อในฟอร์ม NCR)';
 }
@@ -149,10 +151,11 @@ function refreshDrawerView(){
   const v=$('#dView');const ae=document.activeElement;
   if(v&&ae&&v.contains(ae)&&isTyping(ae)){drawerLater=true;return}
   drawerLater=false;const sum=$('#v-doneSum');const sumTxt=sum?sum.value:null;const conf=editing.status!=='done';/* not done yet = the editor confirms เสร็จแล้ว */
-  const att=sumAttNow('v');const mvTo=($('#mv-to')||{}).value;const mvOff=[...document.querySelectorAll('#mvBox [data-mv]')].filter(x=>!x.checked).map(x=>x.dataset.mv);const mvOn=[...document.querySelectorAll('#mvBox [data-mv]:checked')].map(x=>x.dataset.mv);/* ticks stay too */
+  const att=sumAttNow('v');const nAtt=sumAttNow('n');const mvTo=($('#mv-to')||{}).value;const mvOff=[...document.querySelectorAll('#mvBox [data-mv]')].filter(x=>!x.checked).map(x=>x.dataset.mv);const mvOn=[...document.querySelectorAll('#mvBox [data-mv]:checked')].map(x=>x.dataset.mv);/* ticks stay too */
   renderDrawerView(editing);renderPhotos();renderFiles();
   if(sumTxt!=null&&!$('#v-doneSum')){sumSlot(sumEditHtml(editing,conf,att));const ta=$('#v-doneSum');if(ta)ta.value=sumTxt}
   else if(att){const s=$('#v-attSlot');if(s)s.innerHTML=attHtml('v',att)}
+  if(nAtt){const s=$('#v-ndAttSlot');if(s)s.innerHTML=attHtml('n',nAtt)}
   if(mvTo&&$('#mv-to'))$('#mv-to').value=mvTo;document.querySelectorAll('#mvBox [data-mv]').forEach(x=>{if(mvOff.includes(x.dataset.mv))x.checked=false;else if(mvOn.includes(x.dataset.mv))x.checked=true});
 }
 document.addEventListener('focusout',e=>{if(!drawerLater||!e.target.closest||!e.target.closest('#dView'))return;
@@ -186,13 +189,13 @@ function drawDrawerView(t){
       <div class="${gaInfo(t)?'wide':''}" style="--k:10"><dt>Transport / รถ</dt><dd class="${t.transport||t.needGA?'':'dash'}">${transportChip(t.transport,t)||esc(t.transport||'—')}${gaTimes(t)?`<span class="ga-when">${esc(gaTimes(t))}</span>`:''}${gaInfoHtml(t)}${(t.selfDrive||OWN_CAR.includes(t.transport)&&!t.needGA)&&ownCarText(t)?`<small class="car-why">${esc(ownCarText(t))}</small>`:''}${gaNoteText(t)?`<small class="car-why">📝 ${esc(gaNoteText(t))}</small>`:''}${gaWaiting(t)?'<small class="ga-note">ขอรถ GA แล้ว · แอปจองรถส่วนกลาง GA จะส่งข้อมูลรถ (ทะเบียน รถ คนขับ เวลาออก) มาที่แผนนี้เองเมื่อ GA จัดรถ</small>':''}</dd></div>
       ${(()=>{const row=(k,v)=>`<div style="--k:${++kk}"><dt>${k}</dt><dd class="${v?'':'dash'}">${v?telLinks(v):'—'}</dd></div>`;/* a phone number dials when pressed */
         return row('Contact',contactOf(t))+row('Sale',[t.sale,tel].filter(Boolean).join(' · '))})()}
-      <div class="wide" style="--k:13"><dt>Team Service${attHas(t)&&sumNeeded(t)?' · Plan Team':''} (${people.length} คน${teamNeedOf(t)?` จาก ${teamNeedOf(t)} คน`:''})${teamNeedOf(t)?` <span class="tneed-v ${teamShort(t)?'short':'ok'}">${esc(teamNeedText(t))}</span>`:''}</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}${attTeamHtml(t)}${typeof mrPlanBox==='function'?mrPlanBox(t):''/* ประชุมเช้า (js/features/morning-report.js) */}</dd></div>
+      <div class="wide" style="--k:13"><dt>Team Service${attIn(t)?' · Plan Team':''} (${people.length} คน${teamNeedOf(t)?` จาก ${teamNeedOf(t)} คน`:''})${teamNeedOf(t)?` <span class="tneed-v ${teamShort(t)?'short':'ok'}">${esc(teamNeedText(t))}</span>`:''}</dt><dd class="dv-pp">${people.join('')||'<span class="dash">—</span>'}${t.sharedTeam?'<span class="dv-share" title="คนในทีมทำงานอื่นในพื้นที่เดียวกันวันเดียวกันได้ ไม่นับว่าคนซ้ำ (ต้องเปิดทั้งสองงาน)">⇄ ใช้ทีมร่วมกับงานอื่นในพื้นที่เดียวกัน</span>':''}${cardSummary(t.staffIds||[],t.areaId)}${attTeamHtml(t)}${typeof mrPlanBox==='function'?mrPlanBox(t):''/* ประชุมเช้า (js/features/morning-report.js) */}</dd></div>
     </dl>
     ${canWork()&&noStatus(t)&&!isLeave(t)?`<div class="dv-status nost">${reportBoxHtml(t)}</div>`:''/* ประเภทระบบ: no status, documents still attachable */}${canWork()&&!noStatus(t)?`<div class="dv-status"><b>สถานะงาน · กดเพื่อบันทึกผลของงานนี้</b><div class="seg" role="radiogroup" aria-label="สถานะงาน">${STATUSES.map(s=>`<label><input type="radio" name="v-status" id="v-st-${s.id}" value="${s.id}"${(t.status||'planned')===s.id?' checked':''}><span><span class="s-${s.id}">${s.icon}</span>${s.th}</span></label>`).join('')}</div>
       <div id="vSumSlot">${sumViewHtml(t,true)}</div>
       ${mvBoxHtml(t)/* เลื่อน: send its people to help another plan that day */}
       ${reportBoxHtml(t)}
-      <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}>${ncrPickHtml('v',isCont(t),t.contNext,t.date,t.status==='notdone')/* ไม่เสร็จ: NCR or งานต่อเนื่อง (js/features/ncr.js) */}<label for="v-reason" id="vReasonLbl">${esc(t.status==='notdone'?vNcrLabel(isCont(t)):reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
+      <div class="v-reason" id="vReason"${NEEDS_REASON.has(t.status)?'':' hidden'}>${ncrPickHtml('v',isCont(t),t.contNext,t.date,t.status==='notdone')/* ไม่เสร็จ: NCR or งานต่อเนื่อง (js/features/ncr.js) */}${isLeave(t)?'':`<div id="v-ndAttSlot"${t.status==='notdone'?'':' hidden'}>${t.status==='notdone'?attHtml('n',attModel(t)):''/* filled when ไม่เสร็จ is picked (syncVNcr) */}</div>`}<label for="v-reason" id="vReasonLbl">${esc(t.status==='notdone'?vNcrLabel(isCont(t)):reasonLabel(t.status))}</label><textarea id="v-reason" rows="3" maxlength="600" placeholder="เช่น ลูกค้าขอเลื่อน ไลน์ผลิตยังไม่หยุด · อะไหล่ไม่พร้อม · ไม่ได้ Work Permit · ฝนตกเข้าพื้นที่ไม่ได้">${esc(t.statusNote||'')}</textarea>
         <div class="v-row"><button type="button" class="btn primary sm" data-action="save-vreason" id="vReasonSave">${t.status==='notdone'?vNcrBtn(isCont(t)):`บันทึก${NEEDS_REASON.has(t.status)?'เหตุผล':''}`}</button></div></div></div>`:''}
     ${typeof csPlanHtml==='function'?csPlanHtml(t):''/* Check Sheet of this plan (js/features/checksheets.js) */}
     ${typeof odPlanHtml==='function'?odPlanHtml(t):''/* ติดตามเอกสาร Onsite (js/features/onsite-docs.js) */}
@@ -216,7 +219,9 @@ function readForm(){
     status:curStatus(),statusNote:NEEDS_REASON.has(curStatus())?$('#f-reason').value.trim():'',
     ...(curStatus()==='notdone'&&fNcCont()?{cont:true,contNext:($('#f-contNext')||{}).value||''}:{cont:false,contNext:''}),/* ไม่เสร็จ · งานต่อเนื่อง = no NCR */
     /* สรุปงาน: written while เสร็จแล้ว is picked; another status keeps the stored one */
-    ...(curStatus()==='done'&&!isLeaveId(typeId)?{...sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing),...(attCheck(editing,sumAttNow('f')).save||(sumAttNow('f')?attSave(sumAttNow('f')):{}))}:{})});/* mdClean: Sale / รถ / หัวข้องาน saved in the master spelling */
+    ...(curStatus()==='done'&&!isLeaveId(typeId)?{...sumStamp($('#f-doneSum').value.trim().slice(0,3000),editing),...(attCheck(editing,sumAttNow('f')).save||(sumAttNow('f')?attSave(sumAttNow('f')):{}))}:{}),
+    /* ไม่เสร็จ: คนเข้างานจริง + เวลา too (user, 9 Nov 2026) */
+    ...(curStatus()==='notdone'&&!isLeaveId(typeId)?(attCheck(editing,sumAttNow('f')).save||(sumAttNow('f')?attSave(sumAttNow('f')):{})):{})});/* mdClean: Sale / รถ / หัวข้องาน saved in the master spelling */
 }
 /* the link under Location follows what is typed */
 function syncLocMap(){const a=$('#f-locMap');if(!a)return;const u=mapUrl($('#f-location').value,$('#f-customer').value);a.hidden=!u;if(u)a.href=u;else a.removeAttribute('href')}
@@ -305,7 +310,7 @@ function validate(v,copy){
   /* เสร็จแล้ว needs สรุปงาน (user, 14 Oct 2026); a copy starts as วางแผน */
   if(!copy&&v.status==='done'&&!isLeaveId(v.jobType)&&!v.doneSum)return ['เขียนสรุปงานก่อนบันทึกว่าเสร็จแล้ว','#f-doneSum'];
   /* … and คนเข้างานจริง + เวลา (user, 4 Nov 2026); a plan confirmed before that is not forced */
-  if(!copy&&v.status==='done'&&!isLeaveId(v.jobType)){if(!sumAttNow('f')&&!attOld(editing)){attFormFill();return ['ติ๊กคนเข้างานจริงอย่างน้อย 1 คน','#f-attSlot']}
+  if(!copy&&(v.status==='done'||v.status==='notdone')&&!isLeaveId(v.jobType)){if(!sumAttNow('f')&&!attOld(editing)){attFormFill();return ['ติ๊กคนเข้างานจริงอย่างน้อย 1 คน','#f-attSlot']}
     const a=attCheck(editing,sumAttNow('f'));if(a.err)return [a.err,a.el?'#f-'+a.el:'#f-attSlot']}
   return null;
 }

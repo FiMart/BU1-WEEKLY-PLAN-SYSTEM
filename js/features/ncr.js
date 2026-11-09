@@ -90,9 +90,10 @@ async function saveNcr(){
   const btn=$('#ncrSave');btn.disabled=true;
   try{
     await Store.set('ncr',id,data);
-    if(t&&(t.status!=='notdone'||t.ncrId!==id||t.statusNote!==data.issue)){
-      await Store.update('tasks',t.id,Object.assign({status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''},meta()));/* an NCR = not a งานต่อเนื่อง any more */
-      if(editing&&editing.id===t.id){editing=Object.assign({},editing,{status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''});const r=$('#f-st-notdone');if(r)r.checked=true;$('#f-reason').value=data.issue;syncReason()}
+    const att=t&&t._att||{};/* คนเข้างานจริง + เวลา ticked in the plan view before the NCR opened (js/app/events.js save-vreason) */
+    if(t&&(t.status!=='notdone'||t.ncrId!==id||t.statusNote!==data.issue||Object.keys(att).length)){
+      await Store.update('tasks',t.id,Object.assign({status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''},att,meta()));/* an NCR = not a งานต่อเนื่อง any more */
+      if(editing&&editing.id===t.id){editing=Object.assign({},editing,{status:'notdone',statusNote:data.issue,ncrId:id,cont:false,contNext:''},att);const r=$('#f-st-notdone');if(r)r.checked=true;$('#f-reason').value=data.issue;syncReason()}
     }
     ncrEdit.saved=true;$('#ncrDlg').close();
     toast(`${old.ncrNo?'บันทึก':'เปิด'} ${data.ncrNo} แล้ว${state==='closed'&&old.state!=='closed'?' · ปิด NCR':''}`);

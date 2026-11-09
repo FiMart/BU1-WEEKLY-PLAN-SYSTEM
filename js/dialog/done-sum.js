@@ -30,7 +30,11 @@ const SUM_PH='เช่น\nTag. FT-4201\n- Install Flowmeter = 1 EA\n- Loop Tes
    doneIn / doneOut 'HH:MM' ↔ data.bu1wp. Starts ticked from Team Service; "+ เพิ่มคนที่มาเสริม" lists people freed by a เลื่อน plan that day first.
    teamActual (js/core/utils.js) makes them count as busy that day. */
 const attHas=t=>!!t&&((t.doneTeam||[]).length>0||(t.doneGuests||[]).length>0||!!t.doneIn||!!t.doneOut);
-const attOld=t=>!!t&&t.status==='done'&&!isLeave(t)&&!!String(t.doneSum||'').trim()&&!attHas(t);
+/* ไม่เสร็จ — เปิด NCR or งานต่อเนื่อง — records the same people and times (user, 9 Nov 2026: "งานไม่เสร็จหรืองานต่อเนื่อง ให้สรุปคนและเวลาเหมือนกันนะ") */
+const attWant=t=>!!t&&!isLeave(t)&&(t.status==='done'||t.status==='notdone');
+const attIn=t=>attWant(t)&&attHas(t);
+/* a plan closed before these fields existed is not forced (ไม่เสร็จ: any without them, e.g. set from an NCR page) */
+const attOld=t=>!!t&&!isLeave(t)&&!attHas(t)&&(t.status==='done'&&!!String(t.doneSum||'').trim()||t.status==='notdone');
 /* why someone of the Plan Team did not go (task.doneAway {staffId: id} ↔ data.bu1wp; user, 4 Nov 2026: optional) */
 const ATT_WHY=[['sick','ลาป่วย'],['biz','ลากิจ'],['moved','ย้ายไปงานอื่น'],['noneed','งานไม่ต้องใช้คนเพิ่ม'],['other','อื่นๆ']];
 const attWhyName=k=>(ATT_WHY.find(x=>x[0]===k)||[,''])[1];
@@ -67,8 +71,14 @@ function attCheck(t,s){
   return {save:attSave(s)};
 }
 /* the edit form's section follows the picked Team Service; a person newly picked starts ticked */
+/* the edit form has one section: under สรุปงาน while เสร็จแล้ว, under the reason while ไม่เสร็จ (moved, so ticks stay), hidden otherwise */
+const attFormOn=()=>['done','notdone'].includes(curStatus())&&!isLeaveId($('#f-type').value);
+function attFormPlace(){
+  const b=$('#f-attSlot');if(!b)return;const nd=curStatus()==='notdone';const home=nd?$('#f-ncSlot'):$('#f-sumWrap>label');
+  if(home&&b.previousElementSibling!==home)home.after(b);b.hidden=!attFormOn();
+}
 function attFormFill(){
-  const box=$('#f-attSlot');if(!box||$('#f-sumWrap').hidden)return;const cur=sumAttNow('f');const team=[...pickSel];
+  const box=$('#f-attSlot');if(!box||!attFormOn())return;attFormPlace();const cur=sumAttNow('f');const team=[...pickSel];
   if(!cur){box.innerHTML=attHtml('f',attModel(Object.assign({date:$('#f-date').value},editing||{}),team,pickGuests));return}
   const fresh=team.filter(id=>!cur.ids.includes(id));const gf=pickGuests.filter(g=>!cur.guests.includes(g));const gone=id=>cur.team.includes(id)&&!team.includes(id);/* taken off the team */
   box.innerHTML=attHtml('f',Object.assign(cur,{team,ids:cur.ids.filter(id=>!gone(id)).concat(fresh),on:cur.on.filter(id=>!gone(id)).concat(fresh),guests:cur.guests.concat(gf),gOn:cur.gOn.concat(gf)}));
@@ -86,7 +96,7 @@ function attViewHtml(t){
 }
 /* Team Service in the plan view after สรุปงาน: the chips above are the Plan Team, this is who really went */
 function attTeamHtml(t){
-  if(!sumNeeded(t)||!attHas(t))return '';const plan=t.staffIds||[],act=t.doneTeam||[],gp=t.guests||[],ga=t.doneGuests||[];
+  if(!attIn(t))return '';const plan=t.staffIds||[],act=t.doneTeam||[],gp=t.guests||[],ga=t.doneGuests||[];
   const chip=(n,tag,cls)=>`<span class="att-c${cls?' '+cls:''}">${cls==='off'?`<s>${esc(n)}</s>`:esc(n)}${tag?`<small>${esc(tag)}</small>`:''}</span>`;
   const actual=act.map(id=>chip(staffName(id),plan.includes(id)?'':'มาเสริม',plan.includes(id)?'':'plus')).concat(ga.map(g=>chip(g,'แผนกอื่น')));
   const why=t.doneAway||{};const away=plan.filter(id=>!act.includes(id)).map(id=>[staffName(id),attWhyName(why[id])]).concat(gp.filter(g=>!ga.includes(g)).map(g=>[g,'']));const h=attHours(t);
@@ -98,7 +108,8 @@ function attTeamHtml(t){
    the old figures, which stay on Team Service): only plans summed up with คนเข้างานจริง, so Plan and Actual compare the same plans. Each person of a
    job gets its whole hours; other-department people are left out of the per-person figures. ---------- */
 function attStats(jobs){
-  const done=jobs.filter(t=>sumNeeded(t)&&!sumMissing(t));const have=done.filter(attHas);const P=new Map();
+  const fin=jobs.filter(t=>sumNeeded(t)&&!sumMissing(t));const nd=jobs.filter(t=>t.status==='notdone'&&attIn(t));/* ไม่เสร็จ counts once its people are recorded */
+  const done=fin.concat(nd);const have=fin.filter(attHas).concat(nd);const P=new Map();
   const g=id=>{if(!P.has(id))P.set(id,{id,name:staffName(id),s:staffById(id),plan:0,act:0,add:0,away:0,hrs:0,days:new Set()});return P.get(id)};
   have.forEach(t=>{const plan=t.staffIds||[],act=t.doneTeam||[],h=attHours(t);
     plan.forEach(id=>{const p=g(id);p.plan++;if(!act.includes(id))p.away++});
@@ -106,15 +117,15 @@ function attStats(jobs){
   const people=[...P.values()].sort((a,b)=>b.hrs-a.hrs||b.act-a.act||a.name.localeCompare(b.name,'th'));
   const sum=l=>l.reduce((a,p)=>{a.plan+=p.plan;a.act+=p.act;a.add+=p.add;a.away+=p.away;a.hrs+=p.hrs;return a},{plan:0,act:0,add:0,away:0,hrs:0,n:l.length});
   const teams=TEAMS.map(x=>x.id).concat(['']).map(id=>Object.assign({id},sum(people.filter(p=>teamOf(p.s)===id)))).filter(x=>x.n);
-  return {done,have,older:done.length-have.length,people,teams,tot:sum(people),clock:have.reduce((a,t)=>a+attHours(t),0)};
+  return {done,have,nd:nd.length,older:done.length-have.length,people,teams,tot:sum(people),clock:have.reduce((a,t)=>a+attHours(t),0)};
 }
 function attDashHtml(D){
-  const A=D.att;const sub='จากงานที่สรุปคนเข้างานจริงแล้วในช่วงนี้ (ตามแท็บสายงาน / ทีมที่เปิด) · ชั่วโมง = เลิกงาน − ถึงหน้างาน ไม่หักพัก ทุกคนในงานเดียวกันได้เท่ากัน · ไม่รวมคนแผนกอื่น · ตัวเลขคน-วันด้านบนยังนับตาม Team Service';
+  const A=D.att;const sub='จากงานที่สรุปคนเข้างานจริงแล้วในช่วงนี้ ทั้งงานเสร็จและงานไม่เสร็จ / งานต่อเนื่อง (ตามแท็บสายงาน / ทีมที่เปิด) · ชั่วโมง = เลิกงาน − ถึงหน้างาน ไม่หักพัก ทุกคนในงานเดียวกันได้เท่ากัน · ไม่รวมคนแผนกอื่น · ตัวเลขคน-วันด้านบนยังนับตาม Team Service';
   if(!A.have.length)return dzCard('span-12','Plan Team เทียบ Actual',sub,`<p class="hint">ยังไม่มีงานที่สรุปคนเข้างานจริงในช่วงนี้${A.older?` · งานเสร็จก่อนมีหัวข้อนี้ ${A.older} แผนไม่ถูกนับ`:''}</p>`,' style="--d:5"');
   const n=(v,c)=>`<td class="n${v&&c?' '+c:''}">${v||'–'}</td>`;const hr=h=>h?f1(h):'–';
   const row=(lb,x)=>`<tr><td>${lb}</td><td class="n">${x.plan}</td><td class="n">${x.act}</td>${n(x.add,'plus')}${n(x.away,'bad')}<td class="n"><b>${hr(x.hrs)}</b></td></tr>`;
   const head='<thead><tr><th>{}</th><th class="n">Plan (งาน)</th><th class="n">Actual (งาน)</th><th class="n">มาเสริม</th><th class="n">ไม่ได้ไป</th><th class="n">ชั่วโมง</th></tr></thead>';
-  return dzCard('span-12','Plan Team เทียบ Actual',sub,`<div class="dz-facts"><span><b>${A.have.length}</b>งานที่สรุปแล้ว${A.older?` (ไม่นับงานเก่า ${A.older})`:''}</span><span><b>${f1(A.tot.hrs)}</b>ชั่วโมงทำงานรวมของทุกคน</span><span><b>${f1(A.clock/A.have.length)}</b>ชั่วโมงเฉลี่ยต่องาน</span><span><b>${A.tot.add}</b>ครั้งที่มาเสริม</span><span><b>${A.tot.away}</b>ครั้งที่ไม่ได้ไป</span></div>
+  return dzCard('span-12','Plan Team เทียบ Actual',sub,`<div class="dz-facts"><span><b>${A.have.length}</b>งานที่สรุปแล้ว${A.nd?` (ไม่เสร็จ ${A.nd})`:''}${A.older?` (ไม่นับงานเก่า ${A.older})`:''}</span><span><b>${f1(A.tot.hrs)}</b>ชั่วโมงทำงานรวมของทุกคน</span><span><b>${f1(A.clock/A.have.length)}</b>ชั่วโมงเฉลี่ยต่องาน</span><span><b>${A.tot.add}</b>ครั้งที่มาเสริม</span><span><b>${A.tot.away}</b>ครั้งที่ไม่ได้ไป</span></div>
     <div class="att-dz"><div><h3 class="dz-sub">ชั่วโมงทำงานจริงรายคน</h3>${vzRank(A.people.filter(p=>p.hrs).map(p=>({label:p.name,n:Math.round(p.hrs*10)/10,extra:`${p.act} งาน · ${p.days.size} วัน`})),{unit:'ชม.'})}</div>
       <div><h3 class="dz-sub">แยกตามทีม</h3><table class="mini att-t">${head.replace('{}','ทีม')}<tbody>${A.teams.map(x=>row(x.id&&TEAM[x.id]?`<span class="tdot" style="--c:${TEAM[x.id].color}"><i></i>${esc(TEAM[x.id].name)}</span>`:esc(teamName(x.id)),x)).join('')}</tbody></table>
         <h3 class="dz-sub">รายคน</h3><div class="scroll-x plain att-sc"><table class="mini att-t">${head.replace('{}','ชื่อ')}<tbody>${A.people.map(p=>row(esc(p.name),p)).join('')}</tbody></table></div></div></div>`,' style="--d:5"');
@@ -124,8 +135,8 @@ const attNum=h=>Math.round(h*10)/10;
 function attSheets(D){
   const A=D.att;const rows=x=>[x.plan,x.act,x.add,x.away,attNum(x.hrs)];
   return {att:{sheet:'Plan vs Actual',title:'Plan Team เทียบ Actual (งานที่สรุปคนเข้างานจริงแล้ว · ชั่วโมง = เลิกงาน − ถึงหน้างาน ไม่หักพัก)',head:['ทีม / ชื่อ','Plan (งาน)','Actual (งาน)','มาเสริม','ไม่ได้ไป','ชั่วโมง'],num:[1,2,3,4,5],rows:[...A.teams.map(x=>['ทีม '+teamName(x.id),...rows(x)]),...A.people.map(p=>[p.name,...rows(p)])]},
-    attPlans:{sheet:'Plan vs Actual รายแผน',title:'Plan Team เทียบ Actual รายแผน',head:['วันที่','Plan No.','หัวข้องาน','Customer','Plan Team','Actual','คน Plan','คน Actual','ถึงหน้างาน','เลิกงาน','ชั่วโมง','ไม่ได้ไป (เหตุผล)'],num:[6,7,10],
-      rows:A.have.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>[t.date,t.planNo||'',typeLabel(t),t.customer||'',(t.staffIds||[]).map(staffName).concat(t.guests||[]).join(', '),(t.doneTeam||[]).map(staffName).concat(t.doneGuests||[]).join(', '),attPlanN(t),attActualN(t),t.doneIn||'',t.doneOut||'',attNum(attHours(t)),(t.staffIds||[]).filter(id=>!(t.doneTeam||[]).includes(id)).map(id=>staffName(id)+((t.doneAway||{})[id]?` (${attWhyName(t.doneAway[id])})`:'')).join(', ')])}};
+    attPlans:{sheet:'Plan vs Actual รายแผน',title:'Plan Team เทียบ Actual รายแผน',head:['วันที่','Plan No.','หัวข้องาน','Customer','สถานะ','Plan Team','Actual','คน Plan','คน Actual','ถึงหน้างาน','เลิกงาน','ชั่วโมง','ไม่ได้ไป (เหตุผล)'],num:[7,8,11],
+      rows:A.have.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>[t.date,t.planNo||'',typeLabel(t),t.customer||'',t.status==='notdone'?(t.cont?'ไม่เสร็จ · งานต่อเนื่อง':'ไม่เสร็จ'):'เสร็จแล้ว',(t.staffIds||[]).map(staffName).concat(t.guests||[]).join(', '),(t.doneTeam||[]).map(staffName).concat(t.doneGuests||[]).join(', '),attPlanN(t),attActualN(t),t.doneIn||'',t.doneOut||'',attNum(attHours(t)),(t.staffIds||[]).filter(id=>!(t.doneTeam||[]).includes(id)).map(id=>staffName(id)+((t.doneAway||{})[id]?` (${attWhyName(t.doneAway[id])})`:'')).join(', ')])}};
 }
 /* ---------- Dashboard › กำลังคน: who did not work on which day (user, 4 Nov 2026: "ถ้าวันไหน ทีมงานคนไหนไม่ทำงาน ให้นำมาวิเคราะห์ใน Dashboard ด้วย"; chose both kinds · optional
    reason · Mon–Fri without holidays for "no work" · person × day table + ranking). A person-day: ทำงาน (in the Actual of a summed-up plan, else in a
@@ -133,10 +144,10 @@ function attSheets(D){
    (Mon–Fri non-holiday only). Plans of every สายงาน; days up to today. Admin and Safety positions never go on plans, so they are left out. ---------- */
 function awayStats(D){
   if(D._aw)return D._aw;const td=ymd(new Date());const byDay=new Map();(D.raw||[]).forEach(t=>{if(t.date>=D.P.from&&t.date<=D.P.to){if(!byDay.has(t.date))byDay.set(t.date,[]);byDay.get(t.date).push(t)}});
-  const did=t=>t.status==='done'&&attHas(t)?(t.doneTeam||[]):(t.staffIds||[]);const days=D.days.map(ymd).filter(k=>k<=td);const base=new Set(days.filter(k=>!isOffDay(parseD(k))));
+  const did=t=>attIn(t)?(t.doneTeam||[]):(t.staffIds||[]);const days=D.days.map(ymd).filter(k=>k<=td);const base=new Set(days.filter(k=>!isOffDay(parseD(k))));
   const rows=D.people.map(p=>p.s).filter(s=>s&&!mrSafety(s)&&!/^admin$/i.test(String(s.role||'').trim())).map(s=>{const r={s,id:s.id,name:s.name,work:0,away:0,idle:0,leave:0,cells:{}};
     days.forEach(k=>{const l=byDay.get(k)||[];const jobs=l.filter(t=>!isLeave(t)&&holdsTeam(t));const on=jobs.filter(t=>did(t).includes(s.id));
-      const lv=l.find(t=>isLeave(t)&&isWorking(t)&&(t.staffIds||[]).includes(s.id));const aw=jobs.filter(t=>t.status==='done'&&attHas(t)&&(t.staffIds||[]).includes(s.id)&&!(t.doneTeam||[]).includes(s.id));
+      const lv=l.find(t=>isLeave(t)&&isWorking(t)&&(t.staffIds||[]).includes(s.id));const aw=jobs.filter(t=>attIn(t)&&(t.staffIds||[]).includes(s.id)&&!(t.doneTeam||[]).includes(s.id));
       const st=on.length?'work':lv?'leave':aw.length?'away':base.has(k)?'idle':'';if(!st)return;r[st]++;r.cells[k]={st,plans:st==='work'?on:st==='away'?aw:lv?[lv]:[],why:st==='away'?(aw[0].doneAway||{})[s.id]||'':''}});
     return r}).sort((a,b)=>(b.away+b.idle)-(a.away+a.idle)||(b.away-a.away)||a.name.localeCompare(b.name,'th'));
   const shown=days.filter(k=>base.has(k)||rows.some(r=>r.cells[k]));const why=new Map();rows.forEach(r=>Object.values(r.cells).forEach(c=>{if(c.st==='away'){const n=attWhyName(c.why)||'ไม่ระบุ';why.set(n,(why.get(n)||0)+1)}}));

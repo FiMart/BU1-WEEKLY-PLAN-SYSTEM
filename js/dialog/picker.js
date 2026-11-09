@@ -143,6 +143,7 @@ form.addEventListener('change',e=>{const t=e.target;
   if(t.name==='car-mode'||t.id==='f-carDept'){syncCarMode();checkConflicts();if(t.id==='f-carDept'&&t.checked)setTimeout(()=>$('#f-transport').focus(),30)}
   if(t.id==='f-gaCargo'){syncCarMode();if(t.checked)setTimeout(()=>$('#f-gaCargoSize').focus(),30)}
   if(t.name==='f-status'){syncReason();if(NEEDS_REASON.has(t.value))setTimeout(()=>$('#f-reason').focus(),30);
+    if(t.value==='notdone')attFormFill();/* ไม่เสร็จ: คนเข้างานจริง + เวลา too (user, 9 Nov 2026) */
     if(t.value==='done'&&!$('#f-sumWrap').hidden){attFormFill();const ta=$('#f-doneSum');/* สรุปงาน starts from the Detail, then Completed */
       if(!ta.value.trim())ta.value=[$('#f-detail').value.trim(),'Completed'].filter(Boolean).join('\n');setTimeout(()=>ta.focus(),30)}}
   if(t.id==='f-sale')syncSaleTel();

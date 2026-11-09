@@ -51,10 +51,12 @@ document.addEventListener('click',e=>{
     case 'save-vreason':{const r=dlg.querySelector('input[name="v-status"]:checked');if(!r||!editing)break;const note=$('#v-reason').value.trim();
       /* ไม่เสร็จ: เปิด NCR (the typed reason goes into the NCR) or งานต่อเนื่อง (reason required, no NCR) */
       if(r.value==='notdone'){
-        if(!vNcrCont()){const n=ncrOfTask(editing);openNcr(n?n.id:null,Object.assign({},editing,{status:'notdone',statusNote:note||editing.statusNote||''}));break}
+        /* คนเข้างานจริง + เวลา, the same as สรุปงาน (user, 9 Nov 2026); saved with the status (by the NCR's save on the NCR path) */
+        const a=isLeave(editing)?{save:{}}:attCheck(editing,sumAttNow('n'));if(a.err){toast(a.err);const el=a.el&&$('#n-'+a.el);if(el)el.focus();else{const b=$('#v-ndAttSlot');if(b)b.scrollIntoView({block:'nearest'})}break}
+        if(!vNcrCont()){const n=ncrOfTask(editing);openNcr(n?n.id:null,Object.assign({},editing,{status:'notdone',statusNote:note||editing.statusNote||'',_att:a.save}));break}
         if(!note){toast('ใส่ว่าทำได้ถึงไหน / ทำไมต้องทำต่อ');$('#v-reason').focus();break}
         const next=$('#v-contNext').value||'';if(next&&next<=editing.date){toast('วันที่ทำต่อต้องหลังวันของแผนนี้');$('#v-contNext').focus();break}
-        saveViewStatus('notdone',note,{cont:true,contNext:next},`บันทึก “ไม่เสร็จ · งานต่อเนื่อง” แล้ว (ไม่เปิด NCR)${next?` · ทำต่อ ${fmtDay(next)}`:''}`);break}
+        saveViewStatus('notdone',note,Object.assign({cont:true,contNext:next},a.save),`บันทึก “ไม่เสร็จ · งานต่อเนื่อง” แล้ว (ไม่เปิด NCR)${next?` · ทำต่อ ${fmtDay(next)}`:''}`);break}
       saveViewStatus(r.value,note);break}
     case 'copy-day':$('#copyMenu').open=false;copyText(dayText(a.dataset.date),`คัดลอกแผน${fmtDay(a.dataset.date)}แล้ว วางใน LINE ได้เลย`);break;
     case 'shot':takeShot(a);break;

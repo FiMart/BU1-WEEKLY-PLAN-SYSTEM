@@ -9,7 +9,7 @@ const workDate=k=>{const d=parseD(k);return `${String(d.getDate()).padStart(2,'0
 const lineBlock=(icon,label,text)=>{const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean);
   return !l.length?[]:l.length===1?[`${icon} ${label} : ${l[0]}`]:[`${icon} ${label} :`].concat(l)};
 function jobLines(t,withPeriod){
-  const tel=saleTel(t.sale);const real=sumNeeded(t)&&attHas(t);/* a confirmed plan reports who really went (user, 4 Nov 2026) */
+  const tel=saleTel(t.sale);const real=attIn(t);/* a confirmed plan (เสร็จ / ไม่เสร็จ) reports who really went (user, 4 + 9 Nov 2026) */
   const team=real&&(t.doneTeam||[]).concat(t.doneGuests||[]).length?(t.doneTeam||[]).map(staffName).concat(t.doneGuests||[]):teamNames(t);
   const when=[workDate(t.date),withPeriod?`(${LINE_PERIOD[periodOf(t)]||pName(t)})`:'',t.timeNote?`· ${t.timeNote}`:''].filter(Boolean).join(' ');
   return [
