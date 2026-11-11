@@ -58,7 +58,7 @@ document.addEventListener('click',e=>{
         const next=$('#v-contNext').value||'';if(next&&next<=editing.date){toast('วันที่ทำต่อต้องหลังวันของแผนนี้');$('#v-contNext').focus();break}
         saveViewStatus('notdone',note,Object.assign({cont:true,contNext:next},a.save),`บันทึก “ไม่เสร็จ · งานต่อเนื่อง” แล้ว (ไม่เปิด NCR)${next?` · ทำต่อ ${fmtDay(next)}`:''}`);break}
       saveViewStatus(r.value,note);break}
-    case 'copy-day':$('#copyMenu').open=false;copyText(dayText(a.dataset.date),`คัดลอกแผน${fmtDay(a.dataset.date)}แล้ว วางใน LINE ได้เลย`);break;
+    case 'copy-day':$('#copyMenu').open=false;copyDay(a.dataset.date);break;/* long days come in parts (js/features/share.js) */
     case 'shot':takeShot(a);break;
     case 'dprev':dashStep(-1);break;
     case 'dnext':dashStep(1);break;

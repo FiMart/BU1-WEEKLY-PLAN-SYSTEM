@@ -5,8 +5,10 @@
 const LINE_PERIOD={am:'ช่วงเช้า',pm:'ช่วงบ่าย',full:'ทั้งวัน'};
 const LINE_STATUS={done:'✅',notdone:'❌',postponed:'🔁',cancelled:'⛔'};
 const workDate=k=>{const d=parseD(k);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`};
+/* one line of text: tabs and runs of spaces become one space (user, 11 Nov 2026: "เวลาแบ่งเป็นข้อๆ ให้ไม่ต้องเว้นวรรค" — "✓<tab><tab>Hot work" → "✓ Hot work") */
+const lineClean=s=>String(s||'').replace(/[\t  - 　]+/g,' ').replace(/ {2,}/g,' ').trim();
 /* "✍️ label : text" on one line, or the label then one line each when the text has several lines */
-const lineBlock=(icon,label,text)=>{const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean);
+const lineBlock=(icon,label,text)=>{const l=String(text||'').split(/\r?\n/).map(lineClean).filter(Boolean);
   return !l.length?[]:l.length===1?[`${icon} ${label} : ${l[0]}`]:[`${icon} ${label} :`].concat(l)};
 function jobLines(t,withPeriod){
   const tel=saleTel(t.sale);const real=attIn(t);/* a confirmed plan (เสร็จ / ไม่เสร็จ) reports who really went (user, 4 + 9 Nov 2026) */
@@ -32,16 +34,41 @@ function cardText(t){
   return [`📌 ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}`].concat(lineLabel(t)?[`🔧 สายงาน : ${lineLabel(t)}`]:[],jobLines(t,true)).join('\n');
 }
 /* one day for LINE: the open สายงาน tab only (its plans, plans without a line, and leave) */
-function dayText(k){
+function dayText(k){return dayParts(k,Infinity)[0]}
+/* LINE takes at most 10,000 characters in one message, so a long day comes in parts, cut only between plans (user, 11 Nov 2026:
+   "พอเวลามีแผนเยอะๆให้สามารถคัดลอกมาให้ได้ครบทุกแผน"); every part starts with the day's head and "ส่วนที่ i/n". .length counts an emoji as 2: margin. */
+const LINE_MAX=9000;
+function dayParts(k,max){
+  max=max||LINE_MAX;
   const d=parseD(k);const list=S.tasks.filter(t=>t.date===k&&isWorking(t)&&lineMatch(t)).sort(byTime);
   const jobs=list.filter(t=>!isLeave(t));const lv=list.filter(isLeave);
-  const out=[`📅 แผนงาน BU1 Lab${scopeName()?' · '+scopeName():''}`,`วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} · ${jobs.length} งาน`];
-  jobs.forEach((t,i)=>{
-    out.push('',`${i+1}) ${LINE_PERIOD[periodOf(t)]||pName(t)} · ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}${!S.line&&lineOf(t)?` [${LINE[lineOf(t)].short}]`:''}`);
-    out.push(...jobLines(t,false));
-  });
-  if(lv.length)out.push('','🏖️ ลา :',...lv.map(t=>`- ${teamNames(t).join(', ')} (${LINE_PERIOD[periodOf(t)]||pName(t)})`));
-  return out.join('\n');
+  const head=[`📅 แผนงาน BU1 Lab${scopeName()?' · '+scopeName():''}`,`วัน${TH_DAY_FULL[d.getDay()]}ที่ ${fmtShort(d)} ${be(d)} · ${jobs.length} งาน`];
+  const blocks=jobs.map((t,i)=>[`${i+1}) ${LINE_PERIOD[periodOf(t)]||pName(t)} · ${typeLabel(t)}${t.planNo?' · '+t.planNo:''}${!S.line&&lineOf(t)?` [${LINE[lineOf(t)].short}]`:''}`,...jobLines(t,false)].join('\n'));
+  if(lv.length)blocks.push(['🏖️ ลา :',...lv.map(t=>`- ${teamNames(t).join(', ')} (${LINE_PERIOD[periodOf(t)]||pName(t)})`)].join('\n'));
+  const room=max-head.join('\n').length-40;/* 40 = "· ส่วนที่ i/n" and the blank line */
+  /* a single plan longer than a whole part is cut between its own lines */
+  const items=blocks.flatMap(b=>{if(b.length<=room)return [b];const out=[];let cur='';b.split('\n').forEach(l=>{if(cur&&cur.length+1+l.length>room){out.push(cur);cur=l}else cur=cur?cur+'\n'+l:l});if(cur)out.push(cur);return out});
+  const parts=[];let cur=[];let len=0;
+  items.forEach(b=>{if(cur.length&&len+2+b.length>room){parts.push(cur);cur=[];len=0}cur.push(b);len+=(len?2:0)+b.length});
+  if(cur.length||!parts.length)parts.push(cur);
+  const n=parts.length;
+  return parts.map((p,i)=>[head[0]+(n>1?` · ส่วนที่ ${i+1}/${n}`:''),head[1],...p.flatMap(b=>['',b])].join('\n'));
+}
+/* copy a day: one message, or a list of parts to copy one after another */
+function copyDay(k){
+  const parts=dayParts(k);
+  if(parts.length===1){copyText(parts[0],`คัดลอกแผน${fmtDay(k)}แล้ว วางใน LINE ได้เลย`);return}
+  let d=$('#linePartsDlg');
+  if(!d){d=document.createElement('dialog');d.id='linePartsDlg';d.className='confirm-dlg';d.setAttribute('aria-labelledby','lpT');document.body.appendChild(d);
+    d.addEventListener('click',e=>{const b=e.target.closest('[data-lp]');if(!b){if(e.target===d||e.target.closest('[data-lp-close]'))d.close();return}
+      const i=Number(b.dataset.lp);copyText(d._parts[i],`คัดลอกส่วนที่ ${i+1}/${d._parts.length} แล้ว วางใน LINE แล้วกลับมาคัดลอกส่วนถัดไป`);b.classList.add('done');b.querySelector('small').textContent='คัดลอกแล้ว ✓';
+      const nx=d.querySelector(`[data-lp="${i+1}"]`);if(nx)nx.focus()})}
+  d._parts=parts;const plans=p=>(p.match(/^\d+\) /gm)||[]).length;
+  d.innerHTML=`<div class="confirm-wrap"><h2 id="lpT">แผน ${esc(fmtDay(k))} ยาวเกินที่ LINE ส่งได้ในข้อความเดียว</h2>
+    <p>แบ่งเป็น ${parts.length} ส่วน · กดคัดลอกทีละส่วน แล้ววางใน LINE ตามลำดับ</p>
+    <div class="lp-list">${parts.map((p,i)=>`<button type="button" class="btn lp-b" data-lp="${i}"><b>คัดลอกส่วนที่ ${i+1}/${parts.length}</b><small>${plans(p)?`${plans(p)} งาน · `:''}${p.length.toLocaleString()} ตัวอักษร</small></button>`).join('')}</div>
+    <div class="confirm-act"><button type="button" class="btn" data-lp-close>ปิด</button></div></div>`;
+  d.showModal();setTimeout(()=>{const b=d.querySelector('[data-lp="0"]');if(b)b.focus()},30);
 }
 function copyText(txt,msg){
   const done=()=>toast(msg||'คัดลอกแล้ว วางใน LINE ได้เลย');
