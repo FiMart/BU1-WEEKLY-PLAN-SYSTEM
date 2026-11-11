@@ -1148,3 +1148,10 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
 .ga-cars.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
 .ga-cars>b{font-size:14px}
 .ga-cars>span{flex:1 1 320px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+
+/* LINE copy in parts (js/features/share.js copyDay; user, 11 Nov 2026) */
+.lp-list{display:grid;gap:8px;margin:14px 0 4px}
+.lp-b{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;text-align:left}
+.lp-b small{font-weight:500;color:var(--muted);white-space:nowrap}
+.lp-b.done{border-color:color-mix(in srgb,var(--good) 55%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--surface))}
+.lp-b.done small{color:var(--good-ink,var(--good))}
