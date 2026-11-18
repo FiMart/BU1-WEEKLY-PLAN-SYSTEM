@@ -26,7 +26,7 @@ const CS_FORMS={
       {id:'s8',t:'8. Cleaning',qc:1,items:['ทำความสะอาด Flowmeter','ปรับ configuration มาเช็ค และ Recheck configuration (เป็นคนละคนกับคนคืน configuration)','จัดเก็บในพื้นที่เตรียมส่ง'],other:'s7'},
       {id:'s9',t:'9. Report',qc:1,items:['ออกรายงานผลการสอบเทียบ (Report / Certificate)']},
       {id:'s10',t:'10. ส่งอุปกรณ์',qc:1,items:['ถ่ายรูปอุปกรณ์ขณะอยู่ในบรรจุภัณฑ์ / ขณะอยู่ในยานพาหนะ / อุปกรณ์ต่อพ่วง พร้อมถ่ายรูปประกอบ','เตรียมเอกสารใบคำร้องขอรับบริการสอบเทียบ (FLS-F-018) สำหรับให้ลูกค้าเซ็นต์','เขียนใบรับส่งของ (FLS-F-024)','ถอดป้ายชี้บ่ง (FLS-F-023)','Scan และนำเอกสารใบรับส่งของ (FLS-F-024) / รูปถ่าย จัดเก็บเอกสารตามเลข Request No.']}]},
-  data:{code:'FLS-F-122',pre:'DF',name:'Data Flow Meter Check Sheet',sub:'ข้อมูลมิเตอร์ และ Configuration ก่อน / ระหว่าง / หลังสอบเทียบ',per:'item',
+  data:{code:'FLS-F-122',rev:'5',pre:'DF',name:'Data Flow Meter Check Sheet',sub:'ข้อมูลมิเตอร์ และ Configuration ก่อน / ระหว่าง / หลังสอบเทียบ',per:'item',
     head:[['customer','Customer'],['highPressure','High Pressure Flowmeter','yn'],['type','Meter · Type'],['tag','Meter · Tag'],['size','Connection size'],['receiveDate','Receive Date','date'],['calDate','Cal. Date','date'],
       ['cfgStatus','Configuration Status','yn'],['cfgLocation','Configuration · Location'],['saveName','Save Name'],['sensorMake','Sensor · Make'],['sensorModel','Sensor · Model'],['sensorSerial','Sensor · Serial No.'],
       ['txMake','Transmitter · Make'],['txModel','Transmitter · Model'],['txSerial','Transmitter · Serial No.'],['referJob','Data History · Refer Job No.']],
@@ -102,7 +102,7 @@ function nextCsNo(form){
 function csPrefill(form,job,item,task){
   const j=job||{},it=item||{},t=task||{};const h={};
   if(form==='qc')Object.assign(h,{customer:j.customer||t.customer||'',tag:it.tag||'',receiveDate:j.receiveDate||'',requestNo:j.planNo||t.planNo||''});
-  if(form==='data')Object.assign(h,{customer:j.customer||t.customer||'',highPressure:j.highPressure?'yes':'',type:it.type||'',tag:it.tag||'',size:[it.size?it.size+'"':'',it.cls].filter(Boolean).join(' '),receiveDate:j.receiveDate||'',referJob:it.refer||''});
+  if(form==='data')Object.assign(h,{customer:j.customer||t.customer||'',highPressure:j.highPressure?'yes':'',type:it.type||'',tag:it.tag||'',size:[it.size?it.size+'"':'',it.cls].filter(Boolean).join(' '),receiveDate:j.receiveDate||'',calDate:t.date||'',referJob:it.refer||''});/* made from a plan: Cal. Date = the plan's day */
   if(form==='rr'){const ty=norm(it.type||'');Object.assign(h,{plant:j.location||t.location||'',location:t.location||j.location||'',tag:it.tag||'',flange:it.size?it.size+'"':'',cls:it.cls||'',
     fm:/coriolis|mass/.test(ty)?['Mass Flow']:/vortex/.test(ty)?['Vortex flow']:/mag/.test(ty)?['Magnetic flow']:/ultra/.test(ty)?['Ultrasonic']:/pd|positive/.test(ty)?['PD Meter']:[],rangeTrans:it.range||''})}
   if(form==='sr'){const cars=typeof deptCars==='function'?deptCars(t):[];
@@ -115,7 +115,9 @@ function csPrefill(form,job,item,task){
 }
 async function csCreate(form,{jobId,itemId,taskId}={}){
   if(!canWork())return;const task=taskId?findTask(taskId):null;const job=jbById(jobId||(task&&task.jobId)||'');/* a plan made from a booking brings its meters */const item=job&&itemId?(job.items||[]).find(x=>x.id===itemId):null;
-  const dup=S.checks.find(c=>c.form===form&&(itemId?c.itemId===itemId&&(form!=='rr'||c.taskId===(taskId||'')):c.taskId===taskId)&&c.state!=='rejected');
+  /* one sheet per meter of a booking (Remove-Reinstall: per meter and plan) · Service Report / Remove-Reinstall one per plan · a meter typed by hand
+     (QC LAB / Data Flow Meter without a booking meter) may be added again and again: one sheet per meter on the plan */
+  const dup=S.checks.find(c=>c.form===form&&(itemId?c.itemId===itemId&&(form!=='rr'||c.taskId===(taskId||'')):(form==='sr'||form==='rr')&&c.taskId===taskId)&&c.state!=='rejected');
   if(dup){openCs(dup.id);return}
   const p=csPrefill(form,job,item,task);const now=new Date().toISOString();const id=newId('cs');
   const data={form,no:nextCsNo(form),jobId:jobId||(task&&task.jobId)||'',itemId:itemId||'',taskId:taskId||'',planNo:(job&&job.planNo)||(task&&task.planNo)||'',
@@ -129,6 +131,7 @@ function openCs(id,fresh){
   const c=csById(id)||(fresh?Object.assign({id},fresh):null);if(!c)return;
   csEdit=JSON.parse(JSON.stringify(c));csEdit.id=id;
   csDraw();const d=$('#csDlg');if(!d.open)d.showModal();
+  qrReady();/* the QR on the print head (js/features/qr.js) is ready before พิมพ์ / PDF is pressed */
 }
 function csDraw(){
   const c=csEdit;const F=CS_FORMS[c.form];const ed=canEditCs(c);const dis=ed?'':' disabled';const st=CS_STATE[c.state]||CS_STATE.draft;
@@ -243,10 +246,15 @@ function csPlanHtml(t){
   if(!t||isLeave(t))return '';const job=t.jobId?jbById(t.jobId):null;
   const sr=S.checks.filter(c=>c.form==='sr'&&c.taskId===t.id);const rr=S.checks.filter(c=>c.form==='rr'&&c.taskId===t.id);
   const items=job?(job.items||[]):[];
+  /* Data Flow Meter FLS-F-122 (user, 18 Nov 2026: "เพิ่ม data flow meter check sheet"): per meter of the booking, or meters typed by hand on the plan */
+  const df=S.checks.filter(c=>c.form==='data'&&(c.taskId===t.id||(c.itemId&&items.some(it=>it.id===c.itemId))));
+  const dfChip=c=>`${csChip(c)}${c.h&&c.h.tag?`<small class="cs-tag mono">${esc(c.h.tag)}</small>`:''}`;
   return `<div class="cs-plan"><b>Check Sheet ของงานนี้</b>
     <div class="cs-pl-row"><span>Service Report</span>${sr.map(csChip).join('')}${sr.some(c=>c.state!=='rejected')?'':csNew('sr',`data-cs-task="${esc(t.id)}"`,'สร้าง Service Report')}</div>
     ${items.map(it=>{const mine=rr.filter(c=>c.itemId===it.id);return `<div class="cs-pl-row"><span>Remove-Reinstall · <b class="mono">${esc(it.tag||'—')}</b></span>${mine.map(csChip).join('')}${mine.some(c=>c.state!=='rejected')?'':csNew('rr',`data-cs-task="${esc(t.id)}" data-cs-job="${esc(job.id)}" data-cs-item="${esc(it.id)}"`,'สร้าง')}</div>`}).join('')}
-    ${!items.length?`<div class="cs-pl-row"><span>Remove-Reinstall</span>${rr.map(csChip).join('')}${csNew('rr',`data-cs-task="${esc(t.id)}"`,'สร้าง')}</div>`:''}</div>`;
+    ${!items.length?`<div class="cs-pl-row"><span>Remove-Reinstall</span>${rr.map(csChip).join('')}${csNew('rr',`data-cs-task="${esc(t.id)}"`,'สร้าง')}</div>`:''}
+    ${items.map(it=>{const mine=df.filter(c=>c.itemId===it.id);return `<div class="cs-pl-row"><span>Data Flow Meter · <b class="mono">${esc(it.tag||'—')}</b></span>${mine.map(csChip).join('')}${mine.some(c=>c.state!=='rejected')?'':csNew('data',`data-cs-task="${esc(t.id)}" data-cs-job="${esc(job.id)}" data-cs-item="${esc(it.id)}"`,'สร้าง')}</div>`}).join('')}
+    <div class="cs-pl-row"><span>Data Flow Meter${items.length?' · เครื่องอื่น':''}</span>${df.filter(c=>!c.itemId||!items.some(it=>it.id===c.itemId)).map(dfChip).join('')}${csNew('data',`data-cs-task="${esc(t.id)}"${job?` data-cs-job="${esc(job.id)}"`:''}`,'เพิ่มเครื่อง')}</div></div>`;
 }
 /* an approved Service Report / Remove-Reinstall sheet of the plan counts as its after-job document (js/dialog/report.js) */
 function csApprovedFor(t,kind){
@@ -280,7 +288,9 @@ function renderChecks(){
     <section class="panel span-12"><header><h2>Check Sheet <span class="md-count" id="csCount"></span></h2><p>QC LAB · Data Flow Meter · Remove-Reinstall · Service Report · ทำทีละหัวข้อ → ส่งตรวจ → อนุมัติ · กดแถวเพื่อเปิด</p></header>
       <div class="jb-tabs" role="tablist">${CS_TABS.map(([id,l])=>`<button type="button" role="tab" data-cs-tab="${id}" aria-selected="${S.csF.tab===id}">${l}</button>`).join('')}</div>
       <div class="ncr-tools"><input type="search" id="cs-q" placeholder="ค้นหาเลขที่ PN ลูกค้า Tag" value="${esc(S.csF.q)}" autocomplete="off" aria-label="ค้นหา Check Sheet">
-        <select id="cs-form" aria-label="ชนิดฟอร์ม"><option value="">ทุกฟอร์ม</option>${Object.entries(CS_FORMS).map(([k,f])=>`<option value="${k}"${S.csF.form===k?' selected':''}>${esc(f.name)} (${f.code})</option>`).join('')}</select></div>
+        <select id="cs-form" aria-label="ชนิดฟอร์ม"><option value="">ทุกฟอร์ม</option>${Object.entries(CS_FORMS).map(([k,f])=>`<option value="${k}"${S.csF.form===k?' selected':''}>${esc(f.name)} (${f.code})</option>`).join('')}</select>
+        <span class="grow"></span><button type="button" class="btn" data-qr-scan title="สแกน QR code บนหัวกระดาษ เพื่อเปิดใบนั้น"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M4 12h16"/></svg> สแกน QR</button>
+        ${canWork()?'<button type="button" class="btn primary" data-cs-newask>+ Check Sheet ใบใหม่</button>':''}</div>
       <div class="scroll-x plain"><table class="mini ftab cs-tab"><thead><tr><th>เลขที่</th><th>PN</th><th>ลูกค้า / เครื่อง</th><th>ผู้ทำ</th><th>ความคืบหน้า</th><th>สถานะ</th></tr></thead><tbody id="csRows"></tbody></table></div></section></div>`;
 }
 function csBadge(){
@@ -295,15 +305,50 @@ function csApproverSection(){
       <label><b>อนุมัติภายใน (วันทำงาน)</b> <small>เกินแล้วขึ้น Delay</small><input type="number" min="1" max="30" class="w-num" data-csdays value="${Math.max(1,Number(((S.cfg||{}).jobKpi||{}).csDays)||1)}"${dis}></label></div>`};
 }
 
+/* ---------- + Check Sheet ใบใหม่ on the page (user, 18 Nov 2026): pick the form, the plan (PN), then the booking's meter or a meter typed by hand ---------- */
+const CSN={q:'',plan:'',wait:null};
+function csnPlans(){
+  const m=new Map();(typeof NTF!=='undefined'&&NTF.range||[]).concat([...known.values()],ALL.data||[],S.tasks).forEach(t=>{if(t&&!isLeave(t)&&t.status!=='cancelled')m.set(t.id,t)});
+  const q=mdKey(CSN.q);const today=ymd(new Date());
+  return [...m.values()].filter(t=>!q||mdKey([t.planNo,t.customer,t.location,typeLabel(t),fmtDay(t.date),t.date].join(' ')).includes(q))
+    .sort((a,b)=>Math.abs(parseD(a.date)-parseD(today))-Math.abs(parseD(b.date)-parseD(today))||String(b.date).localeCompare(String(a.date))).slice(0,60);
+}
+function csnDraw(){
+  const d=$('#csNewDlg');if(!d)return;const form=($('#csn-form')||{}).value||'data';const l=csnPlans();
+  if(!l.some(t=>t.id===CSN.plan))CSN.plan=l[0]?l[0].id:'';
+  $('#csn-plan').innerHTML=l.map(t=>`<option value="${esc(t.id)}"${t.id===CSN.plan?' selected':''}>${esc([t.planNo||'ไม่มี PN',fmtDay(t.date),t.customer,typeLabel(t)].filter(Boolean).join(' · '))}</option>`).join('')||'<option value="">ไม่พบแผน</option>';
+  const t=findTask(CSN.plan)||l.find(x=>x.id===CSN.plan);const job=t&&t.jobId?jbById(t.jobId):null;const items=job?job.items||[]:[];
+  const per=CS_FORMS[form].per==='item';$('#csn-itemWrap').hidden=!per;
+  $('#csn-item').innerHTML=items.map(it=>`<option value="${esc(it.id)}">${esc(jbItemText(it)||it.tag||'เครื่อง')}</option>`).join('')+'<option value="">เครื่องอื่น · กรอกข้อมูลเครื่องเอง</option>';
+  $('#csn-hint').textContent=ALL.loading?'กำลังโหลดแผนทุกสัปดาห์…':`${l.length} แผน · เรียงจากวันที่ใกล้วันนี้`;
+  clearTimeout(CSN.wait);if(ALL.loading)CSN.wait=setTimeout(()=>{if(d.open)csnDraw()},700);
+}
+function csNewAsk(){
+  if(!canWork())return;let d=$('#csNewDlg');
+  if(!d){d=document.createElement('dialog');d.id='csNewDlg';d.className='confirm-dlg csn-dlg';d.setAttribute('aria-labelledby','csnT');document.body.appendChild(d);
+    d.innerHTML=`<div class="confirm-wrap"><h2 id="csnT">Check Sheet ใบใหม่</h2>
+      <label class="csn-f">ฟอร์ม<select id="csn-form">${Object.entries(CS_FORMS).map(([k,f])=>`<option value="${k}"${k==='data'?' selected':''}>${esc(f.name)} (${f.code})</option>`).join('')}</select></label>
+      <label class="csn-f">แผนงาน (PN)<input type="search" id="csn-q" placeholder="ค้นหา PN · ลูกค้า · สถานที่ · วันที่" autocomplete="off"></label>
+      <select id="csn-plan" size="6" aria-label="เลือกแผนงาน"></select><small class="hint" id="csn-hint"></small>
+      <label class="csn-f" id="csn-itemWrap">เครื่อง<select id="csn-item"></select></label>
+      <div class="confirm-act"><button type="button" class="btn" data-csn="close">ยกเลิก</button><button type="button" class="btn primary" data-csn="ok">สร้าง</button></div></div>`;
+    d.addEventListener('click',e=>{if(e.target===d){d.close();return}const b=e.target.closest('[data-csn]');if(!b)return;if(b.dataset.csn==='close'){d.close();return}
+      const form=$('#csn-form').value;const t=findTask(CSN.plan)||csnPlans().find(x=>x.id===CSN.plan);if(!t){toast('เลือกแผนงานก่อน');return}
+      const per=CS_FORMS[form].per==='item';known.set(t.id,t);d.close();csCreate(form,{jobId:t.jobId||'',itemId:per?$('#csn-item').value:'',taskId:t.id})});
+    d.addEventListener('input',e=>{if(e.target.id==='csn-q'){CSN.q=e.target.value;if(CSN.q.trim().length>=2&&!ALL.data&&!ALL.loading)allTasks();csnDraw()}});
+    d.addEventListener('change',e=>{if(e.target.id==='csn-plan'){CSN.plan=e.target.value;csnDraw()}else if(e.target.id==='csn-form')csnDraw()})}
+  CSN.q='';$('#csn-q').value='';csnDraw();d.showModal();setTimeout(()=>$('#csn-q').focus(),30);
+}
+
 /* ---------- print (the paper form, A4) ---------- */
 function csOpenPrint(html,fname){
   let w=null;try{w=window.open('','_blank')}catch(e){}
   if(w&&w.document){w.document.open();w.document.write(html);w.document.close();return}
   saveFile(fname,html,'ดาวน์โหลดแบบฟอร์มแล้ว เปิดไฟล์แล้วกด "พิมพ์ / บันทึกเป็น PDF"');
 }
-function csPrint(){const c=csEdit;if(c)csOpenPrint(csPrintHtml(c),`${c.no}_${CS_FORMS[c.form].code}.html`)}
+async function csPrint(){const c=csEdit;if(!c)return;await qrReady();csOpenPrint(csPrintHtml(c),`${c.no}_${CS_FORMS[c.form].code}.html`)}
 /* the PDF file (js/features/pdf-export.js): the same page, A4 portrait */
-function csPdf(btn){const c=csEdit;if(c)pdfExport([csPdfDoc(c)],`${c.no}_${CS_FORMS[c.form].code}.pdf`,btn)}
+async function csPdf(btn){const c=csEdit;if(!c)return;await qrReady();pdfExport([csPdfDoc(c)],`${c.no}_${CS_FORMS[c.form].code}.pdf`,btn)}
 const csPdfDoc=c=>({html:csPrintHtml(c),orient:'p',foot:`${CS_FORMS[c.form].code} · ${c.no}${c.planNo?' · '+c.planNo:''}`});
 function csPrintHtml(c){
   const F=CS_FORMS[c.form];const box=b=>b?'☑':'☐';
@@ -316,6 +361,11 @@ function csPrintHtml(c){
     return `<h2>${esc(s.t)}${st&&st.at?` <span class="ok">${st.res==='pass'?'QC Pass':st.res==='fail'?'QC Fail':'ยืนยันแล้ว'} · ${csWho(st.by)} · ${esc(jbWhen(st.at))}${st.note?' · '+esc(st.note):''}</span>`:''}</h2>
       ${items?`<table class="it">${items}</table>`:''}${tbl(s.table)}${tbl(s.table2)}${fl?`<table>${fl}</table>`:''}${sg?`<div class="sgs">${sg}</div>`:''}`};
   const st=CS_STATE[c.state]||CS_STATE.draft;
+  /* QR on the head = a link that opens this sheet (js/features/qr.js); FLS-F-122 is laid out like the paper form */
+  const qr=qrBlock(qrLink('cs',c.id),[c.planNo,c.no]);const df=c.form==='data';
+  const head=df?`<div class="df-hd"><div class="df-qr">${qr||`<b>${esc(c.planNo||'')}</b><span>${esc(c.no)}</span>`}</div><h1>DATA FLOW METER CHECK SHEET</h1><div class="df-org">${orgLogo(34)}</div></div>`
+    :`<div class="hd"><div style="display:flex;gap:10px;align-items:center">${qr}${orgLogo(42)}<div><b>${esc(ORG_NAME)} · ${esc(DASH_ORG)}</b><h1>${esc(F.name)}</h1></div></div><p>${esc(c.no)} · Request No. ${esc(c.planNo||'—')}<br>สถานะ: ${esc(st.th)}</p></div>`;
+  const body=df?csDataBody(c):`<table>${F.head.map(hv).join('')}</table>${F.secs.map(sec).join('')}`;
   const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(c.no)} · ${esc(F.code)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
 <style>@page{size:A4 portrait;margin:11mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:10.5px/1.45 "IBM Plex Sans Thai",Tahoma,sans-serif;color:#0b1b33;margin:14px;max-width:188mm}
@@ -323,18 +373,53 @@ function csPrintHtml(c){
 .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1462d0;padding-bottom:6px;margin-bottom:8px}.hd h1{font-size:16px;margin:0}.hd p{margin:0;text-align:right}
 table{border-collapse:collapse;width:100%;margin:4px 0 6px}th,td{border:1px solid #9fb0c8;padding:3px 6px;text-align:left;vertical-align:top}th{background:#f3f7fd;font-weight:600;width:34%}.it td:first-child{width:28px;text-align:center}.tb th{width:auto}.many{font-size:9px}.many th,.many td{padding:2px 3px}
 h2{font-size:12px;margin:10px 0 3px;padding:3px 6px;background:#e8eef8}h2 .ok{font-weight:400;font-size:10.5px;color:#1f6f43}.sgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sg{border:1px solid #9fb0c8;padding:5px;display:grid;gap:3px;min-height:70px}.sg img{max-width:100%;height:56px;object-fit:contain}.sg .ln{border-bottom:1px solid #0b1b33;height:40px}
-.ap{margin-top:10px;border:1.5px solid #0b1b33;padding:6px 8px}.foot{text-align:right;color:#4a5b75;margin-top:6px}@media print{.bar{display:none}body{margin:0;max-width:none}}${typeof isoPageCss==='function'?isoPageCss('docs'):''}</style></head><body>
+.ap{margin-top:10px;border:1.5px solid #0b1b33;padding:6px 8px}.foot{text-align:right;color:#4a5b75;margin-top:6px}
+.df-hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:6px}.df-hd h1{font-size:17px;margin:0;letter-spacing:.02em;text-align:center}.df-qr{justify-self:start;display:grid;justify-items:center;font-size:9px}.df-org{justify-self:end}
+.df-cu{display:flex;justify-content:space-between;gap:12px;margin:2px 0 6px;font-size:11px}.df-cu u{text-decoration:none;border-bottom:1px solid #0b1b33;padding:0 8px}
+.df-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}.df-col{display:grid;gap:6px;align-content:start}
+table.df-box,table.df-cfg{border:2px solid #0b1b33;margin:0;width:100%}
+th.df-t{width:auto!important;text-align:center!important;background:#d9dde3!important;border-bottom:2px solid #0b1b33!important;font-weight:700;padding:2px 0!important;font-size:10.5px}
+table.df-box th,table.df-box td{border:0;padding:2px 5px;background:none;height:19px;vertical-align:bottom}table.df-box th{width:38%;text-align:right;font-weight:600;white-space:nowrap}table.df-box td.df-cl{width:8px;padding:2px 0}table.df-box .df-v{word-break:break-word}.df-yn{padding:3px 12px!important}
+table.df-box tr:not(:last-child)>*{border-bottom:1px solid #9fb0c8}/* one line across the whole box under every row (user, 19 Nov 2026: "แก้ไขเส้นไม่เต็มกรอบ") */
+table.df-cfg th{text-align:center;font-size:9.5px;background:#f3f5f8;padding:2px 3px}table.df-cfg td{height:17px;padding:1px 4px;font-size:10px;word-break:break-word}table.df-cfg tr>:nth-child(n+2):nth-child(-n+4){border-left:2px solid #0b1b33}
+.df-c{text-align:center!important;padding:1px 0!important;font-size:11px!important}.df-hp{font-size:9px!important;line-height:1.3}
+.df-sg{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;margin-top:10px}.df-sg div{display:grid;gap:3px}.df-sg span{border-bottom:1px solid #0b1b33;min-height:20px;display:flex;gap:6px;align-items:flex-end}.df-sg small{color:#4a5b75;font-size:8.5px}.df-ri i{font-style:normal;color:#4a5b75}
+.df-code{display:flex;justify-content:space-between;color:#0b1b33;margin-top:6px;font-weight:600}
+@media print{.bar{display:none}body{margin:0;max-width:none}}${typeof isoPageCss==='function'?isoPageCss('docs'):''}</style></head><body>
 <div class="bar">${printBackHtml()}<button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>${esc(F.code)} · ${esc(c.no)}</span></div>
-<div class="hd"><div style="display:flex;gap:10px;align-items:center">${orgLogo(42)}<div><b>${esc(ORG_NAME)} · ${esc(DASH_ORG)}</b><h1>${esc(F.name)}</h1></div></div><p>${esc(c.no)} · Request No. ${esc(c.planNo||'—')}<br>สถานะ: ${esc(st.th)}</p></div>
-<table>${F.head.map(hv).join('')}</table>${F.secs.map(sec).join('')}
+${head}${body}
 <div class="ap"><b>การอนุมัติ</b> · ส่งตรวจ ${c.submittedAt?`${csWho(c.submittedBy)} ${esc(jbWhen(c.submittedAt))}`:'—'} · ${c.state==='approved'?`อนุมัติโดย <b>${csWho(c.approvedBy)}</b> ${esc(jbWhen(c.approvedAt))}${c.approveNote?' · '+esc(c.approveNote):''}`:esc(st.th)}</div>
-<p class="foot">${esc(F.code)} · พิมพ์จากระบบ ${esc(jbWhen(new Date()))}</p></body></html>`;
+${df?`<p class="df-code"><span>พิมพ์จากระบบ ${esc(jbWhen(new Date()))}</span><span>${esc(F.code)} REV.${esc(F.rev)}</span></p>`:`<p class="foot">${esc(F.code)} · พิมพ์จากระบบ ${esc(jbWhen(new Date()))}</p>`}</body></html>`;
   return html;
+}
+
+/* FLS-F-122 Rev.5 as the paper form (user, 18 Nov 2026): CUSTOMER + High Pressure · Meter Information / Configuration Status | Senser / Transmitter /
+   Data History · CONFIGURATION (Before · Process · After · Yes / No / แก้ไขแล้ว) · RECORD / RECHECK DATA By · RECHECK DATA (หลังติดตั้ง) 1 / 2 */
+function csDataBody(c){
+  const h=c.h||{};const box=b=>b?'☑':'☐';const dmy=k=>{const m=/^(\d{4})-(\d\d)-(\d\d)/.exec(k||'');return m?`${+m[3]}/${+m[2]}/${m[1]}`:esc(k||'')};
+  /* plain rows only: no <caption> / <colgroup> — html-to-image (the PDF file) drew captions over the rows and dropped the last columns (user, 18 Nov 2026) */
+  const kv=(l,v)=>`<tr><th>${l}</th><td class="df-cl">:</td><td class="df-v">${v}</td></tr>`;const e=k=>esc(h[k]||'');const tt=l=>`<tr><th colspan="3" class="df-t">${l}</th></tr>`;
+  const who=id=>{const s=(c.steps||{})[id];return s&&s.at?`${csWho(s.by)}<small>${esc(jbWhen(s.at))}</small>`:''};
+  const T=CS_FORMS.data.secs[0].table;const rows=csRows(c,T);const n=Math.max(rows.length,22);
+  const cfg=Array.from({length:n},(_,i)=>{const r=rows[i]||{};return `<tr><td>${esc(r.d||'')}</td><td>${esc(r.b||'')}</td><td>${esc(r.p||'')}</td><td>${esc(r.a||'')}</td>${['Yes','No','แก้ไขแล้ว'].map(x=>`<td class="df-c">${box(r.c===x)}</td>`).join('')}</tr>`}).join('');
+  const hp=(k,l)=>`<b>Config ${l} ถูก set ตาม High Pressure Cert. ใช่หรือไม่</b><br>${box(h[k]==='yes')} ใช่ &nbsp; ${box(h[k]==='no')} ไม่ใช่`;
+  return `<div class="df-cu"><span><b>CUSTOMER :</b> <u>${e('customer')}</u></span><span><b>High Pressure Flowmeter :</b> ${box(h.highPressure==='yes')} Yes &nbsp; ${box(h.highPressure==='no')} No</span></div>
+<div class="df-two"><div class="df-col"><table class="df-box">${tt('Meter Information')}${kv('Type',e('type'))}${kv('Tag',e('tag'))}${kv('Connection size',e('size'))}${kv('Receive Date',dmy(h.receiveDate))}${kv('Cal. Date',dmy(h.calDate))}</table>
+  <table class="df-box">${tt('Configuration Status')}<tr><td colspan="3" class="df-yn">${box(h.cfgStatus==='yes')} Yes &nbsp; ${box(h.cfgStatus==='no')} No</td></tr>${kv('Location',e('cfgLocation'))}${kv('Save Name',e('saveName'))}</table></div>
+ <div class="df-col"><table class="df-box">${tt('Senser Data')}${kv('Make',e('sensorMake'))}${kv('Model',e('sensorModel'))}${kv('Serial No.',e('sensorSerial'))}</table>
+  <table class="df-box">${tt('Transmitter Data')}${kv('Make',e('txMake'))}${kv('Model',e('txModel'))}${kv('Serial No.',e('txSerial'))}</table>
+  <table class="df-box">${tt('Data History')}${kv('Refer Job No.',e('referJob'))}</table></div></div>
+<table class="df-cfg"><thead><tr><th colspan="7" class="df-t">CONFIGURATION</th></tr>
+<tr><th style="width:24%">Description</th><th style="width:20%">BEFORE CALIBRATION</th><th style="width:20%">PROCESS CALIBRATION</th><th style="width:20%">AFTER CALIBRATION</th><th class="df-c" style="width:5%">Yes</th><th class="df-c" style="width:5%">No</th><th class="df-c" style="width:6%">แก้ไข<br>แล้ว</th></tr></thead>
+<tbody><tr><td></td><td class="df-hp">${hp('hpBefore','Before')}</td><td></td><td></td><td></td><td></td><td></td></tr>${cfg}
+<tr><td colspan="3"></td><td colspan="4" class="df-hp">${hp('hpAfter','After')}</td></tr></tbody></table>
+<div class="df-sg"><div><b>RECORD DATA By :</b><span>${who('rec')}</span></div><div><b>RECHECK DATA By :</b><span>${who('re')}</span></div><div><b>RECHECK DATA (หลังติดตั้ง) :</b><span class="df-ri"><i>1</i>${who('ri1')}</span><span class="df-ri"><i>2</i>${who('ri2')}</span></div></div>`;
 }
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target;
+  if(t.closest('[data-cs-newask]')){csNewAsk();return}
   const nw=t.closest('[data-cs-new]');if(nw){const d=nw.dataset;if(d.csJob&&$('#jbDlg').open)$('#jbDlg').close();if(dlg.open&&d.csTask)dlg.close();csCreate(d.csNew,{jobId:d.csJob||'',itemId:d.csItem||'',taskId:d.csTask||''});return}
   const op=t.closest('[data-cs-open]');if(op){if($('#jbDlg').open&&t.closest('#jbDlg'))$('#jbDlg').close();if(dlg.open&&t.closest('#dlg'))dlg.close();openCs(op.dataset.csOpen);return}
   const tb=t.closest('[data-cs-tab]');if(tb){S.csF.tab=tb.dataset.csTab;render();return}

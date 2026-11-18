@@ -176,7 +176,7 @@ function jbSaleOptions(cur){
 function jbTypeOptions(cur){const fmFirst=(a,b)=>(a.line==='fm'?0:1)-(b.line==='fm'?0:1);
   return `<option value="">— เลือกหัวข้องาน —</option>`+activeTypes().filter(t=>!isLeaveId(t.id)&&t.line!=='ins').sort(fmFirst).concat(cur&&activeTypes().some(t=>t.id===cur&&t.line==='ins')?[activeTypes().find(t=>t.id===cur)]:[]).concat(cur&&!activeTypes().some(t=>t.id===cur)&&jobTypes().find(t=>t.id===cur)?[jobTypes().find(t=>t.id===cur)]:[]).map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name)}</option>`).join('')}
 function openJob(id){
-  const j=id?jbById(id):null;if(id&&!j)return;
+  const j=id?jbById(id):null;if(id&&!j)return;qrReady();/* QR on the print head (js/features/qr.js) */
   const ed=j?j.state!=='cancelled'&&canBook():canBook();const dis=ed?'':' disabled';
   const v=Object.assign({svcType:'inhouse',period:'full',sale:'',line:'fm',certSame:true,materialBy:'',installBy:'',transportBy:'',adjust:''},j||{});
   /* line: Flow Meter for every new request; an older one keeps what it had (Instrument requests stay Instrument) */
@@ -362,7 +362,7 @@ function planFromJob(){
   $('#jbDlg').close();openTask(null,{job:j,date:j.wantFrom&&j.wantFrom>=ymd(addDays(new Date(),-60))?j.wantFrom:ymd(new Date()),type:j.jobType,customer:j.customer,line:j.line,period:j.period});
 }
 /* FLS-F-018 printed from the booking (A4 landscape, the team's own layout) */
-function jbPrintForm(j){csOpenPrint(jbPrintHtml(j),`${j.planNo||j.jobNo}_FLS-F-018.html`)}
+async function jbPrintForm(j){await qrReady();csOpenPrint(jbPrintHtml(j),`${j.planNo||j.jobNo}_FLS-F-018.html`)}
 /* PDF files (js/features/pdf-export.js): the booking alone, or the booking + every Check Sheet of it in one file (user, 15 Oct 2026) */
 const jbPdfDoc=j=>({html:jbPrintHtml(j),orient:'l',foot:`FLS-F-018 · ${j.planNo||j.jobNo}`});
 const CS_ORDER=['qc','data','rr','sr'];
@@ -390,8 +390,8 @@ function jbDoneAsk(j){
     <div class="confirm-act"><button type="button" class="btn" data-jbdone="close">ปิด</button><button type="button" class="btn" data-jbdone="print">พิมพ์</button><button type="button" class="btn primary" data-jbdone="pdf">ดาวน์โหลด PDF</button></div></div>`;
   d.showModal();setTimeout(()=>{const b=d.querySelector('[data-jbdone="pdf"]');if(b)b.focus()},30);
 }
-function jbPdf(j,all,btn){
-  const docs=[jbPdfDoc(j)].concat(all?jbSheets(j).map(csPdfDoc):[]);const n=j.planNo||j.jobNo;
+async function jbPdf(j,all,btn){
+  await qrReady();const docs=[jbPdfDoc(j)].concat(all?jbSheets(j).map(csPdfDoc):[]);const n=j.planNo||j.jobNo;
   pdfExport(docs,all?`${n}_ชุดเอกสาร.pdf`:`${n}_FLS-F-018.pdf`,btn);
 }
 function jbPrintHtml(j){
@@ -406,7 +406,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #6b7c96;padding
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.foot{margin-top:6px;text-align:right;color:#4a5b75}
 @media print{.bar{display:none}body{margin:0}}${typeof isoPageCss==='function'?isoPageCss('jobs'):''}</style></head><body>
 <div class="bar">${printBackHtml()}<button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>A4 แนวนอน · FLS-F-018</span></div>
-<div class="top"><div style="display:flex;gap:12px;align-items:center">${orgLogo(52)}<div><b>${esc(ORG_NAME)}</b><h1 style="text-align:left">ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div></div>
+<div class="top"><div style="display:flex;gap:12px;align-items:center">${j.id?qrBlock(qrLink('job',j.id),[j.planNo,j.jobNo]):''/* QR opens this request (js/features/qr.js) */}${orgLogo(52)}<div><b>${esc(ORG_NAME)}</b><h1 style="text-align:left">ใบรับคำร้องขอรับบริการสอบเทียบ</h1></div></div>
 <div class="req"><b>REQUEST No. ${esc(j.planNo||'(รอ Planner ออก PN)')}</b><br>CONTACT SALE : ${esc(j.sale||'')}<br>เลขที่คำร้อง : ${esc(j.jobNo)} · รับคำร้องเมื่อ ${esc(jbWhen(j.bookedAt))}</div></div>
 <p><b>ส่วนที่ 1 สำหรับ SALE</b> &nbsp; ${svc('inhouse')} In-house calibration &nbsp; ${svc('onsite')} On-site calibration &nbsp; ${svc('mobile')} Mobile calibration</p>
 <table><tr><th style="width:16%">บริษัท / Customer</th><td>${esc(j.customer)}</td><th style="width:12%">ผู้ติดต่อ / Contact · Tel</th><td colspan="3">${esc(contactOf(j))}</td></tr>

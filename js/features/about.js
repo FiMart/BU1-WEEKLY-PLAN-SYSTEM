@@ -1,8 +1,23 @@
 'use strict';
 /* BU1 Weekly Plan · About: version, build date and what changed in each version (จัดการข้อมูล › เกี่ยวกับระบบ) */
-const APP_VERSION='4.46.1';
-const APP_BUILD='2026-11-11';
+const APP_VERSION='4.47.2';
+const APP_BUILD='2026-11-19';
 const CHANGELOG=[
+  {v:'4.47.2',d:'2026-11-19',items:[
+    'Data Flow Meter Check Sheet (FLS-F-122) พิมพ์ / PDF: เส้นใต้แต่ละแถวในกล่อง Meter Information · Configuration Status · Senser / Transmitter Data · Data History ลากเต็มความกว้างกล่อง',
+  ]},
+  {v:'4.47.1',d:'2026-11-18',items:[
+    'Dashboard › กำลังคน: แสดงเฉพาะทีม Lab On-Site และ All Team (ภาระงานรายคน · ตามตำแหน่ง · แยกตามทีม · Plan Team เทียบ Actual · ทีมงานที่ไม่ทำงาน · ตารางรายคน) · แท็บอื่น Excel และพิมพ์ A4 ยังนับทุกคน',
+    'แก้ไฟล์ PDF ของ Data Flow Meter Check Sheet (FLS-F-122): หัวกล่องไม่ทับข้อมูลแล้ว ตาราง CONFIGURATION ครบทุกคอลัมน์ (Yes / No / แก้ไขแล้ว) จัดหน้าใหม่ให้ตรงกับหน้าพิมพ์',
+  ]},
+  {v:'4.47.0',d:'2026-11-18',items:[
+    'Data Flow Meter Check Sheet (FLS-F-122): สร้างได้จากหน้าดูแผน (ต่อเครื่องของใบรับคำร้อง หรือ + เพิ่มเครื่อง กรอกข้อมูลเครื่องเอง ได้หลายเครื่องต่อแผน) และจากหน้า Check Sheet ปุ่ม + Check Sheet ใบใหม่ (เลือกฟอร์ม · แผน / PN · เครื่อง)',
+    'พิมพ์ / PDF ของ FLS-F-122 จัดหน้าเหมือนกระดาษ Rev.5: Meter Information · Configuration Status · Senser / Transmitter Data · Data History · ตาราง CONFIGURATION ช่อง Yes / No / แก้ไขแล้ว · RECORD / RECHECK DATA By',
+    'QR code บนหัวกระดาษ ทุก Check Sheet และใบรับคำร้อง FLS-F-018 (พิมพ์และ PDF): สแกนด้วยกล้องมือถือแล้วเปิดใบนั้นในระบบ · ปุ่มสแกน QR ในหน้า Check Sheet และค้นหาด่วน (กล้อง หรือเลือกรูปถ่าย) · QR เดิมที่มีแค่เลข PN เปิดแผนของ PN นั้น',
+  ]},
+  {v:'4.46.2',d:'2026-11-18',items:[
+    'มือถือ: ปุ่มจองรถส่วนกลาง GA ย้ายไปอยู่ที่แถบบนข้างปุ่มค้นหา (ไอคอนรถ) กดแล้วเปิดแอป GA Fleet ในแท็บใหม่ · เอาออกจากเมนูเพิ่มเติม',
+  ]},
   {v:'4.46.1',d:'2026-11-11',items:[
     'คัดลอกแผนส่ง LINE: ข้อที่มีช่องว่างยาว (Tab) ระหว่างเครื่องหมายกับข้อความ เช่น "✓      Hot work" เหลือเว้นวรรคเดียว "✓ Hot work"',
     'วันที่มีแผนเยอะจนยาวเกินที่ LINE ส่งได้ในข้อความเดียว: แบ่งเป็นส่วน ๆ (ส่วนที่ 1/2, 2/2 …) ตัดระหว่างแผน กดคัดลอกทีละส่วนจนครบทุกแผน',

@@ -95,13 +95,29 @@ function dzOverview(D){
 }
 
 /* กำลังคน: calendar heatmap, the Utilization table, workload per person, per position, details */
+/* กำลังคน shows only ทีม Lab On-Site and All Team (user, 18 Nov 2026: "ตรงหน้า Dashboard กำลังคน ให้โชว์แค่ ทีม lab on site กับ all team"):
+   every person-based figure of this tab is read from this copy of D; the other tabs, Excel and the A4 print keep everyone */
+const DZ_MAN_TEAMS=['onsite','all'];
+const dzManOk=s=>!!s&&DZ_MAN_TEAMS.includes(teamOf(s));
+function dzManView(D){
+  const people=D.people.filter(p=>dzManOk(p.s));const ids=new Set(people.map(p=>p.s.id));
+  const roleRows=D.roleRows.map(r=>{const g=people.filter(p=>r.ids&&r.ids.has(p.s.id));if(!g.length)return null;const md=g.reduce((a,p)=>a+p.wd,0),cap=g.reduce((a,p)=>a+p.cap,0);
+    return Object.assign({},r,{n:g.filter(p=>p.s.active!==false).length,md,util:pct(md,cap),jobs:(D.jobs||[]).filter(t=>(t.staffIds||[]).some(id=>g.some(p=>p.s.id===id))).length})}).filter(Boolean);
+  const A=D.att;const ap=A.people.filter(p=>ids.has(p.id));
+  const tot=ap.reduce((a,p)=>{a.plan+=p.plan;a.act+=p.act;a.add+=p.add;a.away+=p.away;a.hrs+=p.hrs;return a},{plan:0,act:0,add:0,away:0,hrs:0,n:ap.length});
+  return Object.assign({},D,{people,roleRows,_aw:null,
+    teamUse:(D.teamUse||[]).filter(x=>x.tm.id==='onsite'),teamRows:(D.teamRows||[]).filter(r=>r.tm.id==='onsite'),
+    att:Object.assign({},A,{people:ap,teams:A.teams.filter(x=>DZ_MAN_TEAMS.includes(x.id)),tot}),
+    heat:D.heat?Object.assign({},D.heat,{rows:D.heat.rows.filter(g=>ids.has(g.p.s.id))}):null});
+}
 function dzManpower(D){
-  const P=D.P;const cd=D.calDays;const work=cd.filter(d=>!d.off);
+  D=dzManView(D);const P=D.P;const cd=D.calDays;const work=cd.filter(d=>!d.off);
   const top=cd.slice().sort((a,b)=>b.n-a.n)[0];const low=work.slice().sort((a,b)=>a.free-b.free)[0];const avg=work.length?work.reduce((a,d)=>a+d.n,0)/work.length:0;
   let h=dzCard('span-12','ภาระงานรายวัน',`สีเข้ม = แผนมาก (ตามแท็บสายงาน / ทีมที่เปิด) · ชี้ที่วันเพื่อดูงานหน้างานและคนว่าง · กดเพื่อเปิดแผนวันนั้น`,
     `<div class="dz-facts"><span><b>${f1(avg)}</b>แผนต่อวันทำงาน (เฉลี่ย)</span>${top&&top.n?`<span><b>${top.n}</b>สูงสุด · ${esc(fmtDay(top.k))}</span>`:''}${low?`<span><b>${low.free}</b>คนว่างน้อยสุด · ${esc(fmtDay(low.k))}</span>`:''}<span><b>${cd.reduce((a,d)=>a+d.ons,0)}</b>งานหน้างานในช่วงนี้</span></div>`
     +vzCal(cd,{compact:P.mode==='quarter'||P.mode==='year'}),' style="--d:1"');
   h+=utoPanelHtml();
+  h+=`<p class="hint dz-note span-12 dz-mannote">กำลังคนแสดงเฉพาะทีม Lab On-Site และ All Team · ทีมอื่นและคนที่ยังไม่ได้ตั้งทีมไม่รวมในส่วนนี้</p>`;
   const ppl=D.people.filter(p=>p.wd||p.ot||p.jobs);
   /* man-days split by kind of day (user, 22 Oct 2026: Saturday and Sunday are working days too; public holidays = OT) */
   const DAYKEYS=[{id:'wk',name:'วันธรรมดา จ.–ศ.',color:'var(--vz-1)'},{id:'we',name:'เสาร์–อาทิตย์',color:'var(--vz-3)'},{id:'ot',name:'OT วันหยุดนักขัตฤกษ์',color:'var(--vz-2)'}];

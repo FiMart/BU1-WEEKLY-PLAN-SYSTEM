@@ -7,13 +7,14 @@ function qkPages(){return [...document.querySelectorAll('.sb-nav button[data-vie
   .map(b=>{const v=b.dataset.view;const s=b.querySelector('svg');return {k:'page',v,t:(PAGES[v]||[b.textContent.trim()])[0],s:'ไปหน้า',ic:s?s.innerHTML:'',kw:b.textContent+' '+(PAGES[v]||['',''])[1]}})}
 function qkCmds(){
   const c=[];const ic={add:'<path d="M12 5v14M5 12h14"/>',job:'<rect x="5" y="3.5" width="14" height="17.5" rx="2.2"/><path d="M12 9v7M8.5 12.5h7"/>',week:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
-    ntf:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',ga:'<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16v2.5H4z"/>'};
+    ntf:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',ga:'<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16v2.5H4z"/>',qr:'<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M4 12h16"/>'};
   if(S.canWrite)c.push({k:'cmd',a:'add',t:'เพิ่มแผนงาน',kw:'new plan add เพิ่ม ลงแผน'});
   if(canBook())c.push({k:'cmd',a:'job',t:'ใบรับคำร้องใหม่',kw:'booking job จอง'});
   c.push({k:'cmd',a:'week',t:'ไป Weekly Plan สัปดาห์นี้',kw:'today this week วันนี้'});
   c.push({k:'cmd',a:'ntf',t:'เปิดการแจ้งเตือน',kw:'notification bell แจ้งเตือน'});
   c.push({k:'cmd',a:'theme',t:'สลับโหมดมืด / สว่าง',kw:'dark light theme ธีม'});
   c.push({k:'cmd',a:'ga',t:'จองรถส่วนกลาง GA ↗',kw:'ga fleet car รถ'});
+  c.push({k:'cmd',a:'qr',t:'สแกน QR code บนหัวกระดาษ',kw:'qr scan สแกน กล้อง check sheet'});/* js/features/qr.js */
   return c.map(x=>Object.assign(x,{s:'คำสั่ง',ic:ic[x.a]}));
 }
 function qkFind(q){
@@ -69,6 +70,7 @@ function qkRun(x){
   if(x.a==='ntf'){ntfPanel(true);return}
   if(x.a==='theme'){toggleTheme();return}
   if(x.a==='ga'){window.open(GA_FLEET_URL,'_blank','noopener');return}
+  if(x.a==='qr'){qrScan();return}
 }
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.key==='k'||e.key==='K')){e.preventDefault();const d=$('#qkDlg');if(d&&d.open)d.close();else qkOpen();return}
