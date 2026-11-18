@@ -157,3 +157,27 @@
 .jb-line::before{content:'';width:8px;height:8px;border-radius:50%;background:#0EA5E9}
 .jb-line.ins{background:color-mix(in srgb,#8b5cf6 12%,var(--surface));border-color:color-mix(in srgb,#8b5cf6 35%,var(--line))}.jb-line.ins::before{background:#8b5cf6}
 .confirm-ico.ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));color:var(--good-ink)}/* ส่งใบรับคำร้องแล้ว · พิมพ์ / PDF */
+
+/* QR scan + Check Sheet ใบใหม่ (js/features/qr.js, checksheets.js csNewAsk; user, 18 Nov 2026) */
+.ncr-tools .grow{flex:1 1 0}
+.ncr-tools .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.cs-tag{margin:0 8px 0 -2px;font-size:11px;color:var(--muted)}
+.qr-dlg{width:min(460px,calc(100vw - 24px));padding:0;border:0;border-radius:16px;background:var(--surface);color:var(--ink)}
+.qr-dlg::backdrop{background:rgba(6,14,30,.62)}
+.qr-wrap{display:grid;gap:10px;padding:14px}
+.qr-wrap header{display:flex;align-items:center;justify-content:space-between;font-size:15px}
+.qr-cam{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#0b1220}
+.qr-cam video{width:100%;height:100%;object-fit:cover;display:block}
+.qr-aim{position:absolute;inset:16%;border:3px solid rgba(255,255,255,.9);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
+.qr-msg{margin:0;font-size:13px;color:var(--muted);text-align:center;min-height:1.4em}
+.qr-msg.bad{color:var(--crit)}
+.qr-act{display:flex;justify-content:space-between;gap:8px}
+.qr-act label.btn{cursor:pointer}
+.csn-dlg{width:min(520px,calc(100vw - 24px))}
+.csn-dlg .confirm-wrap{text-align:left;display:grid;gap:8px}
+.csn-dlg h2{text-align:left}
+.csn-f{display:grid;gap:4px;font-size:13px;font-weight:600}
+.csn-f select,.csn-f input{font-weight:400}
+#csn-plan{width:100%;min-height:150px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:4px}
+#csn-plan option{padding:5px 6px;border-radius:6px}
+#csn-itemWrap[hidden]{display:none}
