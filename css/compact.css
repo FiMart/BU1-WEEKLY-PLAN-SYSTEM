@@ -1155,3 +1155,26 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
 .lp-b small{font-weight:500;color:var(--muted);white-space:nowrap}
 .lp-b.done{border-color:color-mix(in srgb,var(--good) 55%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--surface))}
 .lp-b.done small{color:var(--good-ink,var(--good))}
+/* file Preview for every kind of file (js/dialog/file-preview.js; user, 25 Nov 2026) */
+.fpv-fill{align-self:stretch;justify-self:stretch;min-width:0;min-height:0;overflow:auto;padding:14px 16px;background:var(--surface)}
+.fpv-fill>pre.fpv-pre{padding:0;margin:0;font:12.5px/1.55 var(--f-mono,ui-monospace,monospace);white-space:pre-wrap;word-break:break-word;overflow:visible}
+.fpv-note{margin:0 0 10px;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--ink-2,var(--ink));font-size:12.5px}
+.fpv-docx{padding:0;background:#dfe4ea}
+.fpv-docx .docx-wrapper{background:#dfe4ea!important;padding:16px!important}
+.fpv-docx .docx-wrapper>section.docx{box-shadow:0 2px 10px rgba(0,0,0,.18);margin-bottom:16px!important;color:#000}
+.fpv-xl{padding:0;display:flex;flex-direction:column}
+.fpv-tabs{position:sticky;top:0;z-index:1;display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.fpv-tabs button{padding:5px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}
+.fpv-tabs button[aria-selected="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface));font-weight:600}
+.fpv-sheet{padding:10px;overflow:auto}
+.fpv-sheet[hidden]{display:none}
+.fpv-sheet table{border-collapse:collapse;font-size:12.5px;background:#fff;color:#111}
+.fpv-sheet td,.fpv-sheet th{border:1px solid #c9d1dc;padding:3px 7px;white-space:nowrap;vertical-align:top}
+.fpv-slides{display:grid;gap:12px;align-content:start}
+.fpv-slide{display:grid;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.fpv-slide b{font-size:12px;color:var(--muted)}
+.fpv-slide p{margin:0;font-size:14px}
+.fpv-slide img{max-width:100%;max-height:340px;object-fit:contain;justify-self:start;border-radius:6px;background:#fff}
+.fpv-zip table{width:100%}
+.fpv-media{max-width:100%;max-height:100%;background:#000}
+.fpv-audio{width:min(520px,90%)}
