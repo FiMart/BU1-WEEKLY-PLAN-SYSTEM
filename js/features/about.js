@@ -1,8 +1,12 @@
 'use strict';
 /* BU1 Weekly Plan · About: version, build date and what changed in each version (จัดการข้อมูล › เกี่ยวกับระบบ) */
-const APP_VERSION='4.47.2';
-const APP_BUILD='2026-11-19';
+const APP_VERSION='4.48.0';
+const APP_BUILD='2026-11-25';
 const CHANGELOG=[
+  {v:'4.48.0',d:'2026-11-25',items:[
+    'ดูตัวอย่างไฟล์ได้ทุกนามสกุล (ไฟล์แนบของแผน · เอกสารหลังจบงาน · ไฟล์ในติดตามเอกสาร Onsite): Word .docx เป็นหน้าเอกสาร · Excel .xlsx .xls .ods .csv เป็นตารางแยกแผ่นงาน · PowerPoint .pptx ข้อความและรูปทีละสไลด์ · zip รายชื่อไฟล์ข้างใน · วิดีโอ / เสียงเล่นได้ · ไฟล์ข้อความทุกชนิด (.cfg .log .json .xml …) · .doc .ppt .msg รุ่นเก่าแสดงข้อความในไฟล์',
+    'ไฟล์ HTML / XML แสดงเป็นข้อความต้นฉบับ (ไม่เปิดเป็นหน้าเว็บ) · SVG แสดงเป็นรูป · ไฟล์ของโปรแกรมเฉพาะที่ไม่ใช่ข้อความ (เช่น Config แบบไบนารีของ Flow Computer) บอกให้ดาวน์โหลดไปเปิดด้วยโปรแกรมนั้น',
+  ]},
   {v:'4.47.2',d:'2026-11-19',items:[
     'Data Flow Meter Check Sheet (FLS-F-122) พิมพ์ / PDF: เส้นใต้แต่ละแถวในกล่อง Meter Information · Configuration Status · Senser / Transmitter Data · Data History ลากเต็มความกว้างกล่อง',
   ]},

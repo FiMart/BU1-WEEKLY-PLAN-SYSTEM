@@ -127,7 +127,7 @@ function fvDlg(){
     <div class="fpv-body" id="fvBody"></div>`;
   document.body.appendChild(d);
   /* cleared at once on close (the close event comes later — after a quick reopen it must not wipe the new file) */
-  const clean=()=>{if(d.open)return;$('#fvBody').innerHTML='';if(fvUrl){URL.revokeObjectURL(fvUrl);fvUrl=''}fvFile=null};
+  const clean=()=>{if(d.open)return;$('#fvBody').innerHTML='';if(fvUrl){URL.revokeObjectURL(fvUrl);fvUrl=''}fvFile=null;if(typeof fpvClean==='function')fpvClean()};
   const nativeClose=d.close.bind(d);d.close=v=>{nativeClose(v);clean()};d.addEventListener('close',clean);/* Esc */
   d.addEventListener('click',e=>{if(e.target===d)d.close()});
   $('#fvClose').addEventListener('click',()=>d.close());
@@ -142,15 +142,18 @@ async function previewFile(id,meta){
   if(!d.open)d.showModal();
   try{
     const b=await fileBlob(id,f);if(fvFile!==f)return;
-    if(fvUrl)URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(b);const m=b.type;
-    /* HTML / XML / SVG in a tab or an iframe would run as this site: they only download (Onsite upload steps take any file type) */
-    const live=/html|xml/.test(m);$('#fvTab').href=fvUrl;$('#fvTab').hidden=live||!/^(image\/|application\/pdf|text\/)/.test(m);
-    if(/^image\//.test(m))body.innerHTML=`<img src="${fvUrl}" alt="${esc(f.name)}">`;
-    else if(m==='application/pdf')body.innerHTML=`<iframe src="${fvUrl}" title="${esc(f.name)}"></iframe>`;
-    else if(/^text\//.test(m)&&!live){/* shown by the browser itself, read as UTF-8 (Thai) */
-      URL.revokeObjectURL(fvUrl);fvUrl=URL.createObjectURL(new Blob([b],{type:m.split(';')[0]+';charset=utf-8'}));$('#fvTab').href=fvUrl;
-      body.innerHTML=`<iframe class="txt" src="${fvUrl}" title="${esc(f.name)}"></iframe>`}
-    else body.innerHTML=`<div class="fpv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>ไฟล์ ${esc(ext)} ดูตัวอย่างในเบราว์เซอร์ไม่ได้<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมในเครื่อง</p></div>`;
+    if(fvUrl)URL.revokeObjectURL(fvUrl);const m=b.type;const x=typeof fpvExt==='function'?fpvExt(f.name):'';
+    /* every kind of file (user, 25 Nov 2026): pictures / PDF / video / audio here, the rest by fpvShow (js/dialog/file-preview.js).
+       HTML / XML / SVG never open in a tab or an iframe (they would run as this site); SVG shows as a picture, HTML / XML as text */
+    const svg=x==='svg'||/svg/.test(m);const img=!svg&&(/^image\//.test(m)||FPV_IMG.test(x));const vid=FPV_VIDEO.test(x)||/^video\//.test(m);const aud=!vid&&(FPV_AUDIO.test(x)||/^audio\//.test(m));
+    const pdf=m==='application/pdf'||x==='pdf';
+    fvUrl=URL.createObjectURL(pdf?new Blob([b],{type:'application/pdf'}):svg?new Blob([b],{type:'image/svg+xml'}):b);
+    $('#fvTab').href=fvUrl;$('#fvTab').hidden=!(img||pdf||vid||aud);
+    if(img||svg){body.innerHTML=`<img src="${fvUrl}" alt="${esc(f.name)}">`;const im=body.querySelector('img');im.onerror=()=>{if(fvFile===f)body.innerHTML=`<div class="fpv-none"><span class="fext" data-ext="${esc(ext)}">${esc(ext)}</span><p>รูปชนิด .${esc(x)} เบราว์เซอร์นี้แสดงไม่ได้ (เช่น HEIC / TIFF)<br>กด <b>ดาวน์โหลด</b> แล้วเปิดด้วยโปรแกรมดูรูปในเครื่อง</p></div>`}}
+    else if(pdf)body.innerHTML=`<iframe src="${fvUrl}" title="${esc(f.name)}"></iframe>`;
+    else if(vid)body.innerHTML=`<video src="${fvUrl}" controls playsinline class="fpv-media"></video>`;
+    else if(aud)body.innerHTML=`<audio src="${fvUrl}" controls class="fpv-audio"></audio>`;
+    else await fpvShow(body,b,f,()=>fvFile!==f);
   }catch(e){if(fvFile===f)body.innerHTML='<p class="fpv-msg bad">เปิดไฟล์ไม่สำเร็จ ไฟล์อาจถูกลบไปแล้ว</p>'}
 }
 document.addEventListener('click',e=>{const v=e.target.closest('[data-file-view]');if(!v)return;e.preventDefault();
