@@ -1182,7 +1182,7 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
    buttons in each row (main thing · อ่านแล้ว · เลื่อน), pop-ups with a timer bar, a red bell badge while something urgent is unread.
    Urgency colours: --nl = crit (red) / act (amber) / info (blue); the label text says it too, so colour is never the only signal. */
 .ntf-panel{width:min(440px,calc(100vw - 24px));max-height:min(82vh,700px)}
-.lv-crit{--nl:var(--crit)}.lv-act{--nl:var(--warn)}.lv-info{--nl:var(--accent)}.lv-snz{--nl:var(--muted)}
+.lv-crit{--nl:var(--crit)}.lv-act{--nl:var(--warn)}.lv-info{--nl:var(--accent)}
 .ntf-h{display:flex;align-items:center;gap:7px;margin:12px 6px 4px;font:700 12px var(--f-body);color:var(--ink-2);letter-spacing:.01em}
 .ntf-h i{width:8px;height:8px;border-radius:50%;background:var(--nl,var(--muted));flex:none}
 .ntf-h b{margin-left:2px;min-width:20px;height:18px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--nl,var(--muted)) 16%,var(--surface));color:var(--ink);font-size:11px;line-height:18px;text-align:center}
@@ -1216,8 +1216,6 @@ body.tp-dragging,body.tp-dragging *{cursor:grabbing!important;user-select:none}
 .ntf-a:hover{border-color:var(--accent);color:var(--ink)}
 .ntf-a.pri{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--ink)}
 .lv-crit .ntf-a.pri{background:color-mix(in srgb,var(--crit) 12%,var(--surface));border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
-.ntf-a.snz[aria-expanded="true"]{border-color:var(--accent);color:var(--ink)}
-.ntf-snzm{display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%;padding:6px;border-radius:10px;background:var(--surface-2)}
 .ntf-sysp{display:grid;gap:6px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line-2)}.ntf-sysp b{font-size:12.5px}
 .ntf-sysr{display:flex;flex-wrap:wrap;gap:4px 14px}.ntf-sysr label{font-size:13px!important;gap:6px!important}
 /* the bell badge turns red while something urgent is unread */
@@ -1295,37 +1293,64 @@ body.qa-on .ntf-pops:not(.top){bottom:76px}
 }
 body.aa-lock{overflow:hidden}
 body.role-ga .aa-fab{display:none!important}
-/* ⚡ ถามด่วน (v4.52.0, js/features/quick-ask.js): no AI — the same panel look as ถาม AI; results as cards (label · value) */
-.qa-body{gap:12px}
+/* ⚡ ถามด่วน (v4.52.0, redesigned v4.52.1; js/features/quick-ask.js): no AI. Home = typed question + 3 groups of question buttons
+   (งานค้าง buttons carry counts); answer screen = ‹ กลับ, the question's own controls, a summary, numbered cards, sticky LINE button */
+.qa-body{gap:14px;padding-bottom:18px}
 .qa-ask{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
-.qa-ask input{height:42px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.qa-ask input{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 .qa-ask input:focus,.qa-row input:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.qa-ask .btn{height:42px}
-.qa-opts{display:grid;gap:8px;padding:10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-2)}
-.qa-chips{display:flex;flex-wrap:wrap;gap:6px}
-.qa-chip{height:30px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:600 12.5px var(--f-body);cursor:pointer}
-.qa-chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--ink)}
+.qa-ask .btn{height:44px;padding:0 18px}
+.qa-g{display:grid;gap:8px}
+.qa-g h3{display:flex;align-items:baseline;gap:7px;margin:4px 2px 0;font:700 13.5px var(--f-body);color:var(--ink)}
+.qa-g h3 small{font:500 11.5px var(--f-body);color:var(--muted)}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qa-q{display:flex;align-items:center;gap:10px;min-height:58px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+.qa-q:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.qa-q:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.qa-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);font-size:17px}
+.qa-qt{display:grid;gap:1px;min-width:0;flex:1}
+.qa-qt b{font:600 13px/1.3 var(--f-body)}
+.qa-qt small{font-size:11px;line-height:1.3;color:var(--muted)}
+.qa-cnt{flex:none;min-width:26px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font:700 12px/22px var(--f-body);font-style:normal;text-align:center}
+.qa-cnt.has{background:color-mix(in srgb,var(--warn) 18%,var(--surface));color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent)}
+/* the answer screen */
+.qa-back{padding:0 10px}
+.qa-ht{min-width:0}.qa-ht b{font:700 15.5px var(--f-disp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.qa-ctl{display:grid;gap:8px;position:sticky;top:-12px;z-index:2;margin:-12px -14px 0;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line-2)}
+.qa-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.qa-chips::-webkit-scrollbar{display:none}
+.qa-chip{flex:none;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap}
+.qa-chip.on{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
 .qa-dates{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.qa-dates input{height:34px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit}
 .qa-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.qa-rt{font:700 13px var(--f-body);color:var(--ink)}
-.qa-team{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}.qa-team select{height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
-.qa-row input{flex:1 1 160px;min-width:0;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
-.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.qa-q{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 12.5px/1.3 var(--f-body);text-align:left;cursor:pointer}
-.qa-q:hover{border-color:var(--accent)}.qa-q.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
-.qa-q span{font-size:15px;flex:none}.qa-q small{margin-left:auto;font-size:10.5px;font-weight:500;color:var(--muted);white-space:nowrap}
-.qa-res{display:grid;gap:8px;scroll-margin-top:8px}
-.qa-rh{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}.qa-rh b{font:700 14px var(--f-body)}
+.qa-team{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}.qa-team select{height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.qa-row input{flex:1 1 180px;min-width:0;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
 .qa-why{margin:0;font-size:12px;color:var(--muted)}
-.qa-hint,.qa-none{margin:0;padding:10px 4px;font-size:13px;color:var(--muted)}
-/* results as cards: one row = one card, every cell = label · value */
-.qa-t thead{display:none}
-.qa-t,.qa-t tbody{display:block}
-.qa-t tr{display:grid;gap:3px;padding:9px 11px;border-bottom:1px solid var(--line-2)}
-.qa-t tr:last-child{border-bottom:0}
-.qa-t td{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;padding:0;border:0;font-size:12.5px;line-height:1.5}
-.qa-t td::before{content:attr(data-l);color:var(--muted);font-weight:600}
-.qa-t td:empty{display:none}
-.qa-panel .aa-tw{overflow:visible}
-.qa-t td>span{min-width:0}
-@media (max-width:760px){.qa-q small{display:none}.qa-q{min-height:44px}.qa-ask input{font-size:16px}}
+.qa-sum{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line))}
+.qa-sum>b{font:800 26px/1 var(--f-disp);color:var(--ink)}
+.qa-sum>span{font-size:13px;color:var(--ink-2)}
+.qa-sumx{display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%;margin-top:4px}
+.qa-sumx i{font-style:normal;padding:3px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line-2);font-size:12.5px}
+.qa-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.qa-card{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.qa-ch{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line-2)}
+.qa-ch b{font:700 13px var(--f-body)}
+.qa-n{flex:none;min-width:22px;height:22px;border-radius:7px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font:700 11.5px var(--f-body);color:var(--muted)}
+.qa-card dl{margin:0;padding:8px 12px 10px;display:grid;gap:5px}
+.qa-card dl>div{display:grid;grid-template-columns:118px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.5}
+.qa-card dt{display:flex;gap:6px;color:var(--muted);font-weight:600}.qa-card dt span{flex:none}
+.qa-card dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.qa-none{margin:0;padding:16px 4px;font-size:14px;color:var(--ink-2);text-align:center}
+.qa-load{padding:16px 4px}
+.qa-foot{flex:none;padding:10px 14px 12px;border-top:1px solid var(--line-2);background:var(--surface)}
+.qa-foot[hidden]{display:none}
+.qa-copy{width:100%;height:44px;font-size:14px}
+@media (max-width:760px){
+  .qa-ask input{font-size:16px}
+  .qa-q{min-height:62px}
+  .qa-card dl>div{grid-template-columns:104px minmax(0,1fr)}
+  .qa-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:380px){.qa-grid{grid-template-columns:1fr}}.aa-head .grow,.qa-ht{flex:1 1 auto}
+.qa-ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.qa-ul li{padding-left:12px;position:relative}.qa-ul li::before{content:"•";position:absolute;left:0;color:var(--muted)}
