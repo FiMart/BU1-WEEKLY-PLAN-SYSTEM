@@ -1,0 +1,10 @@
+{
+  "name": "bu1-weekly-plan",
+  "private": true,
+  "description": "BU1 Weekly Plan: static web app (index.html + css/ + js/, no build step) plus one Vercel function api/ai-extract.js",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": ">=0.136.0"
+  }
+}

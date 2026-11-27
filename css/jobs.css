@@ -181,3 +181,33 @@
 #csn-plan{width:100%;min-height:150px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:4px}
 #csn-plan option{padding:5px 6px;border-radius:6px}
 #csn-itemWrap[hidden]{display:none}
+/* อ่านจากรูป (AI) on FLS-F-122 (js/features/ai-read.js) */
+.jb-sec.air{border-color:var(--accent);background:var(--surface-2)}
+.air-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.air-top>div{display:grid;gap:2px;min-width:0;flex:1 1 260px}
+.air-top .hint{font-size:12px;line-height:1.45}
+.air-ph{display:flex;gap:6px;margin:8px 0 2px;flex-wrap:wrap}
+.air-ph img{height:72px;max-width:120px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.air-wait{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:13px;color:var(--ink-2)}
+.air-spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:airspin .8s linear infinite;flex:none}
+@keyframes airspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.air-spin{animation-duration:2.4s}}
+.air-err{margin:8px 0 0;color:var(--crit-ink);font-size:13px;font-weight:600}
+.air-note{margin:6px 0 0;font-size:13px;color:var(--ink-2)}
+.air-note.warn{color:var(--warn-ink)}
+.air-t{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.air-t td,.air-t th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.air-t th{font-weight:600;color:var(--ink-2);white-space:nowrap}
+.air-t td:first-child{width:28px}
+.air-nv{font-weight:600;word-break:break-word}
+.air-cur{color:var(--muted);font-size:12px}
+.air-t tr.air-same{opacity:.6}
+.air-t tr.air-uns td,.air-t tr.air-uns th,.air-rt td.air-uns{background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.air-flag{font-size:11px;color:var(--warn-ink);font-weight:600;white-space:nowrap}
+.air-rt td{font-size:12.5px}
+.air-acts{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}@media (max-width:600px){
+  .air-t tr{display:grid;grid-template-columns:28px minmax(0,1fr);border-bottom:1px solid var(--line);padding:4px 0}
+  .air-t td,.air-t th{border-bottom:0;padding:2px 6px}
+  .air-t td:first-child{grid-row:span 3}
+  .air-t th{white-space:normal}
+}

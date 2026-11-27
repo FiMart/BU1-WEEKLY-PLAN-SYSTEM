@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/ai-extract.js": { "maxDuration": 120 },
+    "api/ai-ask.js": { "maxDuration": 120 }
+  }
+}
