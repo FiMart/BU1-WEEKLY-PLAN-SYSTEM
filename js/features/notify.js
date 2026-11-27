@@ -25,14 +25,14 @@ const NTF_GA_CATS=new Set(['gareq']);
 const ntfIsGA=()=>typeof isGA==='function'&&isGA();
 const ntfCats=()=>ntfIsGA()?NTF_CATS.filter(([k])=>NTF_GA_CATS.has(k)):NTF_CATS.filter(([k])=>k!=='gareq');
 const ntfCatOn=c=>!NTF.prefs.off.includes(c)&&(ntfIsGA()?NTF_GA_CATS.has(c):c!=='gareq');
-const NTF={key:'',snap:null,list:[],read:new Set(),seen:new Set(),prefs:{off:[],sys:'all'},snz:{},snzOpen:'',showSnz:false,live:[],range:null,rangeAt:0,busy:false,timer:null,ready:false};
+const NTF={key:'',snap:null,list:[],read:new Set(),seen:new Set(),prefs:{off:[],sys:'all'},live:[],range:null,rangeAt:0,busy:false,timer:null,ready:false};
 const ntfKeyOf=()=>`bu1wp.ntf|${S.backend||'local'}|${typeof DEPT==='function'?DEPT():''}|${norm(S.me)||'local'}`;
 function ntfLoad(){
   const k=ntfKeyOf();if(NTF.key===k)return;NTF.key=k;let d=null;try{d=JSON.parse(localStorage.getItem(k)||'null')}catch(e){}
   NTF.snap=d&&d.snap||null;NTF.list=d&&Array.isArray(d.list)?d.list:[];NTF.read=new Set(d&&d.read||[]);NTF.seen=new Set(d&&d.seen||[]);
-  NTF.prefs=Object.assign({off:[],sys:'all'},d&&d.prefs);NTF.snz=Object.assign({},d&&d.snz);NTF.live=[];NTF.range=null;NTF.rangeAt=0;
+  NTF.prefs=Object.assign({off:[],sys:'all'},d&&d.prefs);NTF.live=[];NTF.range=null;NTF.rangeAt=0;
 }
-function ntfSave(){try{localStorage.setItem(NTF.key,JSON.stringify({snap:NTF.snap,list:NTF.list.slice(0,150),read:[...NTF.read].slice(-600),seen:[...NTF.seen].slice(-600),prefs:NTF.prefs,snz:NTF.snz}))}catch(e){}}
+function ntfSave(){try{localStorage.setItem(NTF.key,JSON.stringify({snap:NTF.snap,list:NTF.list.slice(0,150),read:[...NTF.read].slice(-600),seen:[...NTF.seen].slice(-600),prefs:NTF.prefs}))}catch(e){}}
 
 /* ---------- urgency (v4.50.0): crit = ด่วน / เกินกำหนด · act = ต้องทำ · info = แจ้งให้ทราบ — read from the notice's id, so stored ones work too ---------- */
 const NTF_LV={crit:{th:'ด่วน · เกินกำหนด',short:'ด่วน'},act:{th:'ต้องทำ',short:'ต้องทำ'},info:{th:'แจ้งให้ทราบ',short:'แจ้ง'}};
@@ -59,18 +59,8 @@ function ntfLevel(x){
 const ntfLvSort=(a,b)=>NTF_LV_N[ntfLevel(a)]-NTF_LV_N[ntfLevel(b)]||String(b.at||'').localeCompare(String(a.at||''));
 const ntfSortLv=l=>l.slice().sort(ntfLvSort);
 
-/* ---------- เลื่อนเตือน (snooze): hidden from the bell, the badge and pop-ups until then; then it comes back unread and pops again ---------- */
-const NTF_SNZ=[['h1','1 ชม.'],['h3','3 ชม.'],['tm','พรุ่งนี้ 08:00']];
-const ntfSnzUntil=k=>{const n=new Date();if(k==='h1')return n.getTime()+36e5;if(k==='h3')return n.getTime()+3*36e5;const t=addDays(n,1);t.setHours(8,0,0,0);return t.getTime()};
-const ntfSnoozed=id=>(NTF.snz&&NTF.snz[id]||0)>Date.now();
-const ntfSnzText=id=>{const t=new Date(NTF.snz[id]);const same=ymd(t)===ymd(new Date());return `${same?'':ntfRel(ymd(t))+' '}${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} น.`};
-function ntfSnooze(id,k){NTF.snz=Object.assign({},NTF.snz,{[id]:ntfSnzUntil(k)});NTF.read.add(id);NTF.snzOpen='';ntfSave();ntfBadges();
-  const pop=document.querySelector(`#ntfPops [data-pop="${CSS.escape(id)}"]`);if(pop)pop.remove();
-  toast(`เลื่อนเตือนถึง ${ntfSnzText(id)}`);if(NTF.open)ntfDrawPanel();if(S.view==='my')render()}
-/* snoozes whose time came: back to unread; returns the notices still there, to pop again */
-function ntfWake(){const now=Date.now();const out=[];let ch=false;
-  for(const [id,t] of Object.entries(NTF.snz||{}))if(t<=now){delete NTF.snz[id];NTF.read.delete(id);ch=true;const x=NTF.live.concat(NTF.list).find(y=>y.id===id);if(x)out.push(x)}
-  if(ch)ntfSave();return out}
+/* เลื่อนเตือน (snooze, v4.50.0) was removed in v4.52.2 (user, 27 Nov 2026: "เวลาแจ้งเตือน notification ให้ตัดเลื่อนเวลาออกไป");
+   older saved snoozes (key snz) are dropped by the next ntfSave */
 
 /* ---------- who this is about ---------- */
 const ntfMe=()=>norm(S.me);
@@ -188,16 +178,15 @@ async function ntfTick(force){
       if(p.s!=='closed'&&n.state==='closed'&&(isPlanner()||norm(n.createdBy)===ntfMe())&&ntfByOther(n.closedBy))add('ncr','cl:'+n.id,'ปิด NCR แล้ว',n.closedBy?'โดย '+ntfWho(n.closedBy):'',ref,nm)}
     /* live follow-ups + clashes */
     const cl=ntfClashes(tasks);NTF.live=ntfLiveOf(tasks,cl);
-    const first=!NTF.snap;const freshLive=first?[]:NTF.live.filter(x=>!NTF.seen.has(x.id)&&!ntfSnoozed(x.id));
+    const first=!NTF.snap;const freshLive=first?[]:NTF.live.filter(x=>!NTF.seen.has(x.id));
     NTF.live.forEach(x=>NTF.seen.add(x.id));
-    const woke=ntfWake();
     NTF.snap={t:Object.fromEntries(tasks.map(t=>[t.id,tSnap(t)])),
       j:S.jobsReady?Object.fromEntries(S.jobs.map(j=>[j.id,{s:j.state,r:jbNeedsReview(j)?1:0}])):snap.j,
       c:S.checksReady?Object.fromEntries(S.checks.map(c=>[c.id,{s:c.state}])):snap.c,
       n:S.ncrReady?Object.fromEntries(S.ncr.map(n=>[n.id,{s:n.state}])):snap.n};
     if(ev.length)NTF.list=ev.concat(NTF.list).slice(0,150);
     ntfSave();NTF.ready=true;
-    ntfAnnounce(ev.concat(freshLive,woke.filter(x=>!ev.includes(x)&&!freshLive.includes(x))));ntfBadges();
+    ntfAnnounce(ev.concat(freshLive));ntfBadges();
     if(NTF.open)ntfDrawPanel();
     const sig=NTF.live.map(x=>x.id+x.body).join()+'|'+NTF.list.length;/* งานของฉัน redraws only when its lists changed (render() calls ntfSoon) */
     if(sig!==NTF.sig){NTF.sig=sig;if(S.view==='my'&&!document.querySelector('#view :focus'))render()}
@@ -208,12 +197,12 @@ setInterval(()=>ntfTick(),60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)ntfTick(true)});
 
 /* ---------- counts, pop-ups, browser notifications ---------- */
-const ntfUnread=()=>NTF.list.concat(NTF.live).filter(x=>!NTF.read.has(x.id)&&!ntfSnoozed(x.id)).length;
+const ntfUnread=()=>NTF.list.concat(NTF.live).filter(x=>!NTF.read.has(x.id)).length;
 /* the bell turns red while something urgent is unread */
-const ntfUrgent=()=>NTF.list.concat(NTF.live).some(x=>!NTF.read.has(x.id)&&!ntfSnoozed(x.id)&&ntfLevel(x)==='crit');
+const ntfUrgent=()=>NTF.list.concat(NTF.live).some(x=>!NTF.read.has(x.id)&&ntfLevel(x)==='crit');
 function ntfBadges(){const n=ntfUnread();const u=n&&ntfUrgent();
   ['#ntfBadge','#ntfBadgeM'].forEach(s=>{const b=$(s);if(b){b.hidden=!n;b.textContent=n>99?'99+':n;b.classList.toggle('ntf-crit',!!u);b.title=u?'มีเรื่องด่วนที่ยังไม่อ่าน':''}});
-  const k=NTF.live.filter(x=>!ntfSnoozed(x.id)).length;
+  const k=NTF.live.length;
   const m=$('#myBadge');if(m){m.hidden=!k;m.textContent=k>99?'99+':k}
   const mb=$('#myBadgeM');if(mb){mb.hidden=!k;mb.textContent=k>99?'99+':k}}
 function ntfIcon(cat){const c=NTF_CAT[cat]||NTF_CAT.follow;return `<span class="ntf-ic c-${esc(cat)}" aria-hidden="true"><svg viewBox="0 0 24 24">${c.i}</svg></span>`}
@@ -235,7 +224,7 @@ function ntfPhoneBar(items){
   box.appendChild(el);setTimeout(gone,nc||lv==='crit'?8000:5000);
 }
 function ntfAnnounce(items){
-  items=items.filter(x=>!ntfSnoozed(x.id));if(!items.length)return;
+  if(!items.length)return;
   if(ntfPhone())ntfPhoneBar(items);else ntfPops(items);
   ntfSys(items);
 }
@@ -254,19 +243,18 @@ function ntfSys(items){
     show(`BU1 Weekly Plan · ${pick.length} เรื่องใหม่${nc?` (ด่วน ${nc})`:''}`,{body:pick.slice(0,4).map(x=>'• '+x.title).join('\n')+(pick.length>4?`\nและอีก ${pick.length-4} เรื่อง`:''),tag:'bu1wp-sum',requireInteraction:!!nc},()=>ntfPanel(true))}
 }
 /* corner pop-ups (desktop): ด่วน stays until closed, ต้องทำ 12 s, แจ้งให้ทราบ 8 s — the bar under it runs out, a mouse over it pauses it;
-   the first button does the main thing, ⏰ 1 ชม. snoozes it */
+   the button does the main thing */
 function ntfPops(items){
   const box=ntfPopBox();box.classList.remove('top');const list=ntfSortLv(items);const show=list.slice(0,3);
   show.forEach(x=>{const lv=ntfLevel(x);const A=ntfActs(x);const ms=lv==='crit'?0:lv==='act'?12000:8000;
     const el=document.createElement('div');el.className=`ntf-pop lv-${lv}`;el.dataset.pop=x.id;el.setAttribute('role',lv==='crit'?'alert':'status');
     el.innerHTML=`${ntfIcon(x.cat)}<div class="ntf-pt"><span class="ntf-tl"><b>${esc(x.title)}</b>${lv!=='info'?`<em class="ntf-lv">${NTF_LV[lv].short}</em>`:''}</span>${ntfChips(x)}${x.body?`<span class="ntf-b">${esc(x.body)}</span>`:''}
-      <span class="ntf-pa">${A.slice(0,1).map(([k,l])=>`<button type="button" class="ntf-a pri" data-pop-act="${k}">${esc(l)}</button>`).join('')}<button type="button" class="ntf-a" data-pop-snz title="เลื่อนเตือนอีก 1 ชั่วโมง">⏰ 1 ชม.</button></span></div>
+      ${A.length?`<span class="ntf-pa">${A.slice(0,1).map(([k,l])=>`<button type="button" class="ntf-a pri" data-pop-act="${k}">${esc(l)}</button>`).join('')}</span>`:''}</div>
       <button type="button" class="ntf-x" aria-label="ปิด">✕</button>${ms?`<i class="ntf-tm" style="animation-duration:${ms}ms" aria-hidden="true"></i>`:''}`;
     const gone=()=>{el.classList.add('out');setTimeout(()=>el.remove(),400)};
     if(ms)el.querySelector('.ntf-tm').addEventListener('animationend',gone);
     el.addEventListener('click',e=>{e.stopPropagation();const t=e.target;
       if(t.closest('.ntf-x')){el.remove();return}
-      if(t.closest('[data-pop-snz]')){el.remove();ntfSnooze(x.id,'h1');return}
       const a=t.closest('[data-pop-act]');el.remove();ntfDo(x,a?a.dataset.popAct:'open')});
     box.appendChild(el)});
   while(box.querySelectorAll('.ntf-pop:not(.more)').length>4)box.querySelector('.ntf-pop:not(.more)').remove();/* the oldest goes */
@@ -288,7 +276,7 @@ async function ntfOpen(ref){
 /* ---------- the panel (bell) ---------- */
 function ntfAgo(at){const s=(Date.now()-new Date(at))/1000;if(!(s>=0))return '';if(s<60)return 'เมื่อสักครู่';if(s<3600)return `${Math.floor(s/60)} นาทีที่แล้ว`;if(s<86400)return `${Math.floor(s/3600)} ชม. ที่แล้ว`;return jbWhen(at)}
 /* every row sits on a strip that a swipe to the left uncovers (touch: mark read, and hide a ล่าสุด item) */
-/* v4.50.0: a row = the notice (opens it) + its buttons: the main thing to do · ✓ อ่านแล้ว · ⏰ เลื่อน (1 ชม. · 3 ชม. · พรุ่งนี้ 08:00) */
+/* v4.50.0: a row = the notice (opens it) + its buttons: the main thing to do · ✓ อ่านแล้ว */
 const ntfChips=x=>{const m=x.m;if(!m)return '';const td=ymd(new Date());const o=[];
   if(m.d)o.push(`<span class="ntf-c d${m.d===td?' td':m.d<td?' past':''}">${esc(ntfRel(m.d))}</span>`);if(m.pn)o.push(`<span class="ntf-c pn">${esc(m.pn)}</span>`);if(m.cu)o.push(`<span class="ntf-c">${esc(m.cu)}</span>`);
   return o.length?`<span class="ntf-cs">${o.join('')}</span>`:''};
@@ -306,17 +294,17 @@ function ntfActs(x){const r=x.ref||{};const id=String(x.id);const A=[];
   return A.slice(0,2)}
 const ntfFind=id=>NTF.list.concat(NTF.live).find(y=>y.id===id)||null;
 function ntfRedraw(){if(NTF.open)ntfDrawPanel();if(S.view==='my'&&!document.querySelector('#view :focus'))render()}
-function ntfDo(x,k){NTF.read.add(x.id);NTF.snzOpen='';ntfSave();ntfBadges();
+function ntfDo(x,k){NTF.read.add(x.id);ntfSave();ntfBadges();
   if(k==='open'){ntfOpen(x.ref);return}
   if(k==='week'){const d=(x.ref&&x.ref.date)||(x.m&&x.m.d);ntfPanel(false);if(S.view!=='plan')goView('plan');if(d)jumpWeek(d);return}
   if(k==='odoc'){ntfPanel(false);goView('odoc');return}
   if(k==='gaf')window.open(GA_FLEET_URL,'_blank','noopener');
   if(k==='mr'&&typeof mrSelf==='function')mrSelf().then(()=>ntfTick(true));
   ntfRedraw()}
-const ntfRow=x=>{const lv=ntfLevel(x);const unread=!NTF.read.has(x.id);const snz=ntfSnoozed(x.id);const A=ntfActs(x);const open=NTF.snzOpen===x.id;
+const ntfRow=x=>{const lv=ntfLevel(x);const unread=!NTF.read.has(x.id);const A=ntfActs(x);
   return `<div class="ntf-sw"><span class="ntf-swl" aria-hidden="true">${x.live?'อ่านแล้ว':'อ่านแล้ว · ซ่อน'}</span><div class="ntf-row lv-${lv}${unread?' unread':''}${x.live?' live':''}" data-ntf="${esc(x.id)}">
-    <button type="button" class="ntf-main" data-ntf-go>${ntfIcon(x.cat)}<span class="ntf-t"><span class="ntf-tl"><b>${esc(x.title)}</b>${lv!=='info'?`<em class="ntf-lv">${NTF_LV[lv].short}</em>`:''}</span>${ntfChips(x)}${x.body?`<span class="ntf-b">${esc(x.body)}</span>`:''}<small>${x.at?esc(ntfAgo(x.at)):x.live?'ยังค้างอยู่':''}${snz?` · ⏰ เลื่อนถึง ${esc(ntfSnzText(x.id))}`:''}</small></span></button>
-    <div class="ntf-acts">${A.map(([k,l],i)=>`<button type="button" class="ntf-a${i?'':' pri'}" data-ntf-act="${k}">${esc(l)}</button>`).join('')}${unread?'<button type="button" class="ntf-a" data-ntf-act="read" title="ทำเครื่องหมายว่าอ่านแล้ว">✓ อ่านแล้ว</button>':''}<button type="button" class="ntf-a snz" data-ntf-snz aria-expanded="${open}" title="เลื่อนเตือนภายหลัง">⏰ เลื่อน</button>${open?`<span class="ntf-snzm" role="group" aria-label="เลื่อนเตือน">${NTF_SNZ.map(([k,l])=>`<button type="button" class="ntf-a" data-ntf-snzt="${k}">${l}</button>`).join('')}${snz?'<button type="button" class="ntf-a" data-ntf-snzt="off">ยกเลิกเลื่อน</button>':''}</span>`:''}</div></div></div>`};
+    <button type="button" class="ntf-main" data-ntf-go>${ntfIcon(x.cat)}<span class="ntf-t"><span class="ntf-tl"><b>${esc(x.title)}</b>${lv!=='info'?`<em class="ntf-lv">${NTF_LV[lv].short}</em>`:''}</span>${ntfChips(x)}${x.body?`<span class="ntf-b">${esc(x.body)}</span>`:''}<small>${x.at?esc(ntfAgo(x.at)):x.live?'ยังค้างอยู่':''}</small></span></button>
+    <div class="ntf-acts">${A.map(([k,l],i)=>`<button type="button" class="ntf-a${i?'':' pri'}" data-ntf-act="${k}">${esc(l)}</button>`).join('')}${unread?'<button type="button" class="ntf-a" data-ntf-act="read" title="ทำเครื่องหมายว่าอ่านแล้ว">✓ อ่านแล้ว</button>':''}</div></div></div>`};
 const NTF_SHORT={ga:'GA จัดรถ',job:'ใบรับคำร้อง',cs:'Check Sheet',ncr:'NCR',plan:'แผนงาน',clash:'จัดชน',follow:'งานค้าง',gareq:'คำขอรถ',mrep:'รายงานเช้า',odoc:'เอกสาร Onsite',safety:'Safety'};
 const ntfDay=at=>{const k=ymd(new Date(at));return k===ymd(new Date())?'วันนี้':k===ymd(addDays(new Date(),-1))?'เมื่อวาน':'ก่อนหน้านี้'};
 function ntfPanel(on){
@@ -338,8 +326,8 @@ function ntfDrawPanel(){
   const full=p.classList.contains('sheet');
   /* unread tab, then the category chips (only categories that have something), then by day */
   /* v4.50.0: grouped by urgency — ด่วน · เกินกำหนด / ต้องทำ (follow-ups still open + unread notices of that kind) / ความเคลื่อนไหวล่าสุด
-     (everything else, newest first, by day); snoozed ones only under "เลื่อนไว้" */
-  const keep=x=>(NTF.tab!=='unread'||!NTF.read.has(x.id))&&!ntfSnoozed(x.id);const evAll=NTF.list.filter(keep),liveAll=NTF.live.filter(keep);
+     (everything else, newest first, by day) */
+  const keep=x=>NTF.tab!=='unread'||!NTF.read.has(x.id);const evAll=NTF.list.filter(keep),liveAll=NTF.live.filter(keep);
   const cnt={};liveAll.concat(evAll).forEach(x=>{cnt[x.cat]=(cnt[x.cat]||0)+1});const cats=ntfCats().map(c=>c[0]).filter(k=>cnt[k]);
   if(NTF.cat&&!cnt[NTF.cat])NTF.cat='';const inCat=x=>!NTF.cat||x.cat===NTF.cat;
   const ev=evAll.filter(inCat),live=liveAll.filter(inCat);
@@ -348,7 +336,6 @@ function ntfDrawPanel(){
   const byLv=lv=>top.filter(x=>ntfLevel(x)===lv).sort((a,b)=>(b.live?1:0)-(a.live?1:0)||String(b.at||'').localeCompare(String(a.at||'')));
   const crit=byLv('crit'),act=byLv('act');const rest=ev.filter(x=>!topIds.has(x.id)).slice(0,80);
   const days=['วันนี้','เมื่อวาน','ก่อนหน้านี้'].map(d=>[d,rest.filter(x=>ntfDay(x.at)===d)]).filter(([,l])=>l.length);
-  const zz=NTF.list.concat(NTF.live).filter(x=>ntfSnoozed(x.id));if(!zz.length)NTF.showSnz=false;
   const sec=(lv,l)=>l.length?`<p class="ntf-h lv-${lv}"><i aria-hidden="true"></i>${NTF_LV[lv].th}<b>${l.length}</b></p>${l.map(ntfRow).join('')}`:'';
   const readN=NTF.list.filter(x=>NTF.read.has(x.id)).length;
   const perm='Notification' in window?Notification.permission:'none';
@@ -359,13 +346,12 @@ function ntfDrawPanel(){
       <button type="button" class="btn sm" data-ntf-set>เสร็จ</button></div>`
     :`<div class="seg ntf-tabs" role="tablist"><button type="button" role="tab" data-ntf-tab="all" aria-selected="${NTF.tab!=='unread'}">ทั้งหมด</button><button type="button" role="tab" data-ntf-tab="unread" aria-selected="${NTF.tab==='unread'}">ยังไม่อ่าน ${ntfUnread()?`(${ntfUnread()})`:''}</button></div>
     ${chips}${full&&(live.length||ev.length)?'<p class="ntf-tip">ปัดรายการไปทางซ้าย = อ่านแล้ว / ซ่อน</p>':''}
-    <div class="ntf-list">${NTF.showSnz?`<p class="ntf-h lv-snz"><i aria-hidden="true"></i>เลื่อนเตือนไว้<b>${zz.length}</b></p>${zz.map(ntfRow).join('')}`
-      :`${sec('crit',crit)}${sec('act',act)}
+    <div class="ntf-list">${sec('crit',crit)}${sec('act',act)}
       ${(live.length||ev.length)&&!crit.length&&!act.length?'<p class="ntf-clear">✓ ไม่มีเรื่องด่วนหรืองานที่ต้องทำ</p>':''}
-      ${days.length?`<p class="ntf-h lv-info"><i aria-hidden="true"></i>ความเคลื่อนไหวล่าสุด</p>${days.map(([d,l])=>`<p class="ntf-d">${d}</p>${l.map(ntfRow).join('')}`).join('')}`:''}`}
-      ${!NTF.showSnz&&!live.length&&!ev.length?`<p class="ntf-empty">${!NTF.ready?'กำลังตรวจข้อมูล…':NTF.tab==='unread'?'อ่านครบแล้ว':'ไม่มีการแจ้งเตือน'}<small>${ntfIsGA()?'คำขอรถ GA ใหม่ แก้ไข หรือยกเลิก จะขึ้นที่นี่':'เรื่องใหม่ เช่น GA จัดรถ ใบรับคำร้องขอรับบริการสอบเทียบ Check Sheet จะขึ้นที่นี่'}</small></p>`:''}</div>
+      ${days.length?`<p class="ntf-h lv-info"><i aria-hidden="true"></i>ความเคลื่อนไหวล่าสุด</p>${days.map(([d,l])=>`<p class="ntf-d">${d}</p>${l.map(ntfRow).join('')}`).join('')}`:''}
+      ${!live.length&&!ev.length?`<p class="ntf-empty">${!NTF.ready?'กำลังตรวจข้อมูล…':NTF.tab==='unread'?'อ่านครบแล้ว':'ไม่มีการแจ้งเตือน'}<small>${ntfIsGA()?'คำขอรถ GA ใหม่ แก้ไข หรือยกเลิก จะขึ้นที่นี่':'เรื่องใหม่ เช่น GA จัดรถ ใบรับคำร้องขอรับบริการสอบเทียบ Check Sheet จะขึ้นที่นี่'}</small></p>`:''}</div>
     ${perm==='default'?'<button type="button" class="ntf-ask" data-ntf-perm>🔔 เปิดแจ้งเตือนบน Windows / มือถือ เพื่อรู้แม้เปิดหน้าอื่นอยู่</button>':''}
-    <footer>${zz.length?`<button type="button" class="lnk" data-ntf-zz aria-pressed="${NTF.showSnz}">${NTF.showSnz?'‹ กลับ':`⏰ เลื่อนไว้ ${zz.length}`}</button>`:''}${readN?`<button type="button" class="lnk" data-ntf-clear title="ลบรายการล่าสุดที่อ่านแล้วออกจากรายการในเบราว์เซอร์นี้">ล้างที่อ่านแล้ว (${readN})</button>`:''}<span class="grow"></span>${ntfIsGA()?'':'<button type="button" class="lnk" data-ntf-my>เปิดหน้างานของฉัน ›</button>'}</footer>`}`;
+    <footer>${readN?`<button type="button" class="lnk" data-ntf-clear title="ลบรายการล่าสุดที่อ่านแล้วออกจากรายการในเบราว์เซอร์นี้">ล้างที่อ่านแล้ว (${readN})</button>`:''}<span class="grow"></span>${ntfIsGA()?'':'<button type="button" class="lnk" data-ntf-my>เปิดหน้างานของฉัน ›</button>'}</footer>`}`;
 }
 /* touch: swipe a row to the left = mark read (a ล่าสุด item is also hidden); the click that ends a swipe is ignored */
 let NSW=null,ntfSwAt=0;
@@ -384,10 +370,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(row){if(Date.now()-ntfSwAt<400)return;const x=ntfFind(row.dataset.ntf);if(!x){row.remove();return}
     if(t.closest('[data-ntf-go]')){ntfDo(x,'open');return}
     const ac=t.closest('[data-ntf-act]');if(ac){ntfDo(x,ac.dataset.ntfAct);return}
-    if(t.closest('[data-ntf-snz]')){NTF.snzOpen=NTF.snzOpen===x.id?'':x.id;ntfRedraw();return}
-    const st=t.closest('[data-ntf-snzt]');if(st){if(st.dataset.ntfSnzt==='off'){delete NTF.snz[x.id];NTF.snzOpen='';ntfSave();ntfBadges();ntfRedraw()}else ntfSnooze(x.id,st.dataset.ntfSnzt);return}
     return}
-  if(t.closest('[data-ntf-zz]')){NTF.showSnz=!NTF.showSnz;NTF.snzOpen='';ntfDrawPanel();return}
   if(t.closest('[data-ntf-close]')){ntfPanel(false);return}
   if(t.closest('[data-ntf-all]')){NTF.list.concat(NTF.live).forEach(x=>NTF.read.add(x.id));ntfSave();ntfBadges();ntfDrawPanel();return}
   if(t.closest('[data-ntf-set]')){NTF.set=!NTF.set;ntfDrawPanel();return}

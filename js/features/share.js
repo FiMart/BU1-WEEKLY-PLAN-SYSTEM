@@ -54,19 +54,34 @@ function dayParts(k,max){
   const n=parts.length;
   return parts.map((p,i)=>[head[0]+(n>1?` · ส่วนที่ ${i+1}/${n}`:''),head[1],...p.flatMap(b=>['',b])].join('\n'));
 }
+/* any LINE text = head lines + blocks, cut between blocks into parts ≤ max (a block longer than a part is cut between its lines);
+   used by ⚡ ถามด่วน (js/features/quick-ask.js) */
+function lineSplit(head,blocks,max){
+  max=max||LINE_MAX;const room=max-head.join('\n').length-40;
+  const items=blocks.flatMap(b=>{if(b.length<=room)return [b];const out=[];let cur='';b.split('\n').forEach(l=>{if(cur&&cur.length+1+l.length>room){out.push(cur);cur=l}else cur=cur?cur+'\n'+l:l});if(cur)out.push(cur);return out});
+  const parts=[];let cur=[];let len=0;
+  items.forEach(b=>{if(cur.length&&len+2+b.length>room){parts.push(cur);cur=[];len=0}cur.push(b);len+=(len?2:0)+b.length});
+  if(cur.length||!parts.length)parts.push(cur);
+  const n=parts.length;
+  return parts.map((p,i)=>[head[0]+(n>1?` · ส่วนที่ ${i+1}/${n}`:''),...head.slice(1),...p.flatMap(b=>['',b])].join('\n'));
+}
 /* copy a day: one message, or a list of parts to copy one after another */
 function copyDay(k){
   const parts=dayParts(k);
   if(parts.length===1){copyText(parts[0],`คัดลอกแผน${fmtDay(k)}แล้ว วางใน LINE ได้เลย`);return}
+  copyPartsAsk(parts,`แผน ${fmtDay(k)}`,p=>{const n=(p.match(/^\d+\) /gm)||[]).length;return n?`${n} งาน · `:''});
+}
+/* the parts dialog: one button per part, copied one after another (what = the title, count(part) = "n งาน · " or '') */
+function copyPartsAsk(parts,what,count){
   let d=$('#linePartsDlg');
   if(!d){d=document.createElement('dialog');d.id='linePartsDlg';d.className='confirm-dlg';d.setAttribute('aria-labelledby','lpT');document.body.appendChild(d);
     d.addEventListener('click',e=>{const b=e.target.closest('[data-lp]');if(!b){if(e.target===d||e.target.closest('[data-lp-close]'))d.close();return}
       const i=Number(b.dataset.lp);copyText(d._parts[i],`คัดลอกส่วนที่ ${i+1}/${d._parts.length} แล้ว วางใน LINE แล้วกลับมาคัดลอกส่วนถัดไป`);b.classList.add('done');b.querySelector('small').textContent='คัดลอกแล้ว ✓';
       const nx=d.querySelector(`[data-lp="${i+1}"]`);if(nx)nx.focus()})}
-  d._parts=parts;const plans=p=>(p.match(/^\d+\) /gm)||[]).length;
-  d.innerHTML=`<div class="confirm-wrap"><h2 id="lpT">แผน ${esc(fmtDay(k))} ยาวเกินที่ LINE ส่งได้ในข้อความเดียว</h2>
+  d._parts=parts;
+  d.innerHTML=`<div class="confirm-wrap"><h2 id="lpT">${esc(what)} ยาวเกินที่ LINE ส่งได้ในข้อความเดียว</h2>
     <p>แบ่งเป็น ${parts.length} ส่วน · กดคัดลอกทีละส่วน แล้ววางใน LINE ตามลำดับ</p>
-    <div class="lp-list">${parts.map((p,i)=>`<button type="button" class="btn lp-b" data-lp="${i}"><b>คัดลอกส่วนที่ ${i+1}/${parts.length}</b><small>${plans(p)?`${plans(p)} งาน · `:''}${p.length.toLocaleString()} ตัวอักษร</small></button>`).join('')}</div>
+    <div class="lp-list">${parts.map((p,i)=>`<button type="button" class="btn lp-b" data-lp="${i}"><b>คัดลอกส่วนที่ ${i+1}/${parts.length}</b><small>${count?count(p):''}${p.length.toLocaleString()} ตัวอักษร</small></button>`).join('')}</div>
     <div class="confirm-act"><button type="button" class="btn" data-lp-close>ปิด</button></div></div>`;
   d.showModal();setTimeout(()=>{const b=d.querySelector('[data-lp="0"]');if(b)b.focus()},30);
 }
