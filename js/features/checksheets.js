@@ -148,6 +148,7 @@ function csDraw(){
   $('#csBody').innerHTML=`<div class="cs-top"><span class="ncr-st" style="--c:${st.c}">${esc(st.th)}</span>${flowChip(csFlow(c))}<span class="cs-prog"><b>${n}/${tot}</b> หัวข้อยืนยันแล้ว</span>
       <span class="cs-meta">สร้าง ${esc(jbWhen(c.createdAt))} · ${csWho(c.createdBy)}${c.submittedAt?` · ส่งตรวจ ${esc(jbWhen(c.submittedAt))} · ${csWho(c.submittedBy)}`:''}${c.approvedAt?` · อนุมัติ ${esc(jbWhen(c.approvedAt))} · ${csWho(c.approvedBy)}`:''}</span></div>
     ${c.state==='rejected'?`<div class="reason-box cancelled"><b>ตีกลับเมื่อ ${esc(jbWhen(c.rejectedAt))} โดย ${csWho(c.rejectedBy)} · แก้แล้วส่งตรวจใหม่</b><span>${esc(c.rejectReason||'')}</span></div>`:''}
+    ${typeof airHtml==='function'?airHtml(c,ed):''}
     <fieldset class="jb-sec"><legend>ข้อมูล · ${esc(F.sub)}</legend><div class="ncr-grid jb-grid">${F.head.map(hf).join('')}</div></fieldset>
     ${F.secs.map(s=>csSecHtml(c,s,ed)).join('')}
     ${csApproveHtml(c)}

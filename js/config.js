@@ -11,4 +11,6 @@ const BU1_CONFIG={
   readOnly:false,        // writes switched on 6 Oct 2026 (user approved; the old BU1 app has not been used). true = read the real data and write nothing
   allowSignup:true,     // the central project has sign-ups disabled (checked 2026-10-05); true shows "สมัครสมาชิก" (creates a central Supabase Auth account; BU1 access is still granted by the owner)
   allowedEmailDomain:'', // e.g. 'flowlabservice.co.th' to accept only company e-mails at sign-up; '' accepts any e-mail
+  aiUrl:'',              // AI อ่านจากรูป (FLS-F-122): '' = off (costs money per use). On: '/api/ai-extract' + ANTHROPIC_API_KEY in Vercel (docs/AI-SETUP.md)
+  aiAskUrl:'',           // ถาม AI: '' = off (the free ⚡ ถามด่วน is used instead). On: '/api/ai-ask' + ANTHROPIC_API_KEY in Vercel
 };

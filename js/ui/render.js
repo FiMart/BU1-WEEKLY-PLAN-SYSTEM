@@ -62,6 +62,8 @@ function render(){
   {const on=main.querySelector('.pd-strip.scroll .pd-day.on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2}}
   if(ready){if(anim&&(S.view==='dash'||S.view==='plan'))countUp(main);S.anim=null;flashIds.clear()}
   if(typeof deepLinkTry==='function')deepLinkTry();/* a scanned QR link (?cs= / ?job= / ?pn=) opens its document once ready (js/features/qr.js) */
+  if(typeof aaSync==='function')aaSync();/* ถาม AI panel (js/features/ai-ask.js; off unless BU1_CONFIG.aiAskUrl) */
+  if(typeof qaSync==='function')qaSync();/* ⚡ ถามด่วน floating button (js/features/quick-ask.js) */
 }
 /* sidebar: one highlight that glides to the active page */
 function moveInd(){
